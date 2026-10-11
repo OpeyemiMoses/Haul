@@ -3,7 +3,7 @@
 <div align="center">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Network: Monad Testnet](https://img.shields.io/badge/Network-Monad%20Testnet%20(10143)-836EF9.svg)](https://testnet.monad.xyz)
+[![Network: Monad](https://img.shields.io/badge/Network-Monad%20Testnet%20--%3E%20Mainnet%20Ready-836EF9.svg)](https://testnet.monad.xyz)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.24%20(Cancun)-363636.svg)](https://soliditylang.org/)
 [![React](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite-61DAFB.svg)](https://react.dev/)
 [![Groq AI](https://img.shields.io/badge/AI%20Engine-Groq%20Llama%203.3%2070B-F55036.svg)](https://groq.com/)
@@ -13,32 +13,32 @@
 
 *"Paper and screenshot receipts die after checkout. Products are alive."*
 
-[Features](#-key-features) • [Architecture](#-protocol-architecture) • [Contracts](#-deployed-contracts-on-monad-testnet) • [Quick Start](#-quick-start) • [Environment Setup](#-environment-configuration) • [Documentation](#-community--documentation)
+[Features](#key-features) • [Architecture](#protocol-architecture) • [Contracts](#deployed-contracts-testnet-and-upcoming-mainnet) • [Quick Start](#quick-start) • [Environment Setup](#environment-configuration) • [Documentation](#community-and-documentation)
 
 </div>
 
 ---
 
-## 📖 Overview
+## Overview
 
-**Haul** is an onchain consumer commerce protocol engineered for the **Monad Metropolis Hackathon**. It bridges physical retail, digital escrow, and living ownership by minting a dynamic **ERC-721 Product Passport** for every purchase.
+**Haul** is an onchain consumer commerce protocol engineered for high-throughput decentralized retail. It bridges physical retail, digital escrow, and living ownership by minting a dynamic **ERC-721 Product Passport** for every purchase.
 
 In traditional commerce, checkout receipts are static, disconnected, and easily forged. When a buyer leaves the counter, warranty claims, service histories, and resale authenticity are fragmented across paper receipts and emails.
 
 Haul transforms retail transactions into an immutable onchain state machine:
 
 ```text
-DISCOVER ➔ BUY (1-Click Gasless) ➔ ESCROW ➔ STAGED ➔ PHYSICAL PICKUP PIN HANDSHAKE ➔ ACTIVE OWNERSHIP ➔ WARRANTY CLAIM ➔ RESALE TRANSFER
+DISCOVER -> BUY (1-Click Gasless) -> ESCROW -> STAGED -> PHYSICAL PICKUP PIN HANDSHAKE -> ACTIVE OWNERSHIP -> WARRANTY CLAIM -> RESALE TRANSFER
 ```
 
 ### Why Monad?
-- **Sub-Second Finality:** In-store physical pickups require instant barcode/QR verification without waiting 15–30 seconds for block confirmations.
+- **Sub-Second Finality:** In-store physical pickups require instant barcode/QR verification without waiting 15-30 seconds for block confirmations.
 - **Micro-Cent Gas Sponsorship:** Haul sponsors 100% of customer gas fees through an onchain paymaster and relayer. Executing 5+ lifecycle transitions per item costs fractions of a cent on Monad.
 - **10,000 TPS Scalability:** Handles consumer retail traffic without network congestion spikes.
 
 ---
 
-## ⚡ Key Features
+## Key Features
 
 ### 1. Dynamic Living Product Passports (ERC-721)
 - Every product carries an onchain passport tracking serial number, original merchant, purchase timestamp, warranty duration, and state progression (`Ordered`, `ReadyForPickup`, `Collected`, `WarrantyActive`, `Transferred`).
@@ -46,40 +46,49 @@ DISCOVER ➔ BUY (1-Click Gasless) ➔ ESCROW ➔ STAGED ➔ PHYSICAL PICKUP PIN
 
 ### 2. Gasless Consumer Checkout (Sponsored Paymaster)
 - Powered by Privy Embedded Wallets and an onchain relayer.
-- Consumers experience zero gas popups and 0 MON fee friction—the protocol sponsors transaction gas behind the scenes.
+- Consumers experience zero gas popups and 0 MON fee friction - the protocol sponsors transaction gas behind the scenes.
 
 ### 3. Cryptographic In-Store Pickup Handshake
 - At purchase, a deterministic 4-digit secret PIN is hashed onchain via `keccak256`.
 - The merchant enters or scans the customer PIN at the point of sale. Only matching hashes release escrowed funds and transition the passport to `Collected`.
 
-### 4. Decentralized Store Manager & Merchant Dashboard
+### 4. Dedicated Stores Directory & Verification Pass
+- Features a dedicated **Stores** navigation directory for browsing verified flagship retailers.
+- **Verification Rule:** Stores earn the official Verified Store Pass once at least 1 authenticated item is actively listed in their catalog.
+- Unverified stores with 0 products remain in pending status with one-click listing triggers.
+
+### 5. Decentralized Store Manager
 - Merchants can register their own onchain store profile, customize location, operating hours, office schedules, banner styling, and contact metadata.
 - Integrated Point of Sale (POS) counter for fulfilling orders, staging inventory, and confirming pickups.
 
-### 5. Peer-to-Peer & Merchant Messaging Hub
+### 6. Peer-to-Peer & Merchant Messaging Hub
 - Direct messaging between buyers and store owners.
 - Real-time conversation threads, unread badges, order context attachments, and responsive mobile-first messaging views.
 
-### 6. AI Account Companion & Store Manager (Groq Llama 3.3 70B)
+### 7. AI Account Companion & Store Manager (Groq Llama 3.3 70B)
 - Embedded floating AI assistant powered by Groq's high-speed inference engine.
 - **Account Reasoning:** Knows all pending, received, escrowed, and transferred orders associated with your wallet.
 - **Interactive Disambiguation:** When asking for pickup PINs or tracking codes without specifying an order, the AI presents clickable order cards to select the exact item.
 - **Store Support:** Answers shipping, escrow, and warranty questions, while directing store-specific product inquiries to the respective merchant.
 
+### 8. System, Light, and Dark Theme Modes
+- Full 3-mode theme system: System default (synchronizes with OS appearance), Light Mode, and Dark Mode.
+- Accessible from the Settings page.
+
 ---
 
-## 🏛️ Protocol Architecture
+## Protocol Architecture
 
 ```mermaid
 graph TD
     User([Consumer / Merchant]) -->|Social / Wallet Login| Privy[Privy Embedded Auth]
     User -->|Gasless Action| Relayer[Sponsored Gas Paymaster / Relayer]
     
-    Relayer -->|USDC Approval & Transfer| USDC[TestUSDC Token (ERC-20)]
+    Relayer -->|USDC Approval & Transfer| USDC[TestUSDC Token ERC-20]
     Relayer -->|Order Creation & State Updates| Commerce[HualCommerce Contract]
     
     Commerce -->|Escrow Deposits & Payouts| Escrow[HualEscrow Contract]
-    Commerce -->|Mint & Lifecycle State Machine| Passport[HualPassport (ERC-721)]
+    Commerce -->|Mint & Lifecycle State Machine| Passport[HualPassport ERC-721]
     
     User -->|Store & Order Questions| Groq[Groq AI Assistant - Llama 3.3 70B]
     Groq -.->|Reads Monad RPC State| Passport
@@ -89,10 +98,13 @@ graph TD
 
 ---
 
-## 📜 Deployed Contracts on Monad Testnet
+## Deployed Contracts (Testnet and Upcoming Mainnet)
 
-**Monad Testnet Details:**
-- **Network Name:** Monad Testnet
+> **Network Roadmap & Mainnet Transition**:  
+> Haul is currently operating on the **Monad Testnet** (Chain ID: 10143) for staging and testing. The entire smart contract architecture is designed for a seamless, modular switch to **Monad Mainnet** upon launch. Switching environments only requires updating the RPC endpoint, chain ID, and deployer address in `contracts/.env` and `frontend/.env`.
+
+**Current Testnet Parameters:**
+- **Network Name:** Monad Testnet (Upcoming: Monad Mainnet)
 - **Chain ID:** `10143`
 - **RPC URL:** `https://testnet-rpc.monad.xyz`
 - **Block Explorer:** [https://testnet.monadexplorer.com](https://testnet.monadexplorer.com)
@@ -106,11 +118,11 @@ graph TD
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Domain | Technologies |
 | :--- | :--- |
-| **Blockchain** | Monad Testnet, EVM Cancun, Solidity `^0.8.24` |
+| **Blockchain** | Monad Testnet / Mainnet Ready, EVM Cancun, Solidity `^0.8.24` |
 | **Smart Contract Tooling** | Hardhat, Ethers.js v6 |
 | **Frontend Framework** | React 19, Vite, Vanilla CSS Design System |
 | **Authentication & Wallets** | Privy Embedded Wallets, Viem, Wagmi |
@@ -119,7 +131,7 @@ graph TD
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 Haul/
@@ -140,7 +152,9 @@ Haul/
 │   │   ├── components/         # Glassmorphic UI components
 │   │   │   ├── AISupportFAB.jsx      # Minimal circular AI floating action button
 │   │   │   ├── AISupportModal.jsx    # Fresh-session AI assistant with order picker
-│   │   │   ├── Marketplace.jsx       # Catalog, product detail, and merchant tabs
+│   │   │   ├── Marketplace.jsx       # General catalog and product detail
+│   │   │   ├── StoresPage.jsx        # Dedicated Stores page with 1-item verification pass
+│   │   │   ├── SettingsPage.jsx      # Settings with System, Light, and Dark mode switch
 │   │   │   ├── MerchantDashboard.jsx # Merchant metrics, fulfillment & PIN verification
 │   │   │   ├── EditStoreModal.jsx    # Store management (location, hours, branding)
 │   │   │   ├── InboxPage.jsx         # Cross-user and store messaging hub
@@ -165,7 +179,7 @@ Haul/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Prerequisites
 - **Node.js**: v18.0.0 or higher
@@ -196,13 +210,13 @@ npm install
 # Run the contract test suite
 npx hardhat test
 
-# Deploy to Monad Testnet (requires testnet MONAD in PRIVATE_KEY)
+# Deploy to Monad Testnet (requires MONAD in PRIVATE_KEY)
 npx hardhat run scripts/deployProtocol.js --network monadTestnet
 ```
 
 ---
 
-## ⚙️ Environment Configuration
+## Environment Configuration
 
 ### Frontend (`frontend/.env`)
 Copy `frontend/.env.example` to `frontend/.env`:
@@ -211,7 +225,7 @@ Copy `frontend/.env.example` to `frontend/.env`:
 # Privy Application ID (from https://dashboard.privy.io)
 VITE_PRIVY_APP_ID=your_privy_app_id
 
-# Monad Network RPC
+# Monad Network RPC (Testnet or Mainnet)
 VITE_MONAD_RPC_URL=https://testnet-rpc.monad.xyz
 VITE_MONAD_CHAIN_ID=10143
 
@@ -232,7 +246,7 @@ PRIVATE_KEY=your_deployer_private_key
 
 ---
 
-## 🤝 Community & Documentation
+## Community and Documentation
 
 We are committed to fostering an inclusive, welcoming open-source community:
 
@@ -243,7 +257,7 @@ We are committed to fostering an inclusive, welcoming open-source community:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 

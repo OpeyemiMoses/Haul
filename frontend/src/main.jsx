@@ -4,6 +4,10 @@ import { PrivyProvider } from '@privy-io/react-auth'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './lib/auth/AuthContext'
+import { initTheme } from './lib/theme'
+
+// Initialize System / Light / Dark Theme Mode
+initTheme();
 
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID || 'cmuyjr9ci00860dl30qhs6ya9';
 

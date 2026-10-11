@@ -19,6 +19,7 @@ import MerchantDashboard from './components/MerchantDashboard';
 import CommerceChatModal from './components/CommerceChatModal';
 import CreateStoreModal from './components/CreateStoreModal';
 import StoresPage from './components/StoresPage';
+import SettingsPage from './components/SettingsPage';
 import AISupportModal from './components/AISupportModal';
 import AISupportFAB from './components/AISupportFAB';
 import PrivyModal from './lib/auth/PrivyModal';
@@ -852,6 +853,16 @@ function MainApp() {
                       setActiveTab('cart');
                     }}
                     onOpenAiSupport={handleOpenAiSupport}
+                  />
+                )}
+
+                {/* 7. SETTINGS PAGE */}
+                {activeTab === 'settings' && (
+                  <SettingsPage 
+                    onNavigateTab={(tab) => {
+                      if (tab === 'shop') setSelectedStore(null);
+                      setActiveTab(tab);
+                    }}
                   />
                 )}
               </div>

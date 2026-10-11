@@ -4,10 +4,10 @@
 
 We actively maintain and provide security updates for the primary branch:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| main    | :white_check_mark: |
-| < 1.0.0 | :x:                |
+| Version | Status    |
+| ------- | --------- |
+| main    | Supported |
+| < 1.0.0 | No        |
 
 ## Reporting a Vulnerability
 

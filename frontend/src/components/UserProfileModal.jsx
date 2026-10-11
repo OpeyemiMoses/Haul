@@ -729,6 +729,48 @@ export default function UserProfileModal({
             </div>
           </div>
 
+          {/* Settings & Appearance Link */}
+          <div style={{
+            background: '#F9FAFB',
+            borderRadius: '16px',
+            border: '1px solid #E5E7EB',
+            padding: '14px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <div>
+              <div style={{ fontSize: '0.7rem', color: '#6B7280', textTransform: 'uppercase', fontWeight: 700 }}>
+                Theme & System Preferences
+              </div>
+              <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0A0D0D', marginTop: '2px' }}>
+                Appearance, Theme (System / Light / Dark) & Network
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                onClose();
+                if (onNavigateTab) onNavigateTab('settings');
+              }}
+              style={{
+                background: '#0A0D0D',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '999px',
+                padding: '6px 14px',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <span>Open Settings →</span>
+            </button>
+          </div>
+
           {/* 18+ Age & Legal Verification Status */}
           <div style={{
             background: isAgeVerified ? '#F0FDF4' : '#FEF2F2',

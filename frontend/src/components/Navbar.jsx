@@ -13,7 +13,8 @@ import {
   Heart,
   ShoppingBag,
   MessageSquare,
-  Bot
+  Bot,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
 import { formatCurrency } from '../lib/formatters';
@@ -531,6 +532,30 @@ export default function Navbar({
               <span>Sell</span>
             </button>
           )}
+
+          {/* Settings & Theme Switcher Button */}
+          <button
+            id="nav-settings-btn"
+            onClick={() => setActiveTab && setActiveTab('settings')}
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '50%',
+              background: activeTab === 'settings' ? 'var(--brand-green)' : '#121C1C',
+              border: activeTab === 'settings' ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
+              color: activeTab === 'settings' ? '#080F0F' : '#9CA3AF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              flexShrink: 0
+            }}
+            title="Settings (Appearance, Theme & Network)"
+            aria-label="Settings"
+          >
+            <Settings size={15} color={activeTab === 'settings' ? '#080F0F' : 'currentColor'} />
+          </button>
 
           {/* User Profile Circle (Avatar Only, No Text) or Sign In Button */}
           {authenticated && user ? (
