@@ -349,6 +349,39 @@ function MainApp() {
 
     const isPassportInHand = (p) => {
       if (!p) return false;
+      const tokenIdStr = String(p.tokenId || '');
+      const serialStr = String(p.serialNumber || '');
+      const idStr = String(p.id || '');
+      const orderIdStr = String(p.orderId || '');
+      const prodIdStr = String(p.productId || '');
+
+      // Check persistent refunded map
+      let refundedMap = {};
+      try {
+        refundedMap = JSON.parse(localStorage.getItem('hual_refunded_passports') || '{}');
+      } catch {}
+
+      if (
+        (tokenIdStr && refundedMap[tokenIdStr]) ||
+        (serialStr && refundedMap[serialStr]) ||
+        (idStr && refundedMap[idStr]) ||
+        (orderIdStr && refundedMap[orderIdStr]) ||
+        (prodIdStr && refundedMap[prodIdStr])
+      ) {
+        return false;
+      }
+
+      // Check cancelled escrow orders
+      try {
+        const escrowOrders = JSON.parse(localStorage.getItem('hual_escrow_orders') || '[]');
+        const isCancelledOrder = escrowOrders.some(ord => 
+          ((ord.orderId && (String(ord.orderId) === orderIdStr || String(ord.orderId) === tokenIdStr)) ||
+           (ord.items && ord.items.some(it => String(it.id) === prodIdStr || (p.productName && it.name === p.productName)))) &&
+          (ord.status === 'cancelled' || ord.status === 'refunded')
+        );
+        if (isCancelledOrder) return false;
+      } catch {}
+
       const isCancelled = Boolean(
         p.isCancelled || 
         p.currentState === 'CANCELLED' || 

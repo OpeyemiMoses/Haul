@@ -22,6 +22,7 @@ import {
   Info
 } from 'lucide-react';
 import { formatNumber } from '../lib/formatters';
+import useScrollReveal from '../lib/useScrollReveal';
 
 export default function ProductDetailPage({
   product,
@@ -43,6 +44,16 @@ export default function ProductDetailPage({
   const [helpfulVotes, setHelpfulVotes] = useState({});
   const [productReviews, setProductReviews] = useState([]);
 
+  // ALWAYS START FROM THE TOP WHEN OPENING A PRODUCT PAGE
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [product?.id, product?.productId]);
+
+  // Entrance and scroll reveal micro-animations
+  useScrollReveal([product?.id, productReviews.length, selectedImageIndex]);
+
   const isWishlisted = Boolean(wishlist.some(w => w.productId === product?.productId || w.id === product?.id));
 
   const allImages = useMemo(() => {
@@ -52,6 +63,7 @@ export default function ProductDetailPage({
   }, [product]);
 
   // Load reviews specific to this product
+  // Things paid for but then cancelled must NEVER have a review!
   const prodId = product?.productId || product?.id || 'prod-default';
   useEffect(() => {
     const storageKey = `hual_product_reviews_${prodId}`;
@@ -61,51 +73,64 @@ export default function ProductDetailPage({
       if (raw) saved = JSON.parse(raw);
     } catch {}
 
-    // Default authentic reviews tailored to the product if no custom reviews exist yet
-    const defaultInitialReviews = [
-      {
-        id: `seed-1-${prodId}`,
-        reviewerName: 'Babajide O.',
-        rating: 5,
-        date: '3 days ago',
-        title: 'Authenticity verified in store, pristine condition!',
-        comment: `Picked this up directly at the collection desk in ${product?.merchantLocation || 'Victoria Island'}. The merchant scanned my QR pickup pass in 30 seconds and the Monad digital passport was immediately transferred to my vault. Flawless craftsmanship.`,
-        verified: true,
-        variation: `Size: ${product?.sizes?.[1] || '10'} • In-Store Pickup`,
-        helpfulCount: 14
-      },
-      {
-        id: `seed-2-${prodId}`,
-        reviewerName: 'Chiamaka E.',
-        rating: 5,
-        date: '1 week ago',
-        title: 'Worth every USDC. Packaging is 10/10.',
-        comment: 'Factory fresh, untouched packaging with Monad holographic tag. Exactly as described by the seller. Love having cryptographic proof of ownership onchain.',
-        verified: true,
-        variation: 'Express Local Delivery',
-        helpfulCount: 9
-      },
-      {
-        id: `seed-3-${prodId}`,
-        reviewerName: 'David K.',
-        rating: 4,
-        date: '2 weeks ago',
-        title: 'Great product and very responsive merchant.',
-        comment: 'Merchant communicated clearly through the in-app chat before I arrived for collection. The digital passport gives total peace of mind for future resale.',
-        verified: true,
-        variation: `Size: ${product?.sizes?.[2] || '10.5'} • Ready in 30 mins`,
-        helpfulCount: 6
-      }
-    ];
+    // Check persistent refunded map and escrow cancellations
+    let refundedMap = {};
+    try {
+      refundedMap = JSON.parse(localStorage.getItem('hual_refunded_passports') || '{}');
+    } catch {}
 
-    setProductReviews([...saved, ...defaultInitialReviews]);
+    let escrowCancelledIds = new Set();
+    try {
+      const escrowOrders = JSON.parse(localStorage.getItem('hual_escrow_orders') || '[]');
+      escrowOrders.forEach(ord => {
+        if (ord.status === 'cancelled' || ord.status === 'refunded') {
+          if (ord.orderId) escrowCancelledIds.add(String(ord.orderId));
+          if (ord.items) {
+            ord.items.forEach(it => {
+              if (it.id) escrowCancelledIds.add(String(it.id));
+              if (it.name) escrowCancelledIds.add(it.name.toLowerCase().trim());
+            });
+          }
+        }
+      });
+    } catch {}
+
+    // Filter out any reviews from cancelled or refunded purchases
+    const validReviews = saved.filter(r => {
+      if (!r) return false;
+      const tid = String(r.passportTokenId || r.tokenId || '');
+      const serial = String(r.serialNumber || '');
+      const ordId = String(r.orderId || '');
+      const pId = String(r.productId || '');
+      const pName = (r.productName || '').toLowerCase().trim();
+
+      if (tid && refundedMap[tid]) return false;
+      if (serial && refundedMap[serial]) return false;
+      if (ordId && refundedMap[ordId]) return false;
+      if (pId && refundedMap[pId]) return false;
+      if (ordId && escrowCancelledIds.has(ordId)) return false;
+      if (pId && escrowCancelledIds.has(pId)) return false;
+      if (pName && escrowCancelledIds.has(pName)) return false;
+      if (r.isCancelled || r.isRefunded) return false;
+      return true;
+    });
+
+    // Zero fake seed reviews: Only verified in-hand buyers who did not cancel have reviews!
+    setProductReviews(validReviews);
   }, [prodId]);
+
+  // Dynamic average rating
+  const averageRating = useMemo(() => {
+    if (!productReviews || productReviews.length === 0) return null;
+    const sum = productReviews.reduce((acc, r) => acc + (Number(r.rating) || 5), 0);
+    return (sum / productReviews.length).toFixed(1);
+  }, [productReviews]);
 
   // Listen for newly added reviews
   useEffect(() => {
     const handleReviewAdded = (e) => {
       const newRev = e.detail;
-      if (newRev && (newRev.productId === prodId || newRev.productName === product?.name)) {
+      if (newRev && (String(newRev.productId) === String(prodId) || newRev.productName === product?.name)) {
         setProductReviews(prev => [newRev, ...prev]);
       }
     };
@@ -210,10 +235,10 @@ export default function ProductDetailPage({
       }}>
 
         {/* LEFT COLUMN: Visual Media Gallery & Monad Digital Passport */}
-        <div>
+        <div className="card-reveal-left">
           {/* Main Hero Image */}
           <div 
-            className="liquid-glass-card"
+            className="liquid-glass-card reveal-pop"
             style={{
               width: '100%',
               borderRadius: '24px',
@@ -334,7 +359,7 @@ export default function ProductDetailPage({
         </div>
 
         {/* RIGHT COLUMN: Product Details, Pricing, Merchant Box & Actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="card-reveal-right" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Header Title & Badges */}
           <div>
@@ -367,13 +392,22 @@ export default function ProductDetailPage({
               }}
               title="Click to view customer reviews"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#FBBF24', fontSize: '0.84rem', fontWeight: 800 }}>
-                <Star size={14} fill="#FBBF24" />
-                <span>{product.rating || 4.9}</span>
-              </div>
-              <span style={{ color: '#9CA3AF', fontSize: '0.76rem', textDecoration: 'underline' }}>
-                ({productReviews.length} customer reviews)
-              </span>
+              {productReviews.length > 0 ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#FBBF24', fontSize: '0.84rem', fontWeight: 800 }}>
+                    <Star size={14} fill="#FBBF24" />
+                    <span>{averageRating}</span>
+                  </div>
+                  <span style={{ color: '#9CA3AF', fontSize: '0.76rem', textDecoration: 'underline' }}>
+                    ({productReviews.length} customer review{productReviews.length === 1 ? '' : 's'})
+                  </span>
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#9CA3AF', fontSize: '0.74rem' }}>
+                  <ShieldCheck size={13} color="var(--brand-green)" />
+                  <span>No reviews yet • Verified onchain</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -758,52 +792,71 @@ export default function ProductDetailPage({
           )}
         </div>
 
-        {/* Rating Breakdown Bar */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '20px',
-          marginBottom: '32px',
-          padding: '20px',
-          borderRadius: '16px',
-          background: 'rgba(255, 255, 255, 0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.05)'
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1 }}>
-              {product.rating || 4.9}
-            </div>
-            <div style={{ display: 'flex', gap: '3px', margin: '6px 0', color: '#FBBF24' }}>
-              {[1, 2, 3, 4, 5].map((s) => (
-                <Star key={s} size={16} fill="#FBBF24" />
-              ))}
-            </div>
-            <span style={{ fontSize: '0.76rem', color: '#9CA3AF' }}>
-              Based on {productReviews.length} verified reviews
-            </span>
+        {/* Reviews List & Empty State */}
+        {productReviews.length === 0 ? (
+          <div style={{
+            textAlign: 'center',
+            padding: '48px 24px',
+            background: '#080F0F',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.06)'
+          }}>
+            <ShieldCheck size={36} color="var(--brand-green)" style={{ margin: '0 auto 12px', opacity: 0.8 }} />
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 6px' }}>
+              No reviews yet for this item
+            </h3>
+            <p style={{ fontSize: '0.8rem', color: '#9CA3AF', margin: 0, maxWidth: '440px', margin: '0 auto', lineHeight: 1.5 }}>
+              Only verified buyers who have received this item in hand can leave an onchain review. Orders that were cancelled or refunded cannot be reviewed.
+            </p>
           </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center' }}>
-            {[
-              { stars: 5, pct: '92%' },
-              { stars: 4, pct: '6%' },
-              { stars: 3, pct: '2%' },
-              { stars: 2, pct: '0%' },
-              { stars: 1, pct: '0%' }
-            ].map(row => (
-              <div key={row.stars} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.72rem', color: '#9CA3AF' }}>
-                <span style={{ width: '24px' }}>{row.stars}★</span>
-                <div style={{ flex: 1, height: '6px', borderRadius: '999px', background: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
-                  <div style={{ width: row.pct, height: '100%', background: 'var(--brand-green)', borderRadius: '999px' }} />
+        ) : (
+          <>
+            {/* Rating Breakdown Bar */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '20px',
+              marginBottom: '32px',
+              padding: '20px',
+              borderRadius: '16px',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.05)'
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1 }}>
+                  {averageRating || '5.0'}
                 </div>
-                <span style={{ width: '32px', textAlign: 'right' }}>{row.pct}</span>
+                <div style={{ display: 'flex', gap: '3px', margin: '6px 0', color: '#FBBF24' }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} size={16} fill="#FBBF24" />
+                  ))}
+                </div>
+                <span style={{ fontSize: '0.76rem', color: '#9CA3AF' }}>
+                  Based on {productReviews.length} verified review{productReviews.length === 1 ? '' : 's'}
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Reviews List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center' }}>
+                {[
+                  { stars: 5, pct: '100%' },
+                  { stars: 4, pct: '0%' },
+                  { stars: 3, pct: '0%' },
+                  { stars: 2, pct: '0%' },
+                  { stars: 1, pct: '0%' }
+                ].map(row => (
+                  <div key={row.stars} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.72rem', color: '#9CA3AF' }}>
+                    <span style={{ width: '24px' }}>{row.stars}★</span>
+                    <div style={{ flex: 1, height: '6px', borderRadius: '999px', background: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
+                      <div style={{ width: row.pct, height: '100%', background: 'var(--brand-green)', borderRadius: '999px' }} />
+                    </div>
+                    <span style={{ width: '32px', textAlign: 'right' }}>{row.pct}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Reviews List */}
+            <div className="stagger-group" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {productReviews.map((rev) => (
             <div 
               key={rev.id}
@@ -883,6 +936,8 @@ export default function ProductDetailPage({
             </div>
           ))}
         </div>
+          </>
+        )}
 
       </div>
 
