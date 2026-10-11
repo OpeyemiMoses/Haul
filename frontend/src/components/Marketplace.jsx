@@ -1495,6 +1495,7 @@ export default function Marketplace({
             </div>
           ) : (
           <div 
+            key={`catalog-grid-${activeCategory || 'all'}-${selectedMerchant?.id || 'all'}-${sortBy}`}
             className="stagger-group perspective-container"
             style={{
               display: 'grid',
@@ -1508,12 +1509,13 @@ export default function Marketplace({
             const merchantLoc = product.merchantLocation || merchantObj?.location || 'Victoria Island, Lagos';
             const prox = calculateProximity(buyerLocation, merchantLoc);
 
-          const isWishlisted = wishlist.some(w => w.productId === product.productId);
+            const isWishlisted = wishlist.some(w => String(w.productId) === String(product.productId) && w.name === product.name);
+            const cardKey = product.id || (product.onchain ? `onchain-${product.productId}` : `curated-${product.productId}-${product.name}`);
 
-          return (
-            <div
-              key={product.productId}
-              className="liquid-glass-card"
+            return (
+              <div
+                key={cardKey}
+                className="liquid-glass-card"
               style={{
                 padding: '16px',
                 display: 'flex',

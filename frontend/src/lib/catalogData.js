@@ -533,3 +533,9 @@ export const INITIAL_FEATURED_PASSPORT = {
   ]
 };
 
+// Ensure every curated item has a permanent unique id prefix to avoid collisions with onchain product IDs
+CURATED_CATALOG.forEach(item => {
+  if (!item.id) {
+    item.id = `curated-${item.productId}`;
+  }
+});

@@ -111,6 +111,8 @@ export async function fetchOnchainProducts() {
          pBrand.includes('aether') ? 'Aether Studio' : 'Authentic');
 
       return {
+        id: `onchain-${Number(p.productId)}`,
+        onchain: true,
         productId: Number(p.productId),
         name: p.name,
         brand: finalBrand,

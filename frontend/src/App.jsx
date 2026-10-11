@@ -538,9 +538,11 @@ function MainApp() {
       const uniqueProds = [];
       for (const p of combinedProds) {
         if (!p) continue;
-        const pKey = String(p.id || p.productId || p.name);
-        if (!seenProdIds.has(pKey)) {
+        const normName = (p.name || '').trim().toLowerCase();
+        const pKey = p.id ? String(p.id) : (p.onchain ? `onchain-${p.productId}` : (normName || `prod-${p.productId}`));
+        if (!seenProdIds.has(pKey) && (!normName || !seenProdIds.has(`name-${normName}`))) {
           seenProdIds.add(pKey);
+          if (normName) seenProdIds.add(`name-${normName}`);
           uniqueProds.push(p);
         }
       }
