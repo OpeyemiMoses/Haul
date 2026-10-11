@@ -57,20 +57,64 @@ export async function fetchOnchainProducts() {
     const commerce = getCommerceContract();
     const rawProducts = await commerce.getAllActiveProducts();
     const onchain = rawProducts.map((p, idx) => {
-      // Resolve authentic verified merchant profile & physical store address
+      // Find curated by name match ONLY (never by numeric productId which clashes with onchain counter)
       const matchingCurated = CURATED_CATALOG.find(
-        (c) => c.name?.toLowerCase() === p.name?.toLowerCase() || c.productId === Number(p.productId)
+        (c) => c.name?.toLowerCase() === p.name?.toLowerCase()
       );
-      const merchantObj =
-        VERIFIED_MERCHANTS.find(
-          (m) => m.id === matchingCurated?.merchantId || m.name === matchingCurated?.merchant
-        ) || VERIFIED_MERCHANTS[idx % VERIFIED_MERCHANTS.length];
+
+      const pBrand = (p.brand || matchingCurated?.brand || '').toLowerCase();
+      const pCat = (p.category || matchingCurated?.category || '').toLowerCase();
+      const pName = (p.name || '').toLowerCase();
+
+      // Resolve proper merchant according to product brand / category
+      let merchantObj = null;
+      if (matchingCurated?.merchantId) {
+        merchantObj = VERIFIED_MERCHANTS.find(m => m.id === matchingCurated.merchantId);
+      }
+      
+      if (!merchantObj) {
+        if (pBrand.includes('sony') || pName.includes('sony') || pName.includes('wh-1000')) {
+          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'sony-flagship');
+        } else if (pBrand.includes('fujifilm') || pName.includes('x100') || pName.includes('camera') || pCat.includes('optic')) {
+          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'sony-flagship');
+        } else if (pBrand.includes('apple') || pName.includes('iphone') || pName.includes('macbook')) {
+          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'apple-boutique');
+        } else if (pBrand.includes('teenage') || pCat.includes('synth') || pName.includes('op-1')) {
+          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'teenage-engineering');
+        } else if (pBrand.includes('seiko') || pBrand.includes('rolex') || pCat.includes('watch') || pName.includes('diver')) {
+          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'horology-vault') || VERIFIED_MERCHANTS.find(m => m.id === 'sony-flagship');
+        } else if (pBrand.includes('nike') || pBrand.includes('aether') || pCat.includes('footwear') || pCat.includes('apparel')) {
+          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'nike-lagos');
+        }
+      }
+
+      if (!merchantObj) {
+        merchantObj = VERIFIED_MERCHANTS[idx % VERIFIED_MERCHANTS.length];
+      }
+
+      // Map clean accurate category for filtering
+      let finalCategory = p.category || matchingCurated?.category || 'Curated';
+      if (pName.includes('camera') || pName.includes('fujifilm') || pCat === 'optics') {
+        finalCategory = 'Tech';
+      } else if (pName.includes('headphone') || pName.includes('earbud') || pBrand.includes('sony')) {
+        finalCategory = 'Audio';
+      } else if (pName.includes('watch') || pName.includes('diver') || pBrand.includes('seiko')) {
+        finalCategory = 'Watches';
+      } else if (pName.includes('sneaker') || pName.includes('shoes') || pName.includes('knit')) {
+        finalCategory = 'Footwear';
+      }
+
+      const finalBrand = p.brand || matchingCurated?.brand || 
+        (pBrand.includes('sony') ? 'Sony Electronics' : 
+         pBrand.includes('fujifilm') ? 'Fujifilm' : 
+         pBrand.includes('seiko') ? 'Seiko Horology' : 
+         pBrand.includes('aether') ? 'Aether Studio' : 'Authentic');
 
       return {
         productId: Number(p.productId),
         name: p.name,
-        brand: p.brand || matchingCurated?.brand || 'Authentic',
-        category: p.category || matchingCurated?.category || 'Curated',
+        brand: finalBrand,
+        category: finalCategory,
         imageUri: p.imageUri || matchingCurated?.imageUri || '/assets/air_max_95.jpg',
         description: p.description || matchingCurated?.description || '',
         priceUsd: Number(p.priceUsdCents) / 100,
@@ -78,9 +122,9 @@ export async function fetchOnchainProducts() {
         warrantyDurationDays: Math.floor(Number(p.warrantyDurationSeconds) / 86400),
         stock: Number(p.stock),
         merchantAddress: p.merchant,
-        merchant: matchingCurated?.merchant || merchantObj.name,
-        merchantId: matchingCurated?.merchantId || merchantObj.id,
-        merchantLocation: matchingCurated?.merchantLocation || merchantObj.location || 'Victoria Island, Lagos',
+        merchant: merchantObj?.name || matchingCurated?.merchant || 'Verified Flagship',
+        merchantId: merchantObj?.id || matchingCurated?.merchantId || 'verified-store',
+        merchantLocation: merchantObj?.location || matchingCurated?.merchantLocation || 'Victoria Island, Lagos',
         allowsPickup: p.allowsPickup,
         allowsDelivery: p.allowsDelivery,
         active: p.active,

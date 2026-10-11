@@ -94,6 +94,24 @@ export const VERIFIED_MERCHANTS = [
     deliveryTime: 'Same-day dispatch',
     chatRep: 'Jonas (Synthesizer Architect • Online)',
     description: 'Boutique Swedish electronic instruments and synthesizer hardware in West Africa. OP-1 Field, TX-6, and OB-4 portable studio gear.',
+  },
+  {
+    id: 'horology-vault',
+    name: 'Grand Horology Vault',
+    handle: '@horology.lagos',
+    verified: true,
+    category: 'Luxury Timepieces & Watches',
+    location: 'Victoria Island, Lagos',
+    fullAddress: 'Plot 18B Adeola Odeku St, Victoria Island, Lagos, Nigeria',
+    rating: 4.9,
+    reviewsCount: 780,
+    followersCount: '28.4k',
+    avatar: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=300&q=80',
+    banner: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1200&q=85',
+    pickupTime: 'Ready in 30 mins',
+    deliveryTime: 'Same-day insured courier',
+    chatRep: 'Bamidele (Master Horologist • Online)',
+    description: 'Premier authorized luxury watch boutique in Lagos. Seiko Prospex, Rolex, and certified Swiss chronographs with permanent living onchain Product Passports.',
   }
 ];
 

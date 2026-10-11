@@ -198,17 +198,49 @@ export default function Marketplace({
     if (!prod) return allMerchants?.[0] || VERIFIED_MERCHANTS[0];
     const list = (allMerchants && allMerchants.length > 0) ? allMerchants : VERIFIED_MERCHANTS;
     const pMerchantId = prod.merchantId || prod.sellerId;
-    const pMerchantName = (prod.merchant || prod.store || prod.brand || '').toLowerCase().trim();
+    const pMerchantName = (prod.merchant || prod.store || '').toLowerCase().trim();
+    const pBrand = (prod.brand || '').toLowerCase().trim();
+    const pName = (prod.name || '').toLowerCase().trim();
+    const pCat = (prod.category || '').toLowerCase().trim();
     
-    const found = list.find(m => {
-      if (pMerchantId && String(m.id) === String(pMerchantId)) return true;
-      if (m.name && pMerchantName) {
-        const mName = m.name.toLowerCase().trim();
-        if (mName === pMerchantName || mName.includes(pMerchantName) || pMerchantName.includes(mName)) return true;
-      }
-      return false;
-    });
-    return found || list[0] || VERIFIED_MERCHANTS[0];
+    // 1. Exact ID match
+    if (pMerchantId) {
+      const byId = list.find(m => String(m.id) === String(pMerchantId));
+      if (byId) return byId;
+    }
+
+    // 2. Exact or partial store name match
+    if (pMerchantName) {
+      const byName = list.find(m => {
+        const mName = (m.name || '').toLowerCase().trim();
+        return mName === pMerchantName || mName.includes(pMerchantName) || pMerchantName.includes(mName);
+      });
+      if (byName) return byName;
+    }
+
+    // 3. Match by Brand or Category
+    if (pBrand.includes('sony') || pName.includes('wh-1000') || pCat.includes('audio') || pBrand.includes('fujifilm') || pName.includes('x100')) {
+      const sony = list.find(m => m.id === 'sony-flagship');
+      if (sony) return sony;
+    }
+    if (pBrand.includes('apple') || pName.includes('iphone') || pName.includes('macbook')) {
+      const apple = list.find(m => m.id === 'apple-boutique');
+      if (apple) return apple;
+    }
+    if (pBrand.includes('teenage') || pCat.includes('synth') || pName.includes('op-1')) {
+      const te = list.find(m => m.id === 'teenage-engineering');
+      if (te) return te;
+    }
+    if (pBrand.includes('seiko') || pBrand.includes('rolex') || pCat.includes('watch') || pName.includes('diver')) {
+      const horology = list.find(m => m.id === 'horology-vault');
+      if (horology) return horology;
+    }
+    if (pBrand.includes('nike') || pBrand.includes('aether') || pCat.includes('footwear') || pCat.includes('apparel')) {
+      const nike = list.find(m => m.id === 'nike-lagos');
+      if (nike) return nike;
+    }
+
+    return list[0] || VERIFIED_MERCHANTS[0];
   };
 
   // Verify that an item is ACTUALLY in the buyer's physical possession (In Hand)
@@ -373,23 +405,23 @@ export default function Marketplace({
         const prodCat = (p.category || '').toLowerCase().trim();
 
         if (currentCat === 'footwear' || currentCat.includes('shoe')) {
-          matchesCat = prodCat === 'footwear' || prodCat === 'shoes' || prodCat === 'sneakers';
+          matchesCat = prodCat === 'footwear' || prodCat === 'shoes' || prodCat === 'sneakers' || prodCat.includes('shoe') || prodCat.includes('footwear');
         } else if (currentCat === 'apparel' || currentCat.includes('clothing')) {
-          matchesCat = prodCat === 'apparel' || prodCat === 'clothing';
+          matchesCat = prodCat === 'apparel' || prodCat === 'clothing' || prodCat.includes('apparel');
         } else if (currentCat === 'accessories' || currentCat.includes('bag')) {
-          matchesCat = prodCat === 'accessories' || prodCat === 'bags';
+          matchesCat = prodCat === 'accessories' || prodCat === 'bags' || prodCat.includes('accessory') || prodCat.includes('bag');
         } else if (currentCat === 'audio' || currentCat.includes('sound')) {
-          matchesCat = prodCat === 'audio' || prodCat.includes('audio');
+          matchesCat = prodCat === 'audio' || prodCat.includes('audio') || prodCat.includes('sound') || prodCat.includes('headphone');
         } else if (currentCat === 'tech' || currentCat.includes('device')) {
-          matchesCat = prodCat === 'tech' || prodCat === 'technology' || prodCat === 'smart devices';
+          matchesCat = prodCat === 'tech' || prodCat === 'technology' || prodCat === 'smart devices' || prodCat === 'optics' || prodCat.includes('camera') || prodCat.includes('phone') || prodCat.includes('laptop');
         } else if (currentCat === 'synthesizers' || currentCat.includes('synth')) {
-          matchesCat = prodCat === 'synthesizers' || prodCat === 'synthesizer';
+          matchesCat = prodCat === 'synthesizers' || prodCat === 'synthesizer' || prodCat.includes('synth');
         } else if (currentCat === 'watches' || currentCat.includes('watch')) {
-          matchesCat = prodCat === 'watches' || prodCat === 'watch';
-        } else if (currentCat === 'eyewear' || currentCat.includes('optic') || currentCat.includes('glass')) {
-          matchesCat = prodCat === 'eyewear' || prodCat === 'optics';
+          matchesCat = prodCat === 'watches' || prodCat === 'watch' || prodCat.includes('watch') || prodCat.includes('timepiece');
+        } else if (currentCat === 'eyewear' || currentCat.includes('glass')) {
+          matchesCat = prodCat === 'eyewear' || prodCat.includes('eyewear') || prodCat.includes('glass') || prodCat.includes('frame');
         } else {
-          matchesCat = prodCat === currentCat;
+          matchesCat = prodCat === currentCat || prodCat.includes(currentCat) || currentCat.includes(prodCat);
         }
       }
 
@@ -1471,11 +1503,7 @@ export default function Marketplace({
             }}
           >
           {filteredProducts.map((product) => {
-            const merchantObj = (allMerchants || VERIFIED_MERCHANTS).find(m => 
-              (product.merchantId && m.id === product.merchantId) ||
-              (product.brand && m.name && m.name.toLowerCase().includes(product.brand.toLowerCase())) ||
-              (product.merchant && m.name && m.name.toLowerCase().includes(product.merchant.toLowerCase()))
-            ) || VERIFIED_MERCHANTS[0];
+            const merchantObj = resolveMerchantForProduct(product);
 
             const merchantLoc = product.merchantLocation || merchantObj?.location || 'Victoria Island, Lagos';
             const prox = calculateProximity(buyerLocation, merchantLoc);
