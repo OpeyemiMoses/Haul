@@ -24,6 +24,8 @@ import useScrollReveal from '../lib/useScrollReveal';
 
 export default function StoresPage({
   products = [],
+  searchQuery,
+  setSearchQuery,
   onSelectStore,
   onOpenCreateStore,
   onOpenSellModal,
@@ -34,7 +36,12 @@ export default function StoresPage({
   const { user, authenticated, userStore, userLocation } = useAuth();
   const buyerLocation = userLocation || 'Victoria Island, Lagos';
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [internalSearch, setInternalSearch] = useState('');
+  const activeSearch = searchQuery !== undefined ? searchQuery : internalSearch;
+  const handleSearchChange = (val) => {
+    if (setSearchQuery) setSearchQuery(val);
+    else setInternalSearch(val);
+  };
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   // Collect all stores: User's created store, community created stores from storage, and verified flagship merchants
@@ -124,7 +131,7 @@ export default function StoresPage({
   // Filter verified stores by search query & category
   const filteredVerifiedStores = useMemo(() => {
     return verifiedStores.filter((s) => {
-      const query = searchQuery.trim().toLowerCase();
+      const query = (activeSearch || '').trim().toLowerCase();
       const matchesSearch = 
         !query ||
         s.name.toLowerCase().includes(query) ||
@@ -132,16 +139,19 @@ export default function StoresPage({
         (s.location && s.location.toLowerCase().includes(query)) ||
         (s.description && s.description.toLowerCase().includes(query));
 
+      const sCat = (s.category || '').toLowerCase();
+      const selectedCatLower = (selectedCategory || 'All').trim().toLowerCase();
       const matchesCat = 
-        selectedCategory === 'All' || 
-        s.category === selectedCategory;
+        selectedCatLower === 'all' || 
+        sCat.includes(selectedCatLower) ||
+        selectedCatLower.includes(sCat);
 
       return matchesSearch && matchesCat;
     });
-  }, [verifiedStores, searchQuery, selectedCategory]);
+  }, [verifiedStores, activeSearch, selectedCategory]);
 
   // High-performance scroll reveal and micro-animations
-  useScrollReveal([filteredVerifiedStores.length, selectedCategory, searchQuery]);
+  useScrollReveal([filteredVerifiedStores.length, selectedCategory, activeSearch]);
 
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto', width: '100%', padding: '0 0 80px' }}>
@@ -360,8 +370,8 @@ export default function StoresPage({
           <input
             type="text"
             placeholder="Search stores by name, location, category..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={activeSearch || ''}
+            onChange={(e) => handleSearchChange(e.target.value)}
             style={{
               width: '100%',
               padding: '11px 16px 11px 44px',

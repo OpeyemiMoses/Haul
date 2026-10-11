@@ -151,6 +151,11 @@ export default function Marketplace({
   const [storeTab, setStoreTab] = useState('Products');
   const [activeCategory, setActiveCategory] = useState(selectedCategory || 'All');
   const [isFollowing, setIsFollowing] = useState(false);
+  const [sortBy, setSortBy] = useState('featured');
+  const [priceFilter, setPriceFilter] = useState('all'); // 'all' | 'under-200' | '200-1000' | 'over-1000'
+  const [inStockOnly, setInStockOnly] = useState(false);
+  const [pickupOnly, setPickupOnly] = useState(false);
+  const [localSearch, setLocalSearch] = useState('');
 
   // Sync internal category when external selectedCategory changes (e.g. from CategoriesExplorer or Navbar)
   useEffect(() => {
@@ -164,6 +169,16 @@ export default function Marketplace({
     if (setSelectedCategory) {
       setSelectedCategory(cat);
     }
+  };
+
+  const handleResetAllFilters = () => {
+    handleCategoryChange('All');
+    setSortBy('featured');
+    setPriceFilter('all');
+    setInStockOnly(false);
+    setPickupOnly(false);
+    setLocalSearch('');
+    if (setSearchQuery) setSearchQuery('');
   };
 
   // Chat Modal State
@@ -320,17 +335,18 @@ export default function Marketplace({
     }
   }, [forcedModal, catalogList]);
 
-  // Filter products by category, search query, and selected merchant
+  // Filter products by category, search query, selected merchant, price, and availability
   const filteredProducts = useMemo(() => {
-    return (catalogList || []).filter((p) => {
+    let list = (catalogList || []).filter((p) => {
       if (!p) return false;
+
       // Merchant filter if inside merchant store
       if (selectedMerchant) {
         const sName = (selectedMerchant.name || '').toLowerCase();
         const matchesMerchant = 
           (p.merchant && p.merchant.toLowerCase().includes(sName)) ||
           (p.brand && sName.includes(p.brand.toLowerCase())) ||
-          (p.merchantId && p.merchantId === selectedMerchant.id);
+          (p.merchantId && String(p.merchantId) === String(selectedMerchant.id));
         if (!matchesMerchant) return false;
       }
 
@@ -342,22 +358,22 @@ export default function Marketplace({
         const prodBrand = (p.brand || '').toLowerCase();
         const prodName = (p.name || '').toLowerCase();
 
-        if (currentCat === 'footwear') {
-          matchesCat = prodCat.includes('footwear') || prodCat.includes('shoe') || prodCat.includes('sneaker') || prodName.includes('air max') || prodName.includes('jordan');
-        } else if (currentCat === 'apparel') {
-          matchesCat = prodCat.includes('apparel') || prodCat.includes('clothing') || prodCat.includes('jacket') || prodCat.includes('fleece') || prodCat.includes('shirt');
-        } else if (currentCat === 'accessories') {
-          matchesCat = prodCat.includes('accessories') || prodCat.includes('bag') || prodCat.includes('backpack') || prodCat.includes('cap') || prodCat.includes('hat');
-        } else if (currentCat === 'audio') {
-          matchesCat = prodCat.includes('audio') || prodCat.includes('headphone') || prodCat.includes('speaker') || prodCat.includes('acoustics') || prodCat.includes('sound');
-        } else if (currentCat === 'tech') {
-          matchesCat = prodCat.includes('tech') || prodCat.includes('computing') || prodCat.includes('camera') || prodCat.includes('phone') || prodCat.includes('iphone') || prodCat.includes('laptop') || prodCat.includes('device');
-        } else if (currentCat === 'synthesizers') {
-          matchesCat = prodCat.includes('synthesizer') || prodCat.includes('instruments') || prodName.includes('op-1') || prodName.includes('synthesizer');
-        } else if (currentCat === 'watches') {
-          matchesCat = prodCat.includes('watch') || prodCat.includes('horology') || prodCat.includes('timepiece') || prodName.includes('watch') || prodName.includes('rolex') || prodName.includes('submariner');
-        } else if (currentCat === 'eyewear') {
-          matchesCat = prodCat.includes('eyewear') || prodCat.includes('optics') || prodCat.includes('glasses') || prodCat.includes('sunglasses');
+        if (currentCat === 'footwear' || currentCat.includes('shoe') || currentCat.includes('footwear')) {
+          matchesCat = prodCat.includes('footwear') || prodCat.includes('shoe') || prodCat.includes('sneaker') || prodName.includes('air max') || prodName.includes('jordan') || prodBrand.includes('nike');
+        } else if (currentCat === 'apparel' || currentCat.includes('clothing') || currentCat.includes('apparel')) {
+          matchesCat = prodCat.includes('apparel') || prodCat.includes('clothing') || prodCat.includes('jacket') || prodCat.includes('fleece') || prodCat.includes('shirt') || prodCat.includes('hoodie');
+        } else if (currentCat === 'accessories' || currentCat.includes('bag') || currentCat.includes('accessori')) {
+          matchesCat = prodCat.includes('accessories') || prodCat.includes('bag') || prodCat.includes('backpack') || prodCat.includes('cap') || prodCat.includes('hat') || prodCat.includes('wallet');
+        } else if (currentCat === 'audio' || currentCat.includes('sound')) {
+          matchesCat = prodCat.includes('audio') || prodCat.includes('headphone') || prodCat.includes('speaker') || prodCat.includes('acoustics') || prodCat.includes('sound') || prodBrand.includes('sony') || prodBrand.includes('bowers');
+        } else if (currentCat === 'tech' || currentCat.includes('device') || currentCat.includes('phone') || currentCat.includes('comput')) {
+          matchesCat = prodCat.includes('tech') || prodCat.includes('computing') || prodCat.includes('camera') || prodCat.includes('phone') || prodCat.includes('iphone') || prodCat.includes('laptop') || prodCat.includes('device') || prodCat.includes('hardware') || prodBrand.includes('apple') || prodBrand.includes('sony');
+        } else if (currentCat === 'synthesizers' || currentCat.includes('synth') || currentCat.includes('instrument')) {
+          matchesCat = prodCat.includes('synthesizer') || prodCat.includes('instruments') || prodName.includes('op-1') || prodName.includes('synthesizer') || prodBrand.includes('teenage');
+        } else if (currentCat === 'watches' || currentCat.includes('watch') || currentCat.includes('horology') || currentCat.includes('timepiece')) {
+          matchesCat = prodCat.includes('watch') || prodCat.includes('horology') || prodCat.includes('timepiece') || prodName.includes('submariner') || prodName.includes('rolex') || prodBrand.includes('rolex');
+        } else if (currentCat === 'eyewear' || currentCat.includes('optic') || currentCat.includes('glass')) {
+          matchesCat = prodCat.includes('eyewear') || prodCat.includes('optics') || prodCat.includes('glasses') || prodCat.includes('sunglasses') || prodBrand.includes('gentle monster');
         } else {
           matchesCat = prodCat.includes(currentCat) || currentCat.includes(prodCat) || prodName.includes(currentCat) || prodBrand.includes(currentCat);
         }
@@ -365,8 +381,20 @@ export default function Marketplace({
 
       if (!matchesCat) return false;
 
-      // Search query filter
-      const q = (searchQuery || '').trim().toLowerCase();
+      // Price filter
+      const price = p.priceUsd || 0;
+      if (priceFilter === 'under-200' && price >= 200) return false;
+      if (priceFilter === '200-1000' && (price < 200 || price > 1000)) return false;
+      if (priceFilter === 'over-1000' && price <= 1000) return false;
+
+      // In stock filter
+      if (inStockOnly && (!p.stock || p.stock <= 0)) return false;
+
+      // Pickup filter
+      if (pickupOnly && !p.allowsPickup) return false;
+
+      // Search query filter (combines local catalog search and top navbar search)
+      const q = (localSearch || searchQuery || '').trim().toLowerCase();
       if (q) {
         const matchesName = (p.name && p.name.toLowerCase().includes(q));
         const matchesBrand = (p.brand && p.brand.toLowerCase().includes(q));
@@ -380,9 +408,34 @@ export default function Marketplace({
 
       return true;
     });
-  }, [catalogList, activeCategory, selectedCategory, searchQuery, selectedMerchant]);
 
-  useScrollReveal([filteredProducts?.length, activeCategory, selectedCategory, searchQuery, selectedMerchant?.id]);
+    // Sorting
+    if (sortBy === 'price-asc') {
+      list = [...list].sort((a, b) => (a.priceUsd || 0) - (b.priceUsd || 0));
+    } else if (sortBy === 'price-desc') {
+      list = [...list].sort((a, b) => (b.priceUsd || 0) - (a.priceUsd || 0));
+    } else if (sortBy === 'rating') {
+      list = [...list].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sortBy === 'stock') {
+      list = [...list].sort((a, b) => (b.stock || 0) - (a.stock || 0));
+    }
+
+    return list;
+  }, [catalogList, activeCategory, selectedCategory, searchQuery, localSearch, selectedMerchant, priceFilter, inStockOnly, pickupOnly, sortBy]);
+
+  useScrollReveal([
+    filteredProducts?.length, 
+    activeCategory, 
+    selectedCategory, 
+    searchQuery, 
+    localSearch, 
+    sortBy, 
+    priceFilter, 
+    inStockOnly, 
+    pickupOnly, 
+    selectedMerchant?.id,
+    storeTab
+  ]);
 
   const handleOpenProduct = (product) => {
     setSelectedProduct(product);
@@ -599,44 +652,226 @@ export default function Marketplace({
             }} />
           </div>
           {/* Section Divider: General Catalog */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '16px',
-            marginBottom: '20px'
-          }}>
-            <div>
-              <h3 className="font-display" style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 2px' }}>
-                All Listed Merchandise
-              </h3>
-              <div style={{ fontSize: '0.74rem', color: '#9CA3AF' }}>
-                Showing {filteredProducts.length} items with verifiable Product Passports
+          <div className="reveal-on-scroll" style={{ marginBottom: '24px' }}>
+            {/* Top row: Title + In-Catalog Live Search & Sorting */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '16px',
+              marginBottom: '16px'
+            }}>
+              <div>
+                <h3 className="font-display" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>All Listed Merchandise</span>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    background: 'var(--brand-green-dim)',
+                    color: 'var(--brand-green)',
+                    border: '1px solid var(--brand-green-border)',
+                    fontFamily: 'var(--font-mono)'
+                  }}>
+                    {filteredProducts.length} Passports
+                  </span>
+                </h3>
+                <div style={{ fontSize: '0.78rem', color: '#9CA3AF' }}>
+                  Verifiable luxury assets on Monad with instant in-store collection or insured dispatch
+                </div>
+              </div>
+
+              {/* In-Catalog Live Search & Sort */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{
+                  position: 'relative',
+                  width: '260px'
+                }}>
+                  <Search size={14} color="#6B7280" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search this catalog..."
+                    value={localSearch}
+                    onChange={(e) => setLocalSearch(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 30px 8px 34px',
+                      borderRadius: '999px',
+                      background: '#121C1C',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#FFFFFF',
+                      fontSize: '0.78rem',
+                      outline: 'none'
+                    }}
+                  />
+                  {localSearch && (
+                    <button
+                      onClick={() => setLocalSearch('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#9CA3AF',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        padding: '2px'
+                      }}
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Sort By Dropdown */}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '999px',
+                    background: '#121C1C',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#D1D5DB',
+                    fontSize: '0.76rem',
+                    fontWeight: 600,
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="featured">Sort: Featured</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                  <option value="rating">Highest Rated</option>
+                  <option value="stock">Most Stock</option>
+                </select>
               </div>
             </div>
 
-            {/* Category Filter Pills */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {['All', 'Footwear', 'Apparel', 'Accessories', 'Audio', 'Tech', 'Synthesizers', 'Watches', 'Eyewear'].map((cat) => (
+            {/* Middle Row: Category Filter Pills & Quick Availability Chips */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              padding: '12px 14px',
+              background: '#0D1616',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.06)'
+            }}>
+              {/* Category Pills */}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.72rem', color: '#6B7280', fontWeight: 700, marginRight: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Category:
+                </span>
+                {['All', 'Footwear', 'Apparel', 'Accessories', 'Audio', 'Tech', 'Synthesizers', 'Watches', 'Eyewear'].map((cat) => {
+                  const isSelected = cat === 'All' 
+                    ? (!activeCategory || activeCategory === 'All' || activeCategory === 'All Curations' || activeCategory === '')
+                    : activeCategory?.toLowerCase() === cat.toLowerCase();
+
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => handleCategoryChange(cat)}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '999px',
+                        background: isSelected ? 'var(--brand-green)' : '#162424',
+                        color: isSelected ? '#080F0F' : '#9CA3AF',
+                        border: isSelected ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.08)',
+                        fontSize: '0.74rem',
+                        fontWeight: isSelected ? 800 : 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Quick Filter Chips (In Stock, Pickup) & Clear All */}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
-                  key={cat}
-                  onClick={() => handleCategoryChange(cat)}
+                  onClick={() => setInStockOnly(!inStockOnly)}
                   style={{
-                    padding: '5px 14px',
+                    padding: '5px 12px',
                     borderRadius: '999px',
-                    background: activeCategory === cat ? 'var(--brand-green)' : '#121C1C',
-                    color: activeCategory === cat ? '#080F0F' : '#9CA3AF',
-                    border: activeCategory === cat ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.08)',
-                    fontSize: '0.74rem',
-                    fontWeight: activeCategory === cat ? 700 : 500,
+                    background: inStockOnly ? 'rgba(132, 244, 59, 0.18)' : '#121C1C',
+                    color: inStockOnly ? 'var(--brand-green)' : '#9CA3AF',
+                    border: inStockOnly ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.08)',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
                     cursor: 'pointer',
-                    transition: 'all 0.15s'
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
                   }}
                 >
-                  {cat}
+                  <Package size={12} />
+                  <span>In Stock</span>
                 </button>
-              ))}
+
+                <button
+                  onClick={() => setPickupOnly(!pickupOnly)}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: '999px',
+                    background: pickupOnly ? 'rgba(132, 244, 59, 0.18)' : '#121C1C',
+                    color: pickupOnly ? 'var(--brand-green)' : '#9CA3AF',
+                    border: pickupOnly ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.08)',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <Store size={12} />
+                  <span>Pickup Ready</span>
+                </button>
+
+                {/* Clear Filters Button if any active */}
+                {((activeCategory !== 'All' && activeCategory !== 'All Curations' && activeCategory) ||
+                  sortBy !== 'featured' ||
+                  priceFilter !== 'all' ||
+                  inStockOnly ||
+                  pickupOnly ||
+                  localSearch ||
+                  searchQuery) && (
+                  <button
+                    onClick={handleResetAllFilters}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: '999px',
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      color: '#F87171',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <RotateCcw size={12} />
+                    <span>Clear Filters</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1134,33 +1369,85 @@ export default function Marketplace({
           PRODUCTS GRID (RENDERED FOR GENERAL STORE OR WHEN PRODUCTS TAB SELECTED)
           ======================================================== */}
       {(!selectedMerchant || storeTab === 'Products') && (
-        filteredProducts.length === 0 ? (
-          <div style={{
-            padding: '60px 24px',
-            textAlign: 'center',
-            background: '#0D1616',
-            borderRadius: '20px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            margin: '20px 0 40px'
-          }}>
-            <ShoppingBag size={44} color="var(--brand-green)" style={{ margin: '0 auto 16px' }} />
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px' }}>
-              No items match this filter
-            </h3>
-            <p style={{ color: '#9CA3AF', fontSize: '0.85rem', marginBottom: '20px' }}>
-              Try selecting "All" or clear your search query to see all verified merchandise.
-            </p>
-            <button
-              onClick={() => {
-                handleCategoryChange('All');
-                if (setSearchQuery) setSearchQuery('');
-              }}
-              className="btn-pill-primary"
-            >
-              Reset Filters
-            </button>
-          </div>
-        ) : (
+        <>
+          {selectedMerchant && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              padding: '14px 20px',
+              background: '#0D1616',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              marginBottom: '20px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#FFFFFF' }}>
+                  {selectedMerchant.name} Inventory
+                </span>
+                <span style={{
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  background: 'var(--brand-green-dim)',
+                  color: 'var(--brand-green)',
+                  border: '1px solid var(--brand-green-border)'
+                }}>
+                  {filteredProducts.length} Items Available
+                </span>
+              </div>
+
+              {((activeCategory !== 'All' && activeCategory !== 'All Curations' && activeCategory) || localSearch || searchQuery) && (
+                <button
+                  onClick={handleResetAllFilters}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: '999px',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    color: '#F87171',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <RotateCcw size={11} />
+                  <span>Show All Store Goods</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {filteredProducts.length === 0 ? (
+            <div style={{
+              padding: '60px 24px',
+              textAlign: 'center',
+              background: '#0D1616',
+              borderRadius: '20px',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              margin: '20px 0 40px'
+            }}>
+              <ShoppingBag size={44} color="var(--brand-green)" style={{ margin: '0 auto 16px' }} />
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px' }}>
+                No items match this filter
+              </h3>
+              <p style={{ color: '#9CA3AF', fontSize: '0.85rem', marginBottom: '20px' }}>
+                Try selecting "All" or clear your search query to see all verified merchandise.
+              </p>
+              <button
+                onClick={handleResetAllFilters}
+                className="btn-pill-primary"
+              >
+                Reset Filters
+              </button>
+            </div>
+          ) : (
           <div 
             className="stagger-group perspective-container"
             style={{
@@ -1400,8 +1687,9 @@ export default function Marketplace({
           );
         })}
       </div>
-      )
     )}
+  </>
+)}
         </>
       )}
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShoppingBag, 
   Trash2, 
@@ -21,6 +21,7 @@ import { useAuth } from '../lib/auth/AuthContext';
 import { formatCurrency } from '../lib/formatters';
 import { buyWithUsdcEscrow } from '../lib/web3';
 import ProductReceiptModal from './ProductReceiptModal';
+import useScrollReveal from '../lib/useScrollReveal';
 
 export default function CartPage({ 
   cart = [], 
@@ -47,6 +48,13 @@ export default function CartPage({
   const [releasingItem, setReleasingItem] = useState(null);
   const [successToast, setSuccessToast] = useState(null);
   const [selectedReceiptData, setSelectedReceiptData] = useState(null);
+
+  // Instant scroll-to-top and scroll reveal animations
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activeTab]);
+
+  useScrollReveal([cart.length, activeOrders.length, activeTab]);
 
   const subtotal = cart.reduce((acc, item) => acc + (item.priceUsd * (item.quantity || 1)), 0);
   const gasFeeUsd = 0; // Monad Gas Sponsored
@@ -196,17 +204,15 @@ export default function CartPage({
     <div className="page-fade-in" style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 0 60px' }}>
       
       {/* Header & View Switcher */}
-      <div className="reveal-pop" style={{
+      <div className="apple-liquid-glass reveal-pop" style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap',
         gap: '16px',
         marginBottom: '28px',
-        padding: '24px 28px',
-        background: '#0D1616',
-        borderRadius: '24px',
-        border: '1px solid rgba(255, 255, 255, 0.08)'
+        padding: '28px 32px',
+        borderRadius: '26px'
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
@@ -316,12 +322,10 @@ export default function CartPage({
       {activeTab === 'cart' && (
         <div>
           {cart.length === 0 ? (
-            <div style={{
+            <div className="apple-liquid-glass reveal-pop" style={{
               textAlign: 'center',
-              padding: '80px 20px',
-              background: '#0D1616',
-              borderRadius: '24px',
-              border: '1px solid rgba(255, 255, 255, 0.08)'
+              padding: '80px 24px',
+              borderRadius: '26px'
             }}>
               <div style={{
                 width: '68px',
@@ -354,7 +358,7 @@ export default function CartPage({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '28px', alignItems: 'start' }}>
               
               {/* Left: Cart Items List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="card-reveal-left stagger-group" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
                   <span style={{ fontSize: '0.86rem', fontWeight: 700, color: '#9CA3AF' }}>
                     {cart.length} {cart.length === 1 ? 'Item' : 'Items'} in Cart
@@ -377,15 +381,14 @@ export default function CartPage({
                 {cart.map((item, index) => (
                   <div
                     key={`${item.productId}-${index}`}
+                    className="liquid-glass-card rise-rotate-in"
                     style={{
-                      background: '#0D1616',
                       borderRadius: '18px',
-                      border: '1px solid rgba(255, 255, 255, 0.08)',
                       padding: '18px',
                       display: 'flex',
                       gap: '16px',
                       alignItems: 'center',
-                      transition: 'all 0.2s ease'
+                      transition: 'all 0.25s ease'
                     }}
                   >
                     {/* Item Image */}
@@ -460,13 +463,17 @@ export default function CartPage({
               </div>
 
               {/* Right: Summary Card & Monad Escrow Checkout */}
-              <div style={{
-                background: '#0D1616',
-                borderRadius: '24px',
-                border: '1px solid rgba(132, 244, 59, 0.3)',
-                padding: '24px',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)'
-              }}>
+              <div 
+                className="card-reveal-right apple-liquid-glass"
+                style={{
+                  borderRadius: '26px',
+                  border: '1px solid var(--brand-green-border)',
+                  padding: '28px',
+                  boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(132, 244, 59, 0.08)',
+                  position: 'sticky',
+                  top: '100px'
+                }}
+              >
                 <h2 className="font-display" style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 16px' }}>
                   Order Summary
                 </h2>
@@ -680,12 +687,10 @@ export default function CartPage({
       {activeTab === 'orders' && (
         <div>
           {activeOrders.length === 0 ? (
-            <div style={{
+            <div className="apple-liquid-glass reveal-pop" style={{
               textAlign: 'center',
-              padding: '70px 20px',
-              background: '#0D1616',
-              borderRadius: '24px',
-              border: '1px solid rgba(255, 255, 255, 0.08)'
+              padding: '70px 24px',
+              borderRadius: '26px'
             }}>
               <ShieldCheck size={40} color="var(--brand-green)" style={{ margin: '0 auto 14px' }} />
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 6px' }}>
@@ -703,15 +708,14 @@ export default function CartPage({
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div className="stagger-group perspective-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {activeOrders.map((order) => (
                 <div
                   key={order.orderId}
+                  className="liquid-glass-card rise-rotate-in card-reveal-left"
                   style={{
-                    background: '#0D1616',
                     borderRadius: '22px',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    padding: '22px',
+                    padding: '24px',
                     boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4)'
                   }}
                 >

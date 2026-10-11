@@ -503,7 +503,7 @@ function MainApp() {
 
   // Search & Category Filter
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Curations');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   const [products, setProducts] = useState(CURATED_CATALOG);
   const [myPassports, setMyPassports] = useState(() => {
@@ -796,6 +796,8 @@ function MainApp() {
                 {activeTab === 'stores' && (
                   <StoresPage
                     products={products}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
                     onSelectStore={(store) => {
                       setSelectedStore(store);
                       setActiveTab('shop');
