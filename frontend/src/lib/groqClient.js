@@ -191,9 +191,12 @@ HAUL PLATFORM RULES, POLICIES & CAPABILITIES:
      - If the user has multiple orders and none is currently focused, ask: "You have multiple orders on your account. Which order do you need the PIN verification code for?" and list their orders.
      - If the user specifies an order (or has only 1 order, or an order is focused), output the exact 4-digit PIN code in a bold card format.
 
-5. TONE & FORMATTING:
+5. TONE & CLEAN FORMATTING (STRICT REQUIREMENT):
    - Tone: Premium luxury concierge, crisp, authoritative, friendly, and helpful.
-   - Use GitHub-style markdown with bold highlights, bullet points, and clean blockquotes for key details.`;
+   - Clean Formatting: Never output raw hashtags (like #, ##, ###) for headers or asterisks (like * or **) for bullet points.
+   - Write headers on their own line with clean capitalization without any hash characters.
+   - Use clean bullets with the bullet character • (not *).
+   - Use natural phrasing and bold formatting without raw asterisks.`;
 }
 
 /**
@@ -211,16 +214,16 @@ export function generateLocalFallbackResponse(userPrompt, context) {
       const pin = getOrderPin(activeOrder);
       const name = activeOrder.productName || activeOrder.name || 'Purchased Item';
       const status = activeOrder.currentState || 'ESCROWED';
-      return `### Order Verification Code & Pickup PIN
+      return `Order Verification Code & Pickup PIN
 
-Here is your verification code for **${name}**:
+Here is your verification code for ${name}:
 
-* **Pickup Pass PIN:** \`${pin}\`
-* **Token ID / Order ID:** \`#${activeOrder.tokenId || activeOrder.id || '101'}\`
-* **Status:** **${status}** (Monad Smart Escrow Protected)
-* **Merchant:** ${activeOrder.originalMerchant || activeOrder.merchant || 'Verified Flagship'}
+• Pickup Pass PIN: \`${pin}\`
+• Token ID / Order ID: \`#${activeOrder.tokenId || activeOrder.id || '101'}\`
+• Status: ${status} (Monad Smart Escrow Protected)
+• Merchant: ${activeOrder.originalMerchant || activeOrder.merchant || 'Verified Flagship'}
 
-> **How to use:** Present this 4-digit PIN (\`${pin}\`) to the store counter representative when collecting your item. Once entered, the merchant will confirm physical handover and release escrow.`;
+Present this 4-digit PIN (\`${pin}\`) to the store counter representative when collecting your item. Once entered, the merchant will confirm physical handover and release escrow.`;
     }
 
     // Check if user specifically named or referenced an order by ID or keyword
@@ -232,45 +235,45 @@ Here is your verification code for **${name}**:
 
     if (matched) {
       const pin = getOrderPin(matched);
-      return `### Verification PIN for ${matched.productName || matched.name}
+      return `Verification PIN for ${matched.productName || matched.name}
 
-* **Pickup Pass PIN:** \`${pin}\`
-* **Order ID:** \`#${matched.tokenId || matched.id}\`
-* **Status:** **${matched.currentState || 'ESCROWED'}**
-* **Merchant:** ${matched.originalMerchant || matched.merchant || 'Verified Store'}
+• Pickup Pass PIN: \`${pin}\`
+• Order ID: \`#${matched.tokenId || matched.id}\`
+• Status: ${matched.currentState || 'ESCROWED'}
+• Merchant: ${matched.originalMerchant || matched.merchant || 'Verified Store'}
 
-> Present this 4-digit PIN (\`${pin}\`) at the store counter to confirm collection and release escrow.`;
+Present this 4-digit PIN (\`${pin}\`) at the store counter to confirm collection and release escrow.`;
     }
 
     // If user has MULTIPLE orders and none was specified, ASK WHICH ONE!
     if (passports && passports.length > 1) {
       const list = passports.map((p, idx) => {
-        return `* **Option ${idx + 1}:** **${p.productName || p.name}** (\`#${p.tokenId || p.id}\`) • Status: ${p.currentState || 'ESCROWED'}`;
+        return `• Option ${idx + 1}: ${p.productName || p.name} (\`#${p.tokenId || p.id}\`) • Status: ${p.currentState || 'ESCROWED'}`;
       }).join('\n');
 
-      return `### Which order do you need the PIN for?
+      return `Which order do you need the PIN for?
 
-You have **${passports.length} orders** on your account. Which one would you like the verification code for?
+You have ${passports.length} orders on your account. Which one would you like the verification code for?
 
 ${list}
 
-> **Tap one of the order buttons below** or type the order name/number, and I will instantly reveal your 4-digit pickup PIN!`;
+Tap one of the order buttons on the right or type the item name, and I will instantly reveal your 4-digit pickup PIN!`;
     }
 
     // If single order
     if (passports && passports.length === 1) {
       const single = passports[0];
       const pin = getOrderPin(single);
-      return `### Order Verification Code & Pickup PIN
+      return `Order Verification Code & Pickup PIN
 
-Here is your pickup pass for **${single.productName || single.name}**:
+Here is your pickup pass for ${single.productName || single.name}:
 
-* **Pickup Pass PIN:** \`${pin}\`
-* **Order ID:** \`#${single.tokenId || single.id}\`
-* **Status:** **${single.currentState || 'ESCROWED'}**
-* **Merchant:** ${single.originalMerchant || single.merchant || 'Flagship Store'}
+• Pickup Pass PIN: \`${pin}\`
+• Order ID: \`#${single.tokenId || single.id}\`
+• Status: ${single.currentState || 'ESCROWED'}
+• Merchant: ${single.originalMerchant || single.merchant || 'Flagship Store'}
 
-> Present this 4-digit PIN (\`${pin}\`) to the merchant when collecting your item.`;
+Present this 4-digit PIN (\`${pin}\`) to the merchant when collecting your item.`;
     }
 
     return `You currently have no active pending pickup orders registered. Once you place an order, your secure 4-digit verification PIN and QR Pickup Pass will appear here automatically.`;
@@ -288,10 +291,10 @@ Here is your pickup pass for **${single.productName || single.name}**:
       const isDispatched = p.deliveryMethod === 'dispatch' || p.deliveryMethod === 'delivery';
       const isRefunded = p.currentState === 'REFUNDED';
       const statusLabel = isRefunded ? 'Cancelled & Refunded' : isCollected ? 'Collected & In Hand' : isDispatched ? 'Dispatched (Courier)' : 'Escrowed (Ready for Pickup)';
-      return `**${idx + 1}. ${p.productName || p.name}**\n- Status: ${statusLabel}\n- PIN: \`${pin}\` • Order ID: #${p.tokenId || p.id}\n- Merchant: ${p.originalMerchant || p.merchant || 'Flagship'}`;
+      return `${idx + 1}. ${p.productName || p.name}\n• Status: ${statusLabel}\n• PIN: \`${pin}\` • Order ID: #${p.tokenId || p.id}\n• Merchant: ${p.originalMerchant || p.merchant || 'Flagship'}`;
     }).join('\n\n');
 
-    return `### Your Account Orders & Escrow Summary\n\n${orderLines}\n\n*Need assistance with a specific order? You can tap **"Contact Support"** on any order card in your Passports tab to focus our conversation on it.*`;
+    return `Your Account Orders & Escrow Summary\n\n${orderLines}\n\nNeed assistance with a specific order? You can tap any order card on the right to focus our conversation on it.`;
   }
 
   // 3. Product Catalog & Inventory inquiry (shoes, phones, headphones, sizes, colors, prices)

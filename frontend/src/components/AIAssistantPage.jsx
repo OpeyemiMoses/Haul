@@ -30,6 +30,7 @@ import {
 import { CURATED_CATALOG, VERIFIED_MERCHANTS } from '../lib/catalogData';
 import { formatCurrency } from '../lib/formatters';
 import useScrollReveal from '../lib/useScrollReveal';
+import FormattedMessage from './FormattedMessage';
 
 export default function AIAssistantPage({
   user,
@@ -104,33 +105,33 @@ export default function AIAssistantPage({
 
     if (orderToFocus) {
       const pin = getOrderPin(orderToFocus);
-      intro = `### Focused Order Inquiry: ${orderToFocus.productName || orderToFocus.name}
+      intro = `Focused Order Inquiry: ${orderToFocus.productName || orderToFocus.name}
 
-I've loaded your verified order details into memory:
-* **Order ID:** \`#${orderToFocus.tokenId || orderToFocus.id || '101'}\`
-* **Escrow Status:** **${orderToFocus.currentState || 'ESCROWED'}**
-* **Pickup Pass PIN:** \`${pin}\`
-* **Merchant:** ${orderToFocus.originalMerchant || orderToFocus.merchant || 'Flagship Store'}
+I have loaded your verified order details into memory:
+• Order ID: \`#${orderToFocus.tokenId || orderToFocus.id || '101'}\`
+• Escrow Status: ${orderToFocus.currentState || 'ESCROWED'}
+• Pickup Pass PIN: \`${pin}\`
+• Merchant: ${orderToFocus.originalMerchant || orderToFocus.merchant || 'Flagship Store'}
 
 Ask me anything about pickup instructions, physical vault collection, or Monad escrow guarantees!`;
     } else if (userStore || userRole === 'merchant') {
-      intro = `### Store Operations Manager Companion
+      intro = `Store Operations Manager Companion
 
-Welcome, **${displayName}**! I have real-time access to your store profile and the entire Haul marketplace.
-* **Store Name:** ${userStore?.name || 'Verified Flagship'}
-* **Operating Hours:** ${userStore?.operatingHours || 'Mon - Sat: 9:00 AM - 7:00 PM'}
-* **Location:** ${userStore?.fullAddress || userStore?.location || 'Victoria Island, Lagos'}
+Welcome, ${displayName}! I have real-time access to your store profile and the entire Haul marketplace.
+• Store Name: ${userStore?.name || 'Verified Flagship'}
+• Operating Hours: ${userStore?.operatingHours || 'Mon - Sat: 9:00 AM - 7:00 PM'}
+• Location: ${userStore?.fullAddress || userStore?.location || 'Victoria Island, Lagos'}
 
 You can ask me about catalog listings, customer pickup PIN verification, counter operations, or platform policies!`;
     } else {
       const orderCount = allUserOrders.length;
-      intro = `### Welcome to Haul AI Companion
+      intro = `Welcome to Haul AI Companion
 
 I'm your intelligent concierge with unconstrained access to the entire Haul site:
-* **Site Catalog & Stock:** Ask about our sneakers, headphones, phones, prices, sizes, and colors.
-* **Verified Storefronts:** Inquire about store locations, addresses, and operating hours across Lagos.
-* **Your Orders & PINs:** You currently have **${orderCount} active ${orderCount === 1 ? 'order' : 'orders'}** on your account. Ask *"What is my pickup PIN?"* to view your pass.
-* **Escrow & Policies:** Ask about Monad smart contract protection, cancellations, and why cancelled items cannot be reviewed.
+• Site Catalog & Stock: Inquire about sneakers, headphones, phones, prices, sizes, and colors.
+• Verified Storefronts: Inquire about store locations, addresses, and operating hours across Lagos.
+• Your Orders & PINs: You currently have ${orderCount} active ${orderCount === 1 ? 'order' : 'orders'} on your account. Ask "What is my pickup PIN?" to view your pass.
+• Escrow & Policies: Ask about Monad smart contract protection, cancellations, and why cancelled items cannot be reviewed.
 
 What would you like to explore today?`;
     }
@@ -427,10 +428,9 @@ What would you like to explore today?`;
                     boxShadow: isUser ? '0 4px 16px rgba(132, 244, 59, 0.25)' : '0 4px 20px rgba(0, 0, 0, 0.3)',
                     fontSize: '0.88rem',
                     lineHeight: 1.6,
-                    fontWeight: isUser ? 600 : 400,
-                    whiteSpace: 'pre-wrap'
+                    fontWeight: isUser ? 600 : 400
                   }}>
-                    {m.content}
+                    <FormattedMessage text={m.content} isUser={isUser} />
                   </div>
                 </div>
               );

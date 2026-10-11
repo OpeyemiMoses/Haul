@@ -98,35 +98,35 @@ export default function AISupportModal({
 
     if (orderToFocus) {
       const pin = getOrderPin(orderToFocus);
-      intro = `### Order Support: ${orderToFocus.productName || orderToFocus.name}
+      intro = `Order Support: ${orderToFocus.productName || orderToFocus.name}
 
-I've loaded your verified order details from your account:
+I have loaded your verified order details from your account:
 
-* **Order ID:** \`#${orderToFocus.tokenId || orderToFocus.id || '101'}\`
-* **Escrow Status:** **${orderToFocus.currentState || 'ESCROWED'}**
-* **Pickup Pass PIN:** \`${pin}\`
-* **Merchant:** ${orderToFocus.originalMerchant || orderToFocus.merchant || 'Flagship Store'}
+• Order ID: \`#${orderToFocus.tokenId || orderToFocus.id || '101'}\`
+• Escrow Status: ${orderToFocus.currentState || 'ESCROWED'}
+• Pickup Pass PIN: \`${pin}\`
+• Merchant: ${orderToFocus.originalMerchant || orderToFocus.merchant || 'Flagship Store'}
 
-> **How can I assist you?** Ask me for your pickup instructions, escrow guarantees, or how to claim your physical item.`;
+How can I assist you? Ask me for your pickup instructions, escrow guarantees, or how to claim your physical item.`;
     } else if (userStore || userRole === 'merchant') {
-      intro = `### Store Manager Companion
+      intro = `Store Manager Companion
 
-Welcome, **${displayName}**! I'm your account and store operations assistant for **${userStore?.name || 'Your Flagship Store'}**.
+Welcome, ${displayName}! I'm your account and store operations assistant for ${userStore?.name || 'Your Flagship Store'}.
 
-* **Location:** ${userStore?.fullAddress || userStore?.location || 'Storefront'}
-* **Operating Hours:** ${userStore?.operatingHours || 'Mon - Sat: 9:00 AM - 7:00 PM'}
-* **Store Counter:** You can verify customer pickup passes using their 4-digit PIN in your Counter tab.
+• Location: ${userStore?.fullAddress || userStore?.location || 'Storefront'}
+• Operating Hours: ${userStore?.operatingHours || 'Mon - Sat: 9:00 AM - 7:00 PM'}
+• Store Counter: You can verify customer pickup passes using their 4-digit PIN in your Counter tab.
 
 How can I help you manage your store or account today?`;
     } else {
       const orderCount = allUserOrders.length;
-      intro = `### Hello ${displayName}
+      intro = `Hello ${displayName}
 
-I'm your **AI Support Companion** with direct access to your verified orders and smart contract escrow on Monad.
+I'm your AI Support Companion with direct access to your verified orders and smart contract escrow on Monad.
 
-* You currently have **${orderCount} active ${orderCount === 1 ? 'order' : 'orders'}** in your Living Passport hub.
-* Ask me: *"What is my pickup PIN code?"* to retrieve your verification pass.
-* Ask me: *"What is the status of my orders?"* or *"How does escrow work?"*
+• You currently have ${orderCount} active ${orderCount === 1 ? 'order' : 'orders'} in your Living Passport hub.
+• Ask me: "What is my pickup PIN code?" to retrieve your verification pass.
+• Ask me: "What is the status of my orders?" or "How does escrow work?"
 
 How can I help you today?`;
     }

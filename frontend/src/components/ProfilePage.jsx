@@ -18,6 +18,7 @@ import {
   Layers, 
   Lock,
   ArrowUpRight,
+  ArrowRightLeft,
   Send,
   RotateCcw,
   Tag,
@@ -52,6 +53,13 @@ import CreateStoreModal from './CreateStoreModal';
 import EditProfileModal from './EditProfileModal';
 import QrScannerModal from './QrScannerModal';
 import { resolveRecipient, getRegistry } from '../lib/userRegistry';
+import { 
+  getUserTransfers, 
+  initiateTransferRequest, 
+  acceptTransferRequest, 
+  declineTransferRequest, 
+  cancelTransferRequest 
+} from '../lib/ownershipTransferRegistry';
 import ModalPortal from './ModalPortal';
 import useScrollReveal from '../lib/useScrollReveal';
 
@@ -195,11 +203,7 @@ export default function ProfilePage({
   // Profile sub-tabs: 'overview' | 'products' | 'wishlist' | 'reviews' | 'following' | 'transactions' | 'transfers' | 'resale'
 
   // Modals matching user's spec:
-  // Transfer Ownership
-  const [transferPassport, setTransferPassport] = useState(null);
-  const [transferRecipient, setTransferRecipient] = useState('');
-  const [transferMessage, setTransferMessage] = useState('Enjoy your new item!');
-  const [transferSuccess, setTransferSuccess] = useState(false);
+  // Transfer Ownership state moved below activeUser definition
 
   // Resale Listing & Store Dependency
   const [resalePassport, setResalePassport] = useState(null);
@@ -448,6 +452,26 @@ export default function ProfilePage({
   const address = activeUser.address;
   const shortAddr = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : (isGuest ? 'Not Connected' : 'Provisioning Monad Wallet...');
 
+  // Ownership Transfers State
+  const [transferPassport, setTransferPassport] = useState(null);
+  const [transferRecipient, setTransferRecipient] = useState('');
+  const [transferMessage, setTransferMessage] = useState('Enjoy your new item!');
+  const [transferSuccess, setTransferSuccess] = useState(false);
+  const [transferSuccessData, setTransferSuccessData] = useState(null);
+  const [transferError, setTransferError] = useState(null);
+  const [transferToast, setTransferToast] = useState(null);
+
+  const [userTransfers, setUserTransfers] = useState(() => getUserTransfers(activeUser));
+
+  useEffect(() => {
+    setUserTransfers(getUserTransfers(activeUser));
+  }, [user, customProfile, activeUser]);
+
+  const resolvedRecipient = React.useMemo(() => {
+    if (!transferRecipient.trim()) return null;
+    return resolveRecipient(transferRecipient);
+  }, [transferRecipient]);
+
   // Reactive local passports state initialized from props and localStorage
   const [localPassports, setLocalPassports] = useState(() => {
     try {
@@ -520,8 +544,8 @@ export default function ProfilePage({
 
   const productsOwnedCount = effectivePassports.length;
   const transfersCount = React.useMemo(() => {
-    return effectivePassports.filter(p => p.transferHistory && p.transferHistory.length > 0).length || 0;
-  }, [effectivePassports]);
+    return (userTransfers.incoming?.length || 0) + (userTransfers.outgoing?.length || 0) + (userTransfers.history?.length || 0);
+  }, [userTransfers]);
   const resalesCount = React.useMemo(() => {
     return myResales?.length || effectivePassports.filter(p => p.resaleActive || p.isResale).length || 0;
   }, [myResales, effectivePassports]);
@@ -904,42 +928,106 @@ export default function ProfilePage({
   const handleExecuteTransfer = (e) => {
     e.preventDefault();
     if (!transferPassport) return;
-    const isCollected = transferPassport.currentState === 'COLLECTED' || transferPassport.currentState === 'ACTIVE_OWNERSHIP' || transferPassport.currentState === 'DELIVERED' || transferPassport.currentState === 'COMPLETED' || transferPassport.currentState === 'OWNED' || Boolean(transferPassport.isCollected) || Boolean(transferPassport.isDelivered);
+    setTransferError(null);
+
+    const isCollected = 
+      transferPassport.currentState === 'COLLECTED' || 
+      transferPassport.currentState === 'ACTIVE_OWNERSHIP' || 
+      transferPassport.currentState === 'DELIVERED' || 
+      transferPassport.currentState === 'COMPLETED' || 
+      transferPassport.currentState === 'OWNED' || 
+      Boolean(transferPassport.isCollected) || 
+      Boolean(transferPassport.isDelivered);
+
     if (!isCollected) {
-      alert('This item is currently held in smart contract escrow and must be collected from the merchant before transferring ownership.');
+      setTransferError('This item is currently held in smart contract escrow and must be collected from the merchant before transferring ownership.');
       return;
     }
     if (!transferRecipient.trim()) {
-      alert('Please enter a recipient handle or address.');
+      setTransferError('Please enter a recipient username, handle, or address.');
       return;
     }
 
     try {
-      const stored = JSON.parse(localStorage.getItem('hual_my_passports') || '[]');
-      const updated = stored.filter(p => (p.tokenId !== transferPassport.tokenId && p.serialNumber !== transferPassport.serialNumber));
-      localStorage.setItem('hual_my_passports', JSON.stringify(updated));
+      const newTransfer = initiateTransferRequest({
+        passport: transferPassport,
+        senderUser: activeUser,
+        recipientQuery: transferRecipient,
+        message: transferMessage
+      });
 
-      if (userKey) {
-        const userStored = JSON.parse(localStorage.getItem(`hual_my_passports_${userKey}`) || '[]');
-        const updatedUser = userStored.filter(p => (p.tokenId !== transferPassport.tokenId && p.serialNumber !== transferPassport.serialNumber));
-        localStorage.setItem(`hual_my_passports_${userKey}`, JSON.stringify(updatedUser));
-      }
-      if (user?.address) {
-        const addrStored = JSON.parse(localStorage.getItem(`hual_my_passports_${user.address.toLowerCase()}`) || '[]');
-        const updatedAddr = addrStored.filter(p => (p.tokenId !== transferPassport.tokenId && p.serialNumber !== transferPassport.serialNumber));
-        localStorage.setItem(`hual_my_passports_${user.address.toLowerCase()}`, JSON.stringify(updatedAddr));
-      }
-    } catch (err) {
-      console.warn('Transfer local update error:', err);
-    }
+      setTransferSuccessData(newTransfer);
+      setTransferSuccess(true);
+      setUserTransfers(getUserTransfers(activeUser));
 
-    setTransferSuccess(true);
-    setTimeout(() => {
-      setTransferSuccess(false);
-      setTransferPassport(null);
-      setTransferRecipient('');
+      // Mark the passport as pending transfer in local passports view
+      setLocalPassports(prev => prev.map(p => {
+        if (p.tokenId === transferPassport.tokenId || p.serialNumber === transferPassport.serialNumber) {
+          return {
+            ...p,
+            transferPending: true,
+            pendingTransferId: newTransfer.transferId,
+            pendingRecipient: newTransfer.recipient
+          };
+        }
+        return p;
+      }));
+
       if (onRefreshData) onRefreshData();
-    }, 2000);
+
+      setTimeout(() => {
+        setTransferSuccess(false);
+        setTransferSuccessData(null);
+        setTransferPassport(null);
+        setTransferRecipient('');
+        setTransferMessage('Enjoy your new item!');
+      }, 3500);
+    } catch (err) {
+      setTransferError(err.message || 'Transfer initiation failed.');
+    }
+  };
+
+  const handleAcceptTransfer = (transferId) => {
+    try {
+      const acceptedPassport = acceptTransferRequest(transferId, activeUser);
+      setUserTransfers(getUserTransfers(activeUser));
+      setLocalPassports(prev => [
+        acceptedPassport, 
+        ...prev.filter(p => p.tokenId !== acceptedPassport.tokenId && p.serialNumber !== acceptedPassport.serialNumber)
+      ]);
+      setTransferToast(`Success! Ownership of ${acceptedPassport.productName} has been transferred into your Living Passports.`);
+      setTimeout(() => setTransferToast(null), 5000);
+      if (onRefreshData) onRefreshData();
+    } catch (err) {
+      alert(err.message || 'Failed to accept transfer.');
+    }
+  };
+
+  const handleDeclineTransfer = (transferId) => {
+    declineTransferRequest(transferId);
+    setUserTransfers(getUserTransfers(activeUser));
+    setTransferToast('Transfer request declined.');
+    setTimeout(() => setTransferToast(null), 4000);
+    if (onRefreshData) onRefreshData();
+  };
+
+  const handleCancelTransfer = (transferId) => {
+    cancelTransferRequest(transferId);
+    setUserTransfers(getUserTransfers(activeUser));
+    setLocalPassports(prev => prev.map(p => {
+      if (p.pendingTransferId === transferId) {
+        return {
+          ...p,
+          transferPending: false,
+          pendingTransferId: null,
+          pendingRecipient: null
+        };
+      }
+      return p;
+    }));
+    setTransferToast('Transfer cancelled. Item remains in your collection.');
+    setTimeout(() => setTransferToast(null), 4000);
+    if (onRefreshData) onRefreshData();
   };
 
   const handleExecuteResale = (e) => {
@@ -1434,7 +1522,7 @@ export default function ProfilePage({
           { id: 'reviews', label: `My Reviews (${myReviews.length})` },
           { id: 'following', label: `Followed Stores (${followedStores.length})` },
           { id: 'transactions', label: `Transactions (${realTransactions.length})` },
-          { id: 'transfers', label: 'Transfers (2)' },
+          { id: 'transfers', label: (userTransfers.incoming?.length > 0) ? `Transfers (${userTransfers.incoming.length} Pending)` : `Transfers (${transfersCount})` },
           { id: 'resale', label: 'Resale (1)' }
         ].map((tab) => (
           <button
@@ -2255,6 +2343,134 @@ export default function ProfilePage({
             </div>
           </div>
 
+          {/* Incoming Ownership Transfers Awaiting User Acceptance */}
+          {userTransfers.incoming && userTransfers.incoming.length > 0 && (
+            <div style={{
+              marginBottom: '26px',
+              padding: '22px',
+              background: 'linear-gradient(135deg, rgba(132, 244, 59, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%)',
+              border: '1px solid rgba(132, 244, 59, 0.45)',
+              borderRadius: '20px',
+              boxShadow: '0 12px 35px rgba(0, 0, 0, 0.5), 0 0 25px rgba(132, 244, 59, 0.1)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    background: 'rgba(132, 244, 59, 0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid rgba(132, 244, 59, 0.4)'
+                  }}>
+                    <ArrowRightLeft size={18} color="var(--brand-green)" />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                      Incoming Ownership Transfers ({userTransfers.incoming.length})
+                    </h4>
+                    <p style={{ fontSize: '0.78rem', color: '#9CA3AF', margin: '2px 0 0' }}>
+                      Transferred to your username. Accept below to claim authenticated ownership and manufacturer warranty in your passport collection.
+                    </p>
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  padding: '3px 10px',
+                  borderRadius: '999px',
+                  background: 'rgba(132, 244, 59, 0.15)',
+                  color: 'var(--brand-green)',
+                  border: '1px solid var(--brand-green-border)'
+                }}>
+                  ACTION REQUIRED
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {userTransfers.incoming.map((transfer) => {
+                  const item = transfer.passport || {};
+                  const sender = transfer.sender || {};
+                  return (
+                    <div
+                      key={transfer.transferId}
+                      style={{
+                        padding: '14px 18px',
+                        background: '#080F0F',
+                        borderRadius: '14px',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '14px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: '240px' }}>
+                        <div style={{
+                          width: '56px',
+                          height: '56px',
+                          borderRadius: '12px',
+                          background: '#121C1C',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '3px'
+                        }}>
+                          <img
+                            src={item.imageUri || '/assets/air_max_95.jpg'}
+                            alt={item.productName || 'Product'}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                          />
+                        </div>
+                        <div>
+                          <h5 style={{ fontSize: '0.96rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                            {item.productName}
+                          </h5>
+                          <div style={{ fontSize: '0.76rem', color: '#9CA3AF', marginTop: '2px' }}>
+                            Transferred by: <strong style={{ color: 'var(--brand-green)' }}>{sender.name || sender.handle || 'Owner'}</strong>
+                            {sender.handle && <span style={{ color: '#9CA3AF', marginLeft: '6px' }}>({sender.handle})</span>}
+                          </div>
+                          {transfer.message && (
+                            <div style={{ fontSize: '0.74rem', color: '#E5E7EB', fontStyle: 'italic', marginTop: '3px' }}>
+                              "{transfer.message}"
+                            </div>
+                          )}
+                          <div style={{ fontSize: '0.68rem', color: '#6B7280', marginTop: '3px', fontFamily: 'var(--font-mono)' }}>
+                            Serial: {item.serialNumber} • Token #{item.tokenId}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <button
+                          onClick={() => handleAcceptTransfer(transfer.transferId)}
+                          className="btn-pill-primary btn-pill-sm"
+                          style={{ padding: '8px 18px', fontSize: '0.8rem', fontWeight: 800, gap: '6px' }}
+                        >
+                          <Check size={14} />
+                          <span>Accept Ownership</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeclineTransfer(transfer.transferId)}
+                          className="btn-pill-secondary btn-pill-sm"
+                          style={{ padding: '8px 14px', fontSize: '0.8rem', color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.35)' }}
+                        >
+                          <X size={14} />
+                          <span>Decline</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div 
             className="stagger-group perspective-container"
             style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: '18px', width: '100%', boxSizing: 'border-box' }}
@@ -2449,6 +2665,48 @@ export default function ProfilePage({
                         ))}
                       </div>
                     </div>
+
+                    {/* Transfer Pending Notice if applicable */}
+                    {p.transferPending && (
+                      <div style={{
+                        marginBottom: '10px',
+                        padding: '8px 10px',
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        border: '1px solid rgba(59, 130, 246, 0.35)',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                        fontSize: '0.72rem',
+                        color: '#93C5FD'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' }}>
+                          <Clock size={12} color="#60A5FA" style={{ flexShrink: 0 }} />
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            Transfer pending to <strong>{p.pendingRecipient?.name || p.pendingRecipient?.handle || 'recipient'}</strong>
+                          </span>
+                        </div>
+                        {p.pendingTransferId && (
+                          <button
+                            onClick={() => handleCancelTransfer(p.pendingTransferId)}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid rgba(239, 68, 68, 0.4)',
+                              borderRadius: '6px',
+                              color: '#F87171',
+                              fontSize: '0.66rem',
+                              padding: '2px 8px',
+                              cursor: 'pointer',
+                              flexShrink: 0
+                            }}
+                            title="Cancel this transfer"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Actions Grid (Zero Overflow Flex) */}
@@ -2584,15 +2842,35 @@ export default function ProfilePage({
                       </>
                     ) : (
                       <>
-                        <button
-                          onClick={() => setTransferPassport(p)}
-                          className="btn-pill-primary btn-pill-sm"
-                          style={{ flex: '1 1 80px', fontSize: '0.72rem', padding: '6px 4px', fontWeight: 800, justifyContent: 'center' }}
-                          title="Transfer ownership certificate on Monad"
-                        >
-                          <Send size={11} />
-                          <span>Transfer</span>
-                        </button>
+                        {p.transferPending ? (
+                          <button
+                            onClick={() => p.pendingTransferId && handleCancelTransfer(p.pendingTransferId)}
+                            className="btn-pill-secondary btn-pill-sm"
+                            style={{
+                              flex: '1 1 80px',
+                              fontSize: '0.72rem',
+                              padding: '6px 4px',
+                              justifyContent: 'center',
+                              color: '#93C5FD',
+                              borderColor: 'rgba(59, 130, 246, 0.4)',
+                              background: 'rgba(59, 130, 246, 0.1)'
+                            }}
+                            title="Transfer pending recipient acceptance. Click to cancel."
+                          >
+                            <Clock size={11} color="#60A5FA" />
+                            <span>Pending</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setTransferPassport(p)}
+                            className="btn-pill-primary btn-pill-sm"
+                            style={{ flex: '1 1 80px', fontSize: '0.72rem', padding: '6px 4px', fontWeight: 800, justifyContent: 'center' }}
+                            title="Transfer ownership certificate on Monad"
+                          >
+                            <Send size={11} />
+                            <span>Transfer</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => setWarrantyPassport(p)}
                           className="btn-pill-secondary btn-pill-sm"
@@ -3117,78 +3395,253 @@ export default function ProfilePage({
       {/* ================= 6. TRANSFERS TAB CONTENT ================= */}
       {subTab === 'transfers' && (
         <div style={{ marginTop: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <h3 className="font-display" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
                 Passport Ownership Transfers
               </h3>
               <p style={{ fontSize: '0.82rem', color: '#9CA3AF', margin: '4px 0 0' }}>
-                Transfers of manufacturer warranties and verified authenticity records.
+                Verifiable peer-to-peer ownership transfers with cryptographic provenance and warranty rollover.
               </p>
             </div>
+            {effectivePassports.length > 0 && (
+              <button
+                onClick={() => setTransferPassport(effectivePassports[0])}
+                className="btn-pill-primary btn-pill-sm"
+                style={{ padding: '8px 18px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Send size={13} />
+                <span>Transfer an Item</span>
+              </button>
+            )}
           </div>
 
-          <div className="perspective-container stagger-group" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {[
-              {
-                id: 'tr-1',
-                productName: 'Apple iPhone 16 Pro 256GB',
-                recipient: 'Alex (@alex.owt)',
-                recipientAddress: '0x812b...4a1b',
-                date: 'Sep 12, 2026',
-                note: 'Gift • Factory AppleCare warranty transferred',
-                image: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=200&q=80'
-              },
-              {
-                id: 'tr-2',
-                productName: 'Sony WH-1000XM4 Noise-Canceling',
-                recipient: 'Kemi (@kemi.lagos)',
-                recipientAddress: '0x992a...18fc',
-                date: 'Aug 20, 2026',
-                note: 'Transferred via Hual QR Pass',
-                image: '/assets/sony_passport.jpg'
-              }
-            ].map((tr) => (
-              <div 
-                key={tr.id}
-                className="liquid-glass-card"
-                style={{
-                  padding: '18px 22px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '16px'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <img src={tr.image} alt={tr.productName} style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'contain', background: '#080F0F' }} />
-                  <div>
-                    <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                      {tr.productName}
+          <div className="perspective-container stagger-group" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Section 1: Incoming Transfers Awaiting User Acceptance */}
+            {userTransfers.incoming && userTransfers.incoming.length > 0 && (
+              <div style={{
+                padding: '20px',
+                background: 'linear-gradient(135deg, rgba(132, 244, 59, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%)',
+                border: '1px solid rgba(132, 244, 59, 0.4)',
+                borderRadius: '18px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ArrowRightLeft size={16} color="var(--brand-green)" />
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                      Incoming Transfers ({userTransfers.incoming.length})
                     </h4>
-                    <div style={{ fontSize: '0.76rem', color: '#9CA3AF', marginTop: '3px' }}>
-                      Transferred to <strong style={{ color: 'var(--brand-green)' }}>{tr.recipient}</strong> • {tr.date}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>
-                      {tr.note}
-                    </div>
                   </div>
+                  <span style={{ fontSize: '0.66rem', color: 'var(--brand-green)', fontWeight: 800, padding: '2px 8px', borderRadius: '999px', background: 'rgba(132, 244, 59, 0.15)', border: '1px solid var(--brand-green-border)' }}>
+                    Awaiting Your Acceptance
+                  </span>
                 </div>
 
-                <div style={{
-                  padding: '6px 14px',
-                  borderRadius: '999px',
-                  background: 'var(--brand-green-dim)',
-                  border: '1px solid var(--brand-green-border)',
-                  color: 'var(--brand-green)',
-                  fontSize: '0.72rem',
-                  fontWeight: 700
-                }}>
-                  Ownership Transferred
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {userTransfers.incoming.map((tr) => (
+                    <div 
+                      key={tr.transferId}
+                      className="liquid-glass-card"
+                      style={{
+                        padding: '14px 18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '12px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <img 
+                          src={tr.passport?.imageUri || '/assets/air_max_95.jpg'} 
+                          alt={tr.passport?.productName} 
+                          style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'contain', background: '#080F0F' }} 
+                        />
+                        <div>
+                          <h5 style={{ fontSize: '0.94rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                            {tr.passport?.productName}
+                          </h5>
+                          <div style={{ fontSize: '0.74rem', color: '#9CA3AF', marginTop: '2px' }}>
+                            Transferred from <strong style={{ color: 'var(--brand-green)' }}>{tr.sender?.name || tr.sender?.handle || 'Owner'}</strong> {tr.sender?.handle && `(${tr.sender.handle})`}
+                          </div>
+                          {tr.message && (
+                            <div style={{ fontSize: '0.72rem', color: '#D1D5DB', fontStyle: 'italic', marginTop: '2px' }}>
+                              "{tr.message}"
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button
+                          onClick={() => handleAcceptTransfer(tr.transferId)}
+                          className="btn-pill-primary btn-pill-sm"
+                          style={{ padding: '7px 14px', fontSize: '0.76rem', fontWeight: 800 }}
+                        >
+                          <Check size={12} />
+                          <span>Accept Ownership</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeclineTransfer(tr.transferId)}
+                          className="btn-pill-secondary btn-pill-sm"
+                          style={{ padding: '7px 12px', fontSize: '0.76rem', color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                        >
+                          <X size={12} />
+                          <span>Decline</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Section 2: Outgoing Transfers Pending Recipient Acceptance */}
+            {userTransfers.outgoing && userTransfers.outgoing.length > 0 && (
+              <div style={{
+                padding: '20px',
+                background: 'rgba(59, 130, 246, 0.05)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                borderRadius: '18px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Clock size={16} color="#60A5FA" />
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                      Pending Outgoing Transfers ({userTransfers.outgoing.length})
+                    </h4>
+                  </div>
+                  <span style={{ fontSize: '0.66rem', color: '#93C5FD', fontWeight: 800, padding: '2px 8px', borderRadius: '999px', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+                    Pending Recipient Acceptance
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {userTransfers.outgoing.map((tr) => (
+                    <div 
+                      key={tr.transferId}
+                      className="liquid-glass-card"
+                      style={{
+                        padding: '14px 18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '12px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <img 
+                          src={tr.passport?.imageUri || '/assets/air_max_95.jpg'} 
+                          alt={tr.passport?.productName} 
+                          style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'contain', background: '#080F0F' }} 
+                        />
+                        <div>
+                          <h5 style={{ fontSize: '0.94rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                            {tr.passport?.productName}
+                          </h5>
+                          <div style={{ fontSize: '0.74rem', color: '#9CA3AF', marginTop: '2px' }}>
+                            Transfer sent to <strong style={{ color: '#93C5FD' }}>{tr.recipient?.name || tr.recipient?.handle || 'Recipient'}</strong> {tr.recipient?.handle && `(${tr.recipient.handle})`}
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: '#6B7280', marginTop: '2px' }}>
+                            Awaiting recipient to accept in their passport dashboard
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          padding: '4px 10px',
+                          borderRadius: '999px',
+                          background: 'rgba(59, 130, 246, 0.12)',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                          color: '#93C5FD',
+                          fontSize: '0.7rem'
+                        }}>
+                          Pending Acceptance
+                        </span>
+                        <button
+                          onClick={() => handleCancelTransfer(tr.transferId)}
+                          className="btn-pill-secondary btn-pill-sm"
+                          style={{ padding: '6px 12px', fontSize: '0.74rem', color: '#F87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Section 3: Completed Transfers History */}
+            <div>
+              <h4 style={{ fontSize: '1rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '12px' }}>
+                Transfer History & Provenance
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {(userTransfers.history && userTransfers.history.length > 0 ? userTransfers.history : [
+                  {
+                    transferId: 'tr-1',
+                    passport: { productName: 'Apple iPhone 16 Pro 256GB', imageUri: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=200&q=80' },
+                    recipient: { name: 'Alex', handle: '@alex.owt' },
+                    acceptedAt: '2026-09-12T10:00:00Z',
+                    message: 'Gift • Factory AppleCare warranty transferred'
+                  },
+                  {
+                    transferId: 'tr-2',
+                    passport: { productName: 'Sony WH-1000XM4 Noise-Canceling', imageUri: '/assets/sony_passport.jpg' },
+                    recipient: { name: 'Kemi', handle: '@kemi.lagos' },
+                    acceptedAt: '2026-08-20T14:30:00Z',
+                    message: 'Transferred via Hual Username Pass'
+                  }
+                ]).map((tr) => (
+                  <div 
+                    key={tr.transferId}
+                    className="liquid-glass-card"
+                    style={{
+                      padding: '16px 20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '14px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <img 
+                        src={tr.passport?.imageUri || '/assets/air_max_95.jpg'} 
+                        alt={tr.passport?.productName} 
+                        style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'contain', background: '#080F0F' }} 
+                      />
+                      <div>
+                        <h5 style={{ fontSize: '0.94rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                          {tr.passport?.productName}
+                        </h5>
+                        <div style={{ fontSize: '0.76rem', color: '#9CA3AF', marginTop: '3px' }}>
+                          Transferred to <strong style={{ color: 'var(--brand-green)' }}>{tr.recipient?.name || tr.recipient?.handle || 'User'}</strong> • {new Date(tr.acceptedAt || tr.timestamp || Date.now()).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#6B7280', marginTop: '2px' }}>
+                          {tr.message || 'Verified Monad ownership handover'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{
+                      padding: '5px 12px',
+                      borderRadius: '999px',
+                      background: 'var(--brand-green-dim)',
+                      border: '1px solid var(--brand-green-border)',
+                      color: 'var(--brand-green)',
+                      fontSize: '0.72rem',
+                      fontWeight: 700
+                    }}>
+                      Ownership Transferred
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -3509,11 +3962,37 @@ export default function ProfilePage({
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <CheckCircle2 size={48} color="var(--brand-green)" style={{ margin: '0 auto 12px' }} />
                 <h4 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '6px' }}>
-                  Ownership Transferred!
+                  Transfer Request Sent!
                 </h4>
-                <p style={{ fontSize: '0.84rem', color: '#9CA3AF' }}>
-                  The Product Passport and warranty certificate have been transferred onchain.
+                <p style={{ fontSize: '0.84rem', color: '#9CA3AF', marginBottom: '14px', lineHeight: 1.5 }}>
+                  Ownership transfer initiated for <strong style={{ color: '#FFFFFF' }}>{transferPassport?.productName}</strong> to <strong style={{ color: 'var(--brand-green)' }}>{transferSuccessData?.recipient?.name || transferSuccessData?.recipient?.handle || transferRecipient}</strong>.
                 </p>
+                <div style={{
+                  padding: '12px',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '12px',
+                  fontSize: '0.78rem',
+                  color: '#93C5FD',
+                  textAlign: 'left',
+                  marginBottom: '16px',
+                  lineHeight: 1.4
+                }}>
+                  The recipient will see this pending item in their own <strong>Passport page</strong> and can accept it to claim verifiable onchain ownership and manufacturer warranty.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransferSuccess(false);
+                    setTransferSuccessData(null);
+                    setTransferPassport(null);
+                    setTransferRecipient('');
+                  }}
+                  className="btn-pill-primary"
+                  style={{ padding: '8px 24px', fontSize: '0.82rem' }}
+                >
+                  Done
+                </button>
               </div>
             ) : (
               <form onSubmit={handleExecuteTransfer} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -3527,14 +4006,17 @@ export default function ProfilePage({
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#9CA3AF', marginBottom: '6px' }}>
-                    Transfer to (Handle or Monad Address) *
+                    Transfer to Username, Handle, or Address *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. alex.wallet or 0x812...4a1b"
+                    placeholder="e.g. @dami, consumer, or 0x812...4a1b"
                     value={transferRecipient}
-                    onChange={(e) => setTransferRecipient(e.target.value)}
+                    onChange={(e) => {
+                      setTransferRecipient(e.target.value);
+                      if (transferError) setTransferError(null);
+                    }}
                     style={{
                       width: '100%',
                       padding: '10px 14px',
@@ -3543,19 +4025,63 @@ export default function ProfilePage({
                       borderRadius: '10px',
                       color: '#FFFFFF',
                       fontSize: '0.88rem',
-                      outline: 'none'
+                      outline: 'none',
+                      boxSizing: 'border-box'
                     }}
                   />
+                  {resolvedRecipient && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px 12px',
+                      background: 'rgba(132, 244, 59, 0.08)',
+                      border: '1px solid rgba(132, 244, 59, 0.25)',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '0.74rem'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          background: 'var(--brand-green)',
+                          color: '#000',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.7rem'
+                        }}>
+                          {resolvedRecipient.name?.slice(0, 1).toUpperCase() || 'U'}
+                        </div>
+                        <div>
+                          <strong style={{ color: '#FFFFFF' }}>{resolvedRecipient.name}</strong>
+                          <span style={{ color: 'var(--brand-green)', marginLeft: '6px' }}>{resolvedRecipient.handle}</span>
+                        </div>
+                      </div>
+                      <span style={{ color: '#9CA3AF', fontSize: '0.68rem', fontFamily: 'var(--font-mono)' }}>
+                        {resolvedRecipient.address ? `${resolvedRecipient.address.slice(0, 6)}...${resolvedRecipient.address.slice(-4)}` : 'Verified User'}
+                      </span>
+                    </div>
+                  )}
+                  {transferError && (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', color: '#FCA5A5', fontSize: '0.74rem' }}>
+                      {transferError}
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: '#9CA3AF', marginBottom: '6px' }}>
-                    Message (Optional)
+                    Note or Message (Optional)
                   </label>
                   <input
                     type="text"
                     value={transferMessage}
                     onChange={(e) => setTransferMessage(e.target.value)}
+                    placeholder="e.g. Gift for birthday / verified purchase"
                     style={{
                       width: '100%',
                       padding: '10px 14px',
@@ -3564,7 +4090,8 @@ export default function ProfilePage({
                       borderRadius: '10px',
                       color: '#FFFFFF',
                       fontSize: '0.88rem',
-                      outline: 'none'
+                      outline: 'none',
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -3577,7 +4104,7 @@ export default function ProfilePage({
                   fontSize: '0.76rem',
                   color: 'var(--brand-green)'
                 }}>
-                  Gas sponsored by Hual. No network transaction fee.
+                  The new owner will receive this request and will accept it in their own Living Passports dashboard.
                 </div>
 
                 <button
@@ -3585,7 +4112,7 @@ export default function ProfilePage({
                   className="btn-pill-primary"
                   style={{ width: '100%', padding: '12px', fontWeight: 800, marginTop: '8px' }}
                 >
-                  Send Transfer Request
+                  Send Ownership Transfer
                 </button>
               </form>
             )}
@@ -5277,6 +5804,45 @@ export default function ProfilePage({
           setSendRecipient(scanned);
         }}
       />
+
+      {/* ================= FLOATING TRANSFER NOTIFICATION TOAST ================= */}
+      {transferToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 9999,
+          padding: '14px 20px',
+          background: '#0D1616',
+          border: '1px solid var(--brand-green-border)',
+          borderRadius: '16px',
+          boxShadow: '0 12px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(132, 244, 59, 0.2)',
+          color: '#FFFFFF',
+          fontSize: '0.85rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          animation: 'slideUp 0.3s ease-out'
+        }}>
+          <CheckCircle2 size={18} color="var(--brand-green)" style={{ flexShrink: 0 }} />
+          <span style={{ fontWeight: 600 }}>{transferToast}</span>
+          <button
+            onClick={() => setTransferToast(null)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#9CA3AF',
+              cursor: 'pointer',
+              padding: '2px',
+              marginLeft: '8px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
     </div>
   );
