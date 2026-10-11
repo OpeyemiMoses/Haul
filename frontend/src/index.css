@@ -950,5 +950,49 @@ body {
   border-color: rgba(0, 0, 0, 0.09) !important;
 }
 
+/* ========================================================
+   STORE DIRECTORY & INBOX LIQUID-GLASS ANIMATIONS
+   ======================================================== */
+@keyframes chatBubbleSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.chat-bubble-in {
+  animation: chatBubbleSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes tabFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tab-fade-in {
+  animation: tabFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.store-card-animated {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease !important;
+}
+
+.store-card-animated:hover {
+  transform: translateY(-5px) scale(1.012) !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 24px rgba(132, 244, 59, 0.22) !important;
+  border-color: rgba(132, 244, 59, 0.5) !important;
+}
+
+
 
 

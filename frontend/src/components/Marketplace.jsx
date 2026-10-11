@@ -48,6 +48,7 @@ import CommerceChatModal from './CommerceChatModal';
 import ModalPortal from './ModalPortal';
 import useScrollReveal from '../lib/useScrollReveal';
 import ProductDetailPage from './ProductDetailPage';
+import ProductReceiptModal from './ProductReceiptModal';
 
 export default function Marketplace({ 
   products = [], 

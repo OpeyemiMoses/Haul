@@ -485,21 +485,66 @@ export default function ProductDetailPage({
             </div>
           )}
 
-          {/* Fulfillment Readiness Box */}
+          {/* Color & Variant Info (if provided) */}
+          {(product.color || (product.colors && product.colors.length > 0)) && (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '8px' }}>
+                Color / Finish:
+              </label>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '8px', background: '#162424', border: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--brand-green)' }} />
+                <span>{product.color || (Array.isArray(product.colors) ? product.colors.join(', ') : product.colors)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Storage / Hardware Config (if applicable) */}
+          {product.storage && (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '8px' }}>
+                Configuration / Storage:
+              </label>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '8px', background: '#162424', border: '1px solid var(--brand-green-border)', fontSize: '0.82rem', fontWeight: 700, color: 'var(--brand-green)' }}>
+                <span>{product.storage}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Fulfillment Readiness & Units Left (Stock Countdown) */}
           <div style={{
-            padding: '12px 16px',
-            borderRadius: '12px',
+            padding: '14px 18px',
+            borderRadius: '14px',
             background: 'rgba(255, 255, 255, 0.02)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
+            gap: '8px',
             fontSize: '0.76rem'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--brand-green)', fontWeight: 700 }}>
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--brand-green)' }} />
-              <span>In Stock & Ready for In-Store Pickup or Courier</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--brand-green)', fontWeight: 700 }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--brand-green)' }} />
+                <span>Ready for In-Store Pickup or Express Courier</span>
+              </div>
+
+              {/* Units Left Live Indicator */}
+              {product.stock != null && (
+                <div style={{
+                  padding: '3px 10px',
+                  borderRadius: '999px',
+                  background: parseInt(product.stock, 10) <= 3 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(132, 244, 59, 0.12)',
+                  border: `1px solid ${parseInt(product.stock, 10) <= 3 ? 'rgba(245, 158, 11, 0.4)' : 'rgba(132, 244, 59, 0.3)'}`,
+                  color: parseInt(product.stock, 10) <= 3 ? '#FBBF24' : 'var(--brand-green)',
+                  fontWeight: 800,
+                  fontSize: '0.72rem'
+                }}>
+                  {parseInt(product.stock, 10) <= 3 
+                    ? `Only ${product.stock} unit${parseInt(product.stock, 10) === 1 ? '' : 's'} left - order soon` 
+                    : `${product.stock} units in stock`}
+                </div>
+              )}
             </div>
+
             <div style={{ color: '#9CA3AF' }}>
               Physical pickup desk: {product.merchantLocation || 'Victoria Island, Lagos'} (Available 9:00 AM - 7:00 PM)
             </div>
@@ -599,14 +644,40 @@ export default function ProductDetailPage({
         </p>
 
         {/* Specifications grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
           <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-            <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Retailer</span>
-            <strong style={{ fontSize: '0.84rem', color: '#FFFFFF' }}>{product.merchant || 'Flagship Store'}</strong>
+            <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Category</span>
+            <strong style={{ fontSize: '0.84rem', color: '#FFFFFF' }}>{product.category || 'Retail Goods'}</strong>
           </div>
           <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
             <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Condition</span>
-            <strong style={{ fontSize: '0.84rem', color: '#FFFFFF' }}>Brand New / Sealed in Box</strong>
+            <strong style={{ fontSize: '0.84rem', color: '#FFFFFF' }}>{product.condition || 'Brand New / Sealed'}</strong>
+          </div>
+          {product.stock != null && (
+            <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+              <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Units Available</span>
+              <strong style={{ fontSize: '0.84rem', color: parseInt(product.stock, 10) <= 3 ? '#FBBF24' : 'var(--brand-green)' }}>
+                {product.stock} Left in Stock
+              </strong>
+            </div>
+          )}
+          {(product.color || product.colors) && (
+            <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+              <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Color / Finish</span>
+              <strong style={{ fontSize: '0.84rem', color: '#FFFFFF' }}>
+                {product.color || (Array.isArray(product.colors) ? product.colors.join(', ') : product.colors)}
+              </strong>
+            </div>
+          )}
+          {product.storage && (
+            <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+              <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Configuration</span>
+              <strong style={{ fontSize: '0.84rem', color: '#FFFFFF' }}>{product.storage}</strong>
+            </div>
+          )}
+          <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+            <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Warranty</span>
+            <strong style={{ fontSize: '0.84rem', color: '#FFFFFF' }}>{product.warrantyMonths ? `${product.warrantyMonths} Months Active` : '12 Months Active'}</strong>
           </div>
           <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
             <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Packaging</span>

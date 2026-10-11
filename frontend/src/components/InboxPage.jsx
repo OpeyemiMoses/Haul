@@ -27,6 +27,7 @@ import {
   sendMerchantReply, 
   markConversationRead 
 } from '../lib/messageRegistry';
+import useScrollReveal from '../lib/useScrollReveal';
 
 export default function InboxPage({ 
   onOpenStore,
@@ -169,11 +170,16 @@ export default function InboxPage({
   const totalStoreUnread = storeConvs.reduce((acc, c) => acc + (c.unreadForStore || 0), 0);
   const totalBuyerUnread = buyerConvs.reduce((acc, c) => acc + (c.unreadForBuyer || 0), 0);
 
+  // Scroll reveal and entrance micro-animations
+  useScrollReveal([activeFolder, selectedConvId, conversationsPool.length]);
+
   return (
     <div className="page-fade-in" style={{ maxWidth: '1440px', margin: '0 auto', padding: '0 0 60px' }}>
       
       {/* Header Banner */}
-      <div style={{
+      <div 
+        className="apple-liquid-glass reveal-pop"
+        style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -239,7 +245,9 @@ export default function InboxPage({
       }}>
         
         {/* Left Column: Folder Switcher + Conversation List */}
-        <div style={{
+        <div 
+          className="reveal-on-scroll"
+          style={{
           background: '#0D1616',
           borderRadius: '20px',
           border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -367,7 +375,7 @@ export default function InboxPage({
           </div>
 
           {/* Conversation List */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+          <div className="stagger-group tab-fade-in" style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
             {filteredConversations.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 16px', color: '#6B7280', fontSize: '0.8rem' }}>
                 <Inbox size={32} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
@@ -475,7 +483,9 @@ export default function InboxPage({
 
         {/* Right Column: Active Conversation Feed */}
         {selectedConv ? (
-          <div style={{
+          <div 
+            className="card-reveal-right"
+            style={{
             background: '#0D1616',
             borderRadius: '20px',
             border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -612,6 +622,7 @@ export default function InboxPage({
                 return (
                   <div
                     key={msg.id}
+                    className="chat-bubble-in"
                     style={{
                       display: 'flex',
                       flexDirection: 'column',

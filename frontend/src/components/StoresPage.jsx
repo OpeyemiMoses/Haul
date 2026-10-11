@@ -20,6 +20,7 @@ import {
 import { VERIFIED_MERCHANTS } from '../lib/catalogData';
 import { useAuth } from '../lib/auth/AuthContext';
 import { calculateProximity } from '../lib/formatters';
+import useScrollReveal from '../lib/useScrollReveal';
 
 export default function StoresPage({
   products = [],
@@ -139,12 +140,15 @@ export default function StoresPage({
     });
   }, [verifiedStores, searchQuery, selectedCategory]);
 
+  // High-performance scroll reveal and micro-animations
+  useScrollReveal([filteredVerifiedStores.length, selectedCategory, searchQuery]);
+
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto', width: '100%', padding: '0 0 80px' }}>
       
       {/* Hero Header */}
       <div 
-        className="apple-liquid-glass" 
+        className="apple-liquid-glass reveal-pop" 
         style={{
           padding: '36px 32px',
           borderRadius: '26px',
@@ -332,7 +336,9 @@ export default function StoresPage({
       )}
 
       {/* Search and Category Filters Bar */}
-      <div style={{
+      <div 
+        className="reveal-on-scroll"
+        style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -398,7 +404,10 @@ export default function StoresPage({
       </div>
 
       {/* Directory Count Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+      <div 
+        className="reveal-on-scroll"
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}
+      >
         <div>
           <h2 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 2px', color: '#FFFFFF' }}>
             Verified Flagship Stores
@@ -411,7 +420,9 @@ export default function StoresPage({
 
       {/* Empty State */}
       {filteredVerifiedStores.length === 0 ? (
-        <div style={{
+        <div 
+          className="reveal-pop"
+          style={{
           textAlign: 'center',
           padding: '60px 24px',
           background: '#0D1616',
@@ -446,19 +457,21 @@ export default function StoresPage({
         </div>
       ) : (
         /* Verified Stores Cards Grid */
-        <div style={{
+        <div 
+          className="stagger-group"
+          style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
           gap: '22px'
         }}>
-          {filteredVerifiedStores.map((store) => {
+          {filteredVerifiedStores.map((store, idx) => {
             const prox = calculateProximity(buyerLocation, store.location);
             const isFollowed = followedStores.includes(store.id);
 
             return (
               <div
                 key={store.id}
-                className="liquid-glass-card"
+                className={`liquid-glass-card store-card-animated ${idx % 2 === 0 ? 'card-reveal-left' : 'card-reveal-right'}`}
                 onClick={() => onSelectStore && onSelectStore(store)}
                 style={{
                   borderRadius: '22px',
@@ -467,7 +480,6 @@ export default function StoresPage({
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   display: 'flex',
                   flexDirection: 'column',
-                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
                   position: 'relative'
                 }}
                 onMouseEnter={(e) => {

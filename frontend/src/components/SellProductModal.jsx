@@ -14,83 +14,151 @@ import {
   Truck, 
   ExternalLink,
   Trash2,
-  Camera
+  Camera,
+  Tag,
+  Check,
+  Plus
 } from 'lucide-react';
 import { listProductOnchain } from '../lib/web3';
 import { useAuth } from '../lib/auth/AuthContext';
 import ModalPortal from './ModalPortal';
 
-const PRESET_IMAGES = [
+// Preset high-res demo items across distinct categories
+const PRESET_ITEMS = [
   {
-    title: 'iPhone 15 Pro',
-    category: 'Phones & Tablets',
+    title: 'Nike Air Max 95 OG Neon',
+    category: 'Shoes & Footwear',
+    brand: 'Nike',
+    url: '/assets/air_max_95.jpg',
+    price: '185',
+    stock: '6',
+    warranty: '12',
+    sizes: ['EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU 44', 'EU 45'],
+    color: 'Black / Neon Yellow / Cool Grey',
+    condition: 'Brand New In Box (Deadstock)',
+    description: 'Iconic Sergio Lozano design featuring human anatomy inspired gradient panels and dual visible Air cushioning pods. Verified authentic with Monad Product Passport.'
+  },
+  {
+    title: 'Essentials Fear of God Heavyweight Hoodie',
+    category: 'Clothing & Apparel',
+    brand: 'Fear of God',
+    url: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&q=80',
+    price: '135',
+    stock: '8',
+    warranty: '6',
+    sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+    color: 'Washed Vintage Black',
+    condition: 'Brand New with Tags',
+    description: 'Custom 480 GSM fleece with dropped shoulders, oversized boxy silhouette, rubberized back logo patch, and ribbed hem. Certified authentic luxury streetwear.'
+  },
+  {
+    title: 'Apple iPhone 15 Pro Max 256GB',
+    category: 'Phones & Mobile Devices',
     brand: 'Apple',
     url: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=800&q=80',
     price: '1199',
-    warranty: '12'
+    stock: '4',
+    warranty: '24',
+    storage: '256GB',
+    color: 'Natural Titanium',
+    condition: 'Brand New Factory Sealed',
+    description: 'Grade 5 aerospace titanium design with A17 Pro chip, Action button, and 5x optical telephoto lens. Includes 24-month manufacturer and retailer warranty.'
   },
   {
-    title: 'MacBook Pro M3 Max',
+    title: 'MacBook Pro 16-inch M3 Max',
     category: 'Computing & Hardware',
     brand: 'Apple',
     url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&q=80',
-    price: '2499',
-    warranty: '24'
+    price: '3499',
+    stock: '3',
+    warranty: '24',
+    storage: '1TB SSD',
+    color: 'Space Black',
+    condition: 'Brand New Factory Sealed',
+    description: '16-core CPU, 40-core GPU, 48GB unified memory, Liquid Retina XDR display with ProMotion. Official flagship stock with Monad escrow protection.'
   },
   {
-    title: 'Sony WH-1000XM5',
-    category: 'Audio & Acoustics',
-    brand: 'Sony',
-    url: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&q=80',
-    price: '349',
-    warranty: '12'
-  },
-  {
-    title: 'Rolex Submariner Date',
-    category: 'Luxury Timepieces',
+    title: 'Rolex Submariner Date 41mm',
+    category: 'Watches & Luxury Timepieces',
     brand: 'Rolex',
     url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800&q=80',
-    price: '10500',
-    warranty: '60'
+    price: '14200',
+    stock: '1',
+    warranty: '60',
+    color: 'Black Sunburst / Cerachrom',
+    condition: 'Unworn Full Set (2025 Card)',
+    description: 'Oystersteel reference with Calibre 3235 automatic movement, unidirectional rotating bezel, and Chromalight display. Complete box, papers, and NFC tag.'
   },
   {
-    title: 'Leica Q3 Camera',
-    category: 'Cameras & Optics',
-    brand: 'Leica',
-    url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&q=80',
-    price: '5995',
-    warranty: '24'
+    title: 'Sony WH-1000XM5 Wireless Headphones',
+    category: 'Audio & Electronics',
+    brand: 'Sony',
+    url: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=800&q=80',
+    price: '399',
+    stock: '5',
+    warranty: '12',
+    color: 'Silver Platinum',
+    condition: 'Brand New Sealed',
+    description: 'Industry-leading noise cancellation with two processors and 8 microphones, LDAC Hi-Res audio, and 30-hour battery life.'
   }
 ];
 
 const CATEGORIES = [
-  'Phones & Tablets',
-  'Audio & Acoustics',
-  'Cameras & Optics',
-  'Luxury Timepieces',
+  'Shoes & Footwear',
+  'Clothing & Apparel',
+  'Phones & Mobile Devices',
   'Computing & Hardware',
-  'Designer Goods'
+  'Watches & Luxury Timepieces',
+  'Audio & Electronics',
+  'Bags & Luxury Accessories',
+  'General Merchandise / Other'
 ];
+
+// Category size templates
+const FOOTWEAR_SIZES = ['EU 38', 'EU 39', 'EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU 44', 'EU 45', 'EU 46', 'EU 47'];
+const APPAREL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'One Size'];
+const PHONE_STORAGES = ['64GB', '128GB', '256GB', '512GB', '1TB'];
+const COMPUTER_CONFIGS = ['16GB / 512GB', '18GB / 512GB', '36GB / 1TB', '64GB / 2TB', '128GB / 4TB'];
+const WATCH_SIZES = ['36mm', '39mm', '40mm', '41mm', '42mm', '44mm'];
 
 export default function SellProductModal({ isOpen, onClose, onProductListed, onOpenCreateStore }) {
   const { user, userRole, userStore } = useAuth();
   
+  // Basic Info
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
-  const [category, setCategory] = useState('Phones & Tablets');
+  const [category, setCategory] = useState('Shoes & Footwear');
   const [customCategory, setCustomCategory] = useState('');
   const [customCategoryMode, setCustomCategoryMode] = useState(false);
-  const [priceUsd, setPriceUsd] = useState('450');
+  const [priceUsd, setPriceUsd] = useState('185');
   const [stock, setStock] = useState('5');
   const [warrantyMonths, setWarrantyMonths] = useState('12');
+  const [description, setDescription] = useState('');
+  
+  // Category-Specific Dynamic Options
+  const [selectedSizes, setSelectedSizes] = useState(['EU 41', 'EU 42', 'EU 43', 'EU 44']);
+  const [customSizeInput, setCustomSizeInput] = useState('');
+  const [color, setColor] = useState('');
+  const [condition, setCondition] = useState('Brand New In Box');
+  const [storage, setStorage] = useState('256GB');
+  const [material, setMaterial] = useState('');
+  const [fit, setFit] = useState('Regular Fit');
+  const [caseDiameter, setCaseDiameter] = useState('41mm');
+  const [movement, setMovement] = useState('Automatic');
+  const [processor, setProcessor] = useState('');
+  const [boxAndPapers, setBoxAndPapers] = useState('Full Set (Box & Papers)');
+
+  // Media
   const [imageUri, setImageUri] = useState('');
   const [imageFileName, setImageFileName] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
-  const [description, setDescription] = useState('');
+
+  // Fulfillment
   const [allowsPickup, setAllowsPickup] = useState(true);
   const [allowsDelivery, setAllowsDelivery] = useState(true);
 
+  // Status
   const [loading, setLoading] = useState(false);
   const [successTx, setSuccessTx] = useState(null);
   const [error, setError] = useState(null);
@@ -99,6 +167,7 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
 
   const finalCategory = customCategoryMode && customCategory.trim() ? customCategory.trim() : category;
 
+  // Handle Preset Autofill
   const handleApplyPreset = (preset) => {
     setName(preset.title);
     setBrand(preset.brand);
@@ -106,8 +175,27 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
     setImageUri(preset.url);
     setImageFileName(`${preset.title}.jpg`);
     setPriceUsd(preset.price);
+    setStock(preset.stock || '5');
     setWarrantyMonths(preset.warranty);
-    setDescription(`Official ${preset.brand} ${preset.title}. Verified authenticity with factory warranty.`);
+    setDescription(preset.description);
+    if (preset.sizes) setSelectedSizes(preset.sizes);
+    if (preset.color) setColor(preset.color);
+    if (preset.condition) setCondition(preset.condition);
+    if (preset.storage) setStorage(preset.storage);
+  };
+
+  // Toggle size chips
+  const toggleSize = (sz) => {
+    setSelectedSizes(prev => 
+      prev.includes(sz) ? prev.filter(s => s !== sz) : [...prev, sz]
+    );
+  };
+
+  const handleAddCustomSize = () => {
+    if (customSizeInput.trim() && !selectedSizes.includes(customSizeInput.trim())) {
+      setSelectedSizes(prev => [...prev, customSizeInput.trim()]);
+      setCustomSizeInput('');
+    }
   };
 
   const processImageFile = (file) => {
@@ -131,42 +219,26 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      processImageFile(file);
-    }
+    if (file) processImageFile(file);
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file) {
-      processImageFile(file);
-    }
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
+    if (file) processImageFile(file);
   };
 
   const handleRemoveImage = () => {
     setImageUri('');
     setImageFileName('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !brand.trim() || !priceUsd) {
-      setError('Please fill in all required product details');
+      setError('Please fill in product name, brand, and price');
       return;
     }
 
@@ -181,7 +253,7 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
           name: name.trim(),
           brand: brand.trim(),
           category: finalCategory,
-          imageUri: imageUri.trim() || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800&q=80',
+          imageUri: imageUri.trim() || '/assets/air_max_95.jpg',
           description: description.trim() || `Authentic ${brand} ${name} backed by living onchain Product Passport.`,
           priceUsd: parseFloat(priceUsd),
           warrantyMonths: parseInt(warrantyMonths, 10) || 12,
@@ -193,13 +265,31 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
         console.warn('Listing local fallback used:', onchainErr);
       }
 
+      // Format applicable sizes and options based on category
+      const isFootwear = finalCategory === 'Shoes & Footwear';
+      const isApparel = finalCategory === 'Clothing & Apparel';
+      const hasSizes = (isFootwear || isApparel) && selectedSizes.length > 0;
+
       const newProduct = {
         id: Date.now(),
         productId: Date.now(),
         name: name.trim(),
         brand: brand.trim(),
         category: finalCategory,
-        imageUri: imageUri.trim() || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800&q=80',
+        sizes: hasSizes ? selectedSizes : null,
+        color: color.trim() || null,
+        condition: condition.trim() || 'Brand New',
+        storage: finalCategory.includes('Phone') || finalCategory.includes('Computing') ? storage : null,
+        specs: {
+          material: material.trim() || null,
+          fit: fit.trim() || null,
+          caseDiameter: finalCategory.includes('Watch') ? caseDiameter : null,
+          movement: finalCategory.includes('Watch') ? movement : null,
+          boxAndPapers: finalCategory.includes('Watch') ? boxAndPapers : null,
+          processor: processor.trim() || null
+        },
+        imageUri: imageUri.trim() || '/assets/air_max_95.jpg',
+        images: [imageUri.trim() || '/assets/air_max_95.jpg'],
         description: description.trim() || `Authentic ${brand} ${name} backed by living onchain Product Passport.`,
         priceUsd: parseFloat(priceUsd),
         priceUsdCents: Math.round(parseFloat(priceUsd) * 100),
@@ -244,21 +334,21 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
         className="custom-scrollbar"
         onClick={(e) => e.stopPropagation()}
         style={{ 
-          maxWidth: '680px', 
+          maxWidth: '720px', 
           width: '100%',
-          maxHeight: 'calc(100vh - 48px)',
+          maxHeight: 'calc(100vh - 40px)',
           overflowY: 'auto',
           borderRadius: '24px',
           background: '#0D1616',
           border: '1px solid rgba(132, 244, 59, 0.3)',
-          boxShadow: '0 25px 70px rgba(0, 0, 0, 0.8), 0 0 30px rgba(132, 244, 59, 0.15)',
+          boxShadow: '0 25px 70px rgba(0, 0, 0, 0.85), 0 0 30px rgba(132, 244, 59, 0.15)',
           margin: '0 auto'
         }}
       >
         {/* Header */}
         <div style={{
           background: '#121C1C',
-          padding: '24px',
+          padding: '24px 28px',
           borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
           position: 'relative',
           borderTopLeftRadius: '24px',
@@ -297,26 +387,26 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
               justifyContent: 'center',
               color: 'var(--brand-green)'
             }}>
-              <Store size={22} />
+              <Package size={22} />
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>List Product for Sale</h2>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>List Any Item for Sale</h2>
                 <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: 'var(--brand-green-dim)', color: 'var(--brand-green)', border: '1px solid var(--brand-green-border)' }}>
-                  Live Catalog
+                  Onchain Catalog
                 </span>
               </div>
-              <p style={{ fontSize: '0.82rem', color: '#9CA3AF', marginTop: '2px' }}>
-                List verified physical goods. Every buyer receives an authentic Product Passport.
+              <p style={{ fontSize: '0.82rem', color: '#9CA3AF', marginTop: '3px' }}>
+                Pick a category to customize options (sizes, color, stock left, condition) for this item.
               </p>
             </div>
           </div>
         </div>
 
         {/* Content */}
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '24px 28px' }}>
           {userRole !== 'merchant' && !userStore ? (
-            <div style={{ textAlign: 'center', padding: '32px 16px' }}>
+            <div style={{ textAlign: 'center', padding: '36px 16px' }}>
               <div style={{
                 width: '56px',
                 height: '56px',
@@ -332,10 +422,10 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                 <Store size={26} />
               </div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
-                Create a Store to Sell Items
+                Create a Store to List Items
               </h3>
-              <p style={{ fontSize: '0.84rem', color: '#9CA3AF', maxWidth: '420px', margin: '0 auto 24px', lineHeight: 1.5 }}>
-                To list items on Hual, you must first create your verified merchant store. That is where all your listed products, digital Product Passports, and customer reviews will stay.
+              <p style={{ fontSize: '0.84rem', color: '#9CA3AF', maxWidth: '440px', margin: '0 auto 24px', lineHeight: 1.5 }}>
+                To sell items on Haul, create your store first. Once you list at least 1 item, your store gains the official <strong>Verified Store Pass</strong>!
               </p>
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                 <button onClick={onClose} className="btn-pill-secondary btn-pill-sm">
@@ -354,7 +444,7 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
               </div>
             </div>
           ) : successTx ? (
-            <div style={{ textAlign: 'center', padding: '30px 10px' }}>
+            <div style={{ textAlign: 'center', padding: '32px 10px' }}>
               <div style={{
                 width: '64px',
                 height: '64px',
@@ -372,8 +462,8 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
               <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
                 Product Listed Successfully!
               </h3>
-              <p style={{ fontSize: '0.88rem', color: '#9CA3AF', marginBottom: '20px', maxWidth: '440px', margin: '0 auto 20px' }}>
-                Your product has been published directly to your store on the Hual catalog. Customers can now browse and purchase it with full buyer protection.
+              <p style={{ fontSize: '0.88rem', color: '#9CA3AF', marginBottom: '24px', maxWidth: '460px', margin: '0 auto 24px' }}>
+                Your item has been published to your storefront and the marketplace. Shoppers can view sizes, condition, and full specifications.
               </p>
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
@@ -405,28 +495,32 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              {/* Quick Presets for Demo */}
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* Presets Bar */}
               <div>
                 <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>
                   Auto-Fill Presets (Click to autofill)
                 </div>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {PRESET_IMAGES.map((preset) => (
+                  {PRESET_ITEMS.map((preset) => (
                     <button
                       key={preset.title}
                       type="button"
                       onClick={() => handleApplyPreset(preset)}
                       style={{
-                        padding: '4px 10px',
+                        padding: '5px 12px',
                         borderRadius: '999px',
                         background: '#162424',
                         border: '1px solid rgba(255, 255, 255, 0.1)',
                         fontSize: '0.74rem',
                         fontWeight: 600,
                         color: '#D1D5DB',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease'
                       }}
+                      onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--brand-green)'}
+                      onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
                     >
                       {preset.title}
                     </button>
@@ -434,7 +528,87 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                 </div>
               </div>
 
-              {/* Form Grid */}
+              {/* STEP 1: ITEM CATEGORY PICKER */}
+              <div style={{
+                padding: '16px 18px',
+                borderRadius: '16px',
+                background: '#080F0F',
+                border: '1px solid rgba(132, 244, 59, 0.2)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 800, color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    1. Item Category *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setCustomCategoryMode(!customCategoryMode)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--brand-green)',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    {customCategoryMode ? 'Select from list' : '+ Custom Category'}
+                  </button>
+                </div>
+
+                {customCategoryMode ? (
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Vintage Streetwear, Collectibles, Gaming Hardware..."
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '11px 14px',
+                      background: '#121C1C',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: '10px',
+                      fontSize: '0.88rem',
+                      color: '#FFFFFF',
+                      outline: 'none'
+                    }}
+                  />
+                ) : (
+                  <select
+                    value={category}
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      setCategory(newCat);
+                      if (newCat === 'Shoes & Footwear') {
+                        setSelectedSizes(['EU 40', 'EU 41', 'EU 42', 'EU 43', 'EU 44']);
+                      } else if (newCat === 'Clothing & Apparel') {
+                        setSelectedSizes(['S', 'M', 'L', 'XL']);
+                      } else {
+                        setSelectedSizes([]);
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '11px 14px',
+                      background: '#121C1C',
+                      border: '1px solid var(--brand-green)',
+                      borderRadius: '10px',
+                      fontSize: '0.88rem',
+                      fontWeight: 700,
+                      color: '#FFFFFF',
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* STEP 2: CORE DETAILS (NAME, BRAND, PRICE, STOCK LEFT) */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
                 {/* Product Name */}
                 <div style={{ gridColumn: 'span 2' }}>
@@ -444,12 +618,12 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Apple iPhone 15 Pro Max 256GB Titanium"
+                    placeholder="e.g. Nike Dunk Low Retro 'Panda' or Apple iPhone 15 Pro"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '10px 14px',
+                      padding: '11px 14px',
                       background: '#080F0F',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: '10px',
@@ -460,7 +634,7 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                   />
                 </div>
 
-                {/* Brand */}
+                {/* Brand / Designer */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
                     Brand / Manufacturer *
@@ -468,12 +642,12 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Apple, Sony, Leica"
+                    placeholder="e.g. Nike, Apple, Fear of God, Sony"
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '10px 14px',
+                      padding: '11px 14px',
                       background: '#080F0F',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: '10px',
@@ -484,68 +658,39 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                   />
                 </div>
 
-                {/* Category with Custom Support */}
+                {/* Units Left / Stock ("how many its left") */}
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                     <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF' }}>
-                      Retail Category *
+                      Units Left (Stock) *
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => setCustomCategoryMode(!customCategoryMode)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--brand-green)',
-                        fontSize: '0.68rem',
-                        cursor: 'pointer',
-                        textDecoration: 'underline'
-                      }}
-                    >
-                      {customCategoryMode ? 'Select preset' : 'Custom'}
-                    </button>
+                    <span style={{ fontSize: '0.68rem', color: parseInt(stock, 10) <= 3 ? '#F59E0B' : 'var(--brand-green)', fontWeight: 700 }}>
+                      {parseInt(stock, 10) <= 3 ? 'Low Stock Warning' : `${stock} Units Available`}
+                    </span>
                   </div>
-                  {customCategoryMode ? (
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Vintage Watches, Streetwear..."
-                      value={customCategory}
-                      onChange={(e) => setCustomCategory(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        background: '#080F0F',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                        borderRadius: '10px',
-                        fontSize: '0.88rem',
-                        color: '#FFFFFF',
-                        outline: 'none'
-                      }}
-                    />
-                  ) : (
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        background: '#080F0F',
-                        border: '1px solid rgba(255, 255, 255, 0.15)',
-                        borderRadius: '10px',
-                        fontSize: '0.88rem',
-                        color: '#FFFFFF',
-                        outline: 'none'
-                      }}
-                    >
-                      {CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
-                    </select>
-                  )}
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    placeholder="e.g. 5"
+                    value={stock}
+                    onChange={(e) => setStock(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '11px 14px',
+                      background: '#080F0F',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      borderRadius: '10px',
+                      fontSize: '0.88rem',
+                      fontWeight: 700,
+                      fontFamily: 'var(--font-mono)',
+                      color: '#FFFFFF',
+                      outline: 'none'
+                    }}
+                  />
                 </div>
 
-                {/* Price in USD */}
+                {/* Price USD */}
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
                     Price in USD ($) *
@@ -556,18 +701,18 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                       step="0.01"
                       min="1"
                       required
-                      placeholder="e.g. 450"
+                      placeholder="e.g. 185"
                       value={priceUsd}
                       onChange={(e) => setPriceUsd(e.target.value)}
                       style={{
                         width: '100%',
-                        padding: '10px 14px 10px 28px',
+                        padding: '11px 14px 11px 28px',
                         background: '#080F0F',
                         border: '1px solid rgba(255, 255, 255, 0.15)',
                         borderRadius: '10px',
                         fontSize: '0.88rem',
                         fontWeight: 700,
-                        color: '#FFFFFF',
+                        color: 'var(--brand-green)',
                         fontFamily: 'var(--font-mono)',
                         outline: 'none'
                       }}
@@ -576,31 +721,6 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                       $
                     </span>
                   </div>
-                </div>
-
-                {/* Stock Quantity */}
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
-                    Stock Quantity *
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    placeholder="e.g. 5"
-                    value={stock}
-                    onChange={(e) => setStock(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      background: '#080F0F',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      borderRadius: '10px',
-                      fontSize: '0.88rem',
-                      color: '#FFFFFF',
-                      outline: 'none'
-                    }}
-                  />
                 </div>
 
                 {/* Warranty Months */}
@@ -616,7 +736,7 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                     onChange={(e) => setWarrantyMonths(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '10px 14px',
+                      padding: '11px 14px',
                       background: '#080F0F',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       borderRadius: '10px',
@@ -626,200 +746,565 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                     }}
                   />
                 </div>
+              </div>
 
-                {/* Image Upload Zone (Primary: Local File / Drag & Drop) */}
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
-                    Product Photo / Media *
-                  </label>
-                  
-                  {/* Hidden File Input */}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    style={{ display: 'none' }}
-                  />
+              {/* STEP 3: DYNAMIC CATEGORY-SPECIFIC OPTIONS */}
+              <div style={{
+                padding: '18px',
+                borderRadius: '16px',
+                background: '#0A1212',
+                border: '1px solid rgba(255, 255, 255, 0.08)'
+              }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--brand-green)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Tag size={14} />
+                  <span>Applicable Options for {finalCategory}</span>
+                </div>
 
-                  {imageUri ? (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '16px',
-                      padding: '12px 16px',
-                      background: '#080F0F',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px'
-                    }}>
-                      <div style={{
-                        width: '72px',
-                        height: '72px',
-                        borderRadius: '8px',
-                        overflow: 'hidden',
-                        background: '#121C1C',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        flexShrink: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        <img 
-                          src={imageUri} 
-                          alt="Product preview" 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                {/* A: FOOTWEAR OPTIONS */}
+                {finalCategory === 'Shoes & Footwear' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '8px' }}>
+                        Shoe Sizes in Stock (Click to toggle sizes):
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                        {FOOTWEAR_SIZES.map(sz => {
+                          const active = selectedSizes.includes(sz);
+                          return (
+                            <button
+                              key={sz}
+                              type="button"
+                              onClick={() => toggleSize(sz)}
+                              style={{
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                background: active ? 'var(--brand-green)' : '#162424',
+                                color: active ? '#080F0F' : '#FFFFFF',
+                                border: active ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {sz}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Custom Size Adder */}
+                      <div style={{ display: 'flex', gap: '8px', maxWidth: '300px' }}>
+                        <input
+                          type="text"
+                          placeholder="Add custom size (e.g. US 10.5)"
+                          value={customSizeInput}
+                          onChange={(e) => setCustomSizeInput(e.target.value)}
+                          style={{
+                            flex: 1,
+                            padding: '6px 12px',
+                            background: '#080F0F',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '8px',
+                            fontSize: '0.78rem',
+                            color: '#FFFFFF'
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddCustomSize}
+                          className="btn-pill-secondary btn-pill-sm"
+                          style={{ padding: '6px 12px' }}
+                        >
+                          <Plus size={12} /> Add
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                          Colorway / Color
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Triple Black, White/Gym Red"
+                          value={color}
+                          onChange={(e) => setColor(e.target.value)}
+                          style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
                         />
                       </div>
-
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                          <CheckCircle2 size={14} color="var(--brand-green)" />
-                          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>
-                            Image Attached
-                          </span>
-                        </div>
-                        <div style={{
-                          fontSize: '0.74rem',
-                          color: '#9CA3AF',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}>
-                          {imageFileName || 'Selected product image'}
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '999px',
-                            background: '#162424',
-                            border: '1px solid rgba(255, 255, 255, 0.15)',
-                            fontSize: '0.74rem',
-                            fontWeight: 600,
-                            color: '#FFFFFF',
-                            cursor: 'pointer'
-                          }}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                          Shoe Condition
+                        </label>
+                        <select
+                          value={condition}
+                          onChange={(e) => setCondition(e.target.value)}
+                          style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
                         >
-                          Change Photo
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleRemoveImage}
-                          style={{
-                            padding: '6px 10px',
-                            borderRadius: '999px',
-                            background: 'rgba(239, 68, 68, 0.15)',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                            fontSize: '0.74rem',
-                            fontWeight: 600,
-                            color: '#EF4444',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px'
-                          }}
-                        >
-                          <Trash2 size={12} /> Remove
-                        </button>
+                          <option value="Brand New In Box (Deadstock)">Brand New In Box (Deadstock)</option>
+                          <option value="Brand New (No Box)">Brand New (No Box)</option>
+                          <option value="VNDS / Like New (Authenticated)">VNDS / Like New (Authenticated)</option>
+                        </select>
                       </div>
                     </div>
-                  ) : (
-                    <div
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        border: isDragging ? '2px dashed var(--brand-green)' : '2px dashed rgba(132, 244, 59, 0.35)',
-                        background: isDragging ? 'rgba(132, 244, 59, 0.08)' : '#080F0F',
-                        borderRadius: '12px',
-                        padding: '24px 20px',
-                        textAlign: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--brand-green)';
-                        e.currentTarget.style.background = '#121C1C';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = isDragging ? 'var(--brand-green)' : 'rgba(132, 244, 59, 0.35)';
-                        e.currentTarget.style.background = isDragging ? 'rgba(132, 244, 59, 0.08)' : '#080F0F';
-                      }}
-                    >
+                  </div>
+                )}
+
+                {/* B: CLOTHING & APPAREL OPTIONS */}
+                {finalCategory === 'Clothing & Apparel' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '8px' }}>
+                        Available Clothing Sizes:
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                        {APPAREL_SIZES.map(sz => {
+                          const active = selectedSizes.includes(sz);
+                          return (
+                            <button
+                              key={sz}
+                              type="button"
+                              onClick={() => toggleSize(sz)}
+                              style={{
+                                padding: '6px 14px',
+                                borderRadius: '8px',
+                                background: active ? 'var(--brand-green)' : '#162424',
+                                color: active ? '#080F0F' : '#FFFFFF',
+                                border: active ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
+                                fontSize: '0.8rem',
+                                fontWeight: 800,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {sz}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                          Color / Shade
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Washed Black, Navy"
+                          value={color}
+                          onChange={(e) => setColor(e.target.value)}
+                          style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                          Fabric / Material
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. 100% Cotton, Fleece"
+                          value={material}
+                          onChange={(e) => setMaterial(e.target.value)}
+                          style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                          Fit / Cut
+                        </label>
+                        <select
+                          value={fit}
+                          onChange={(e) => setFit(e.target.value)}
+                          style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                        >
+                          <option value="Regular Fit">Regular Fit</option>
+                          <option value="Oversized Boxy Fit">Oversized Boxy Fit</option>
+                          <option value="Slim Tailored">Slim Tailored</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* C: PHONES & MOBILE DEVICES */}
+                {finalCategory === 'Phones & Mobile Devices' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        Storage Capacity
+                      </label>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {PHONE_STORAGES.map(st => (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() => setStorage(st)}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              background: storage === st ? 'var(--brand-green)' : '#162424',
+                              color: storage === st ? '#080F0F' : '#FFFFFF',
+                              border: 'none',
+                              fontSize: '0.76rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {st}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        Color / Finish
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Natural Titanium, Space Black"
+                        value={color}
+                        onChange={(e) => setColor(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        Device Condition
+                      </label>
+                      <select
+                        value={condition}
+                        onChange={(e) => setCondition(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                      >
+                        <option value="Brand New Factory Sealed">Brand New Factory Sealed</option>
+                        <option value="Open Box (100% Battery)">Open Box (100% Battery)</option>
+                        <option value="Refurbished Grade A">Refurbished Grade A</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        SIM / Network Status
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Factory Unlocked (Dual SIM / eSIM)"
+                        value={material}
+                        onChange={(e) => setMaterial(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* D: COMPUTING & HARDWARE */}
+                {finalCategory === 'Computing & Hardware' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        RAM & SSD Configuration
+                      </label>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {COMPUTER_CONFIGS.map(cfg => (
+                          <button
+                            key={cfg}
+                            type="button"
+                            onClick={() => setStorage(cfg)}
+                            style={{
+                              padding: '5px 8px',
+                              borderRadius: '6px',
+                              background: storage === cfg ? 'var(--brand-green)' : '#162424',
+                              color: storage === cfg ? '#080F0F' : '#FFFFFF',
+                              border: 'none',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {cfg}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        Color / Finish
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Space Black, Silver"
+                        value={color}
+                        onChange={(e) => setColor(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* E: WATCHES & TIMEPIECES */}
+                {finalCategory === 'Watches & Luxury Timepieces' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        Case Diameter
+                      </label>
+                      <select
+                        value={caseDiameter}
+                        onChange={(e) => setCaseDiameter(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                      >
+                        {WATCH_SIZES.map(w => <option key={w} value={w}>{w}</option>)}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        Dial & Bezel Color
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Black Sunburst, Blue"
+                        value={color}
+                        onChange={(e) => setColor(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        Inclusions
+                      </label>
+                      <select
+                        value={boxAndPapers}
+                        onChange={(e) => setBoxAndPapers(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                      >
+                        <option value="Full Set (Box & Papers)">Full Set (Box & Papers)</option>
+                        <option value="Watch & Original Box">Watch & Original Box</option>
+                        <option value="Watch Only (Authenticated)">Watch Only (Authenticated)</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* F: GENERAL / AUDIO / ACCESSORIES */}
+                {['Audio & Electronics', 'Bags & Luxury Accessories', 'General Merchandise / Other'].includes(finalCategory) && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        Color / Finish
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Matte Black, Tan Leather, Silver"
+                        value={color}
+                        onChange={(e) => setColor(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                        Condition
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Brand New Sealed, Pristine"
+                        value={condition}
+                        onChange={(e) => setCondition(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', background: '#080F0F', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#FFFFFF', fontSize: '0.84rem' }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* STEP 4: PHOTO / MEDIA UPLOAD */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                  Product Photo / Media *
+                </label>
+                
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+                />
+
+                {imageUri ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    padding: '12px 16px',
+                    background: '#080F0F',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px'
+                  }}>
+                    <div style={{
+                      width: '72px',
+                      height: '72px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      background: '#121C1C',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <img 
+                        src={imageUri} 
+                        alt="Product preview" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      />
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                        <CheckCircle2 size={14} color="var(--brand-green)" />
+                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>
+                          Image Ready
+                        </span>
+                      </div>
                       <div style={{
-                        width: '40px',
-                        height: '40px',
-                        borderRadius: '50%',
-                        background: '#121C1C',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 10px',
-                        color: 'var(--brand-green)'
+                        fontSize: '0.74rem',
+                        color: '#9CA3AF',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
                       }}>
-                        <Upload size={18} />
-                      </div>
-                      <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '2px' }}>
-                        Click to select photo or drag & drop here
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#9CA3AF' }}>
-                        Supports PNG, JPG, or WebP files from your device (Max 10MB)
+                        {imageFileName || 'Selected product image'}
                       </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Fulfillment Checkboxes */}
-                <div style={{ gridColumn: 'span 2', display: 'flex', gap: '24px', padding: '12px 14px', background: '#080F0F', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 600, color: '#D1D5DB' }}>
-                    <input
-                      type="checkbox"
-                      checked={allowsPickup}
-                      onChange={(e) => setAllowsPickup(e.target.checked)}
-                      style={{ accentColor: 'var(--brand-green)', width: '16px', height: '16px' }}
-                    />
-                    <span>Allow In-Store Pickup (with PIN)</span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 600, color: '#D1D5DB' }}>
-                    <input
-                      type="checkbox"
-                      checked={allowsDelivery}
-                      onChange={(e) => setAllowsDelivery(e.target.checked)}
-                      style={{ accentColor: 'var(--brand-green)', width: '16px', height: '16px' }}
-                    />
-                    <span>Allow Insured Delivery</span>
-                  </label>
-                </div>
-
-                {/* Description */}
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
-                    Description & Specifications
-                  </label>
-                  <textarea
-                    rows={3}
-                    placeholder="Details about product condition, serial numbers, box contents..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '999px',
+                          background: '#162424',
+                          border: '1px solid rgba(255, 255, 255, 0.15)',
+                          fontSize: '0.74rem',
+                          fontWeight: 600,
+                          color: '#FFFFFF',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: '999px',
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          fontSize: '0.74rem',
+                          fontWeight: 600,
+                          color: '#EF4444',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <Trash2 size={12} /> Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
                     style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      background: '#080F0F',
-                      border: '1px solid rgba(255, 255, 255, 0.15)',
-                      borderRadius: '10px',
-                      fontSize: '0.88rem',
-                      color: '#FFFFFF',
-                      outline: 'none',
-                      fontFamily: 'inherit'
+                      border: isDragging ? '2px dashed var(--brand-green)' : '2px dashed rgba(132, 244, 59, 0.35)',
+                      background: isDragging ? 'rgba(132, 244, 59, 0.08)' : '#080F0F',
+                      borderRadius: '12px',
+                      padding: '24px 20px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
                     }}
+                  >
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      background: '#121C1C',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 10px',
+                      color: 'var(--brand-green)'
+                    }}>
+                      <Upload size={18} />
+                    </div>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '2px' }}>
+                      Click to upload photo or drag & drop here
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#9CA3AF' }}>
+                      PNG, JPG, or WebP (Max 10MB)
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* STEP 5: DESCRIPTION & FULFILLMENT */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                  Description & Seller Details
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Describe your item, materials, packaging, provenance, or anything else you'd like buyers to know..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '11px 14px',
+                    background: '#080F0F',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '10px',
+                    fontSize: '0.88rem',
+                    color: '#FFFFFF',
+                    outline: 'none',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+
+              {/* Fulfillment Checkboxes */}
+              <div style={{ display: 'flex', gap: '24px', padding: '12px 14px', background: '#080F0F', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 600, color: '#D1D5DB' }}>
+                  <input
+                    type="checkbox"
+                    checked={allowsPickup}
+                    onChange={(e) => setAllowsPickup(e.target.checked)}
+                    style={{ accentColor: 'var(--brand-green)', width: '16px', height: '16px' }}
                   />
-                </div>
+                  <span>Allow In-Store Pickup (with PIN)</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer', fontWeight: 600, color: '#D1D5DB' }}>
+                  <input
+                    type="checkbox"
+                    checked={allowsDelivery}
+                    onChange={(e) => setAllowsDelivery(e.target.checked)}
+                    style={{ accentColor: 'var(--brand-green)', width: '16px', height: '16px' }}
+                  />
+                  <span>Allow Insured Delivery</span>
+                </label>
               </div>
 
               {error && (
@@ -828,6 +1313,7 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                 </div>
               )}
 
+              {/* Submit Buttons */}
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
                 <button
                   type="button"
@@ -862,4 +1348,3 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
     </ModalPortal>
   );
 }
-
