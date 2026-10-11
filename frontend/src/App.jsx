@@ -147,13 +147,7 @@ function MainApp() {
     }
   }, [activeTab]);
 
-  // All pages, tabs, and views always start strictly from the top
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    }
-  }, [activeTab, currentView, selectedStore]);
-
+  const [selectedStore, setSelectedStore] = useState(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [privyModalOpen, setPrivyModalOpen] = useState(false);
   const [userProfileOpen, setUserProfileOpen] = useState(false);
@@ -166,9 +160,15 @@ function MainApp() {
   });
   const [createStoreOpen, setCreateStoreOpen] = useState(false);
   const [forcedModal, setForcedModal] = useState(null);
-  const [selectedStore, setSelectedStore] = useState(null);
   const [aiSupportOpen, setAiSupportOpen] = useState(false);
   const [aiSupportOrderContext, setAiSupportOrderContext] = useState(null);
+
+  // All pages, tabs, and views always start strictly from the top
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [activeTab, currentView, selectedStore]);
 
   const handleOpenAiSupport = (orderContext = null) => {
     setAiSupportOrderContext(orderContext);
