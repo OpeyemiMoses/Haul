@@ -238,58 +238,29 @@ export default function EditStoreModal({ isOpen, onClose, store, onSave }) {
                 </div>
               </div>
 
-              {/* Row 2: Location & Full Address */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
-                    City / Region
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="e.g. Victoria Island, Lagos"
-                    style={{
-                      width: '100%',
-                      background: '#080F0F',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      borderRadius: '12px',
-                      padding: '10px 14px',
-                      color: '#FFFFFF',
-                      fontSize: '0.82rem',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
-                    Category
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    style={{
-                      width: '100%',
-                      background: '#080F0F',
-                      border: '1px solid rgba(255, 255, 255, 0.12)',
-                      borderRadius: '12px',
-                      padding: '10px 14px',
-                      color: '#FFFFFF',
-                      fontSize: '0.82rem',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    <option value="Footwear & Apparel">Footwear & Apparel</option>
-                    <option value="Luxury Watches & Jewelry">Luxury Watches & Jewelry</option>
-                    <option value="Smart Devices & Audio">Smart Devices & Audio</option>
-                    <option value="Designer Handbags">Designer Handbags</option>
-                    <option value="Hardware Synthesizers">Hardware Synthesizers</option>
-                  </select>
-                </div>
+              {/* Row 2: Location */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '6px' }}>
+                  City / Region
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. Victoria Island, Lagos"
+                  style={{
+                    width: '100%',
+                    background: '#080F0F',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    borderRadius: '12px',
+                    padding: '10px 14px',
+                    color: '#FFFFFF',
+                    fontSize: '0.82rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
               </div>
 
               {/* Full Physical Address */}

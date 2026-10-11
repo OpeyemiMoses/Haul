@@ -177,6 +177,51 @@ export default function Marketplace({
     return VERIFIED_MERCHANTS;
   }, [userStore]);
 
+  // Helper to resolve merchant object for any product
+  const resolveMerchantForProduct = (prod) => {
+    if (!prod) return allMerchants?.[0] || VERIFIED_MERCHANTS[0];
+    const list = (allMerchants && allMerchants.length > 0) ? allMerchants : VERIFIED_MERCHANTS;
+    const pMerchantId = prod.merchantId || prod.sellerId;
+    const pMerchantName = (prod.merchant || prod.store || prod.brand || '').toLowerCase().trim();
+    
+    const found = list.find(m => {
+      if (pMerchantId && String(m.id) === String(pMerchantId)) return true;
+      if (m.name && pMerchantName) {
+        const mName = m.name.toLowerCase().trim();
+        if (mName === pMerchantName || mName.includes(pMerchantName) || pMerchantName.includes(mName)) return true;
+      }
+      return false;
+    });
+    return found || list[0] || VERIFIED_MERCHANTS[0];
+  };
+
+  // Check if current user has purchased a product
+  const hasPurchasedProduct = (prod) => {
+    if (!passports || !passports.length || !prod) return false;
+    const prodId = String(prod.productId || prod.id || '');
+    const prodName = (prod.name || prod.productName || '').toLowerCase().trim();
+    return passports.some(p => {
+      const pId = String(p.productId || p.id || '');
+      const pName = (p.productName || p.name || '').toLowerCase().trim();
+      if (prodId && (pId === prodId || String(p.tokenId) === prodId)) return true;
+      if (prodName && pName && (prodName === pName || prodName.includes(pName) || pName.includes(prodName))) return true;
+      return false;
+    });
+  };
+
+  // Check if current user has purchased from a specific merchant
+  const hasPurchasedFromMerchant = (merchant) => {
+    if (!passports || !passports.length || !merchant) return false;
+    const mName = (merchant.name || '').toLowerCase().trim();
+    const mId = merchant.id ? String(merchant.id) : null;
+    return passports.some(p => {
+      if (mId && p.merchantId && String(p.merchantId) === mId) return true;
+      const pMerchant = (p.originalMerchant || p.merchant || '').toLowerCase().trim();
+      if (mName && pMerchant && (mName.includes(pMerchant) || pMerchant.includes(mName))) return true;
+      return false;
+    });
+  };
+
   // Product Detail Modal state (Screen 03)
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState(10);
@@ -941,16 +986,18 @@ export default function Marketplace({
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      if (onOpenRateSeller) onOpenRateSeller(selectedMerchant);
-                    }}
-                    className="btn-pill-primary btn-pill-sm"
-                    style={{ padding: '8px 20px', fontWeight: 800 }}
-                  >
-                    <Star size={14} />
-                    <span>Write a Review</span>
-                  </button>
+                  {hasPurchasedFromMerchant(selectedMerchant) && (
+                    <button
+                      onClick={() => {
+                        if (onOpenRateSeller) onOpenRateSeller(selectedMerchant);
+                      }}
+                      className="btn-pill-primary btn-pill-sm"
+                      style={{ padding: '8px 20px', fontWeight: 800 }}
+                    >
+                      <Star size={14} />
+                      <span>Write a Review</span>
+                    </button>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -1153,22 +1200,25 @@ export default function Marketplace({
                       <span style={{ color: '#6B7280', fontWeight: 500 }}>({formatNumber(product.reviewsCount || merchantObj.reviewsCount || 120)})</span>
                     </div>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onOpenRateSeller) onOpenRateSeller(merchantObj, product);
-                      }}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#9CA3AF',
-                        fontSize: '0.68rem',
-                        cursor: 'pointer',
-                        textDecoration: 'underline'
-                      }}
-                    >
-                      Rate Seller
-                    </button>
+                    {hasPurchasedProduct(product) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onOpenRateSeller) onOpenRateSeller(merchantObj, product);
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'var(--brand-green)',
+                          fontSize: '0.68rem',
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                          fontWeight: 600
+                        }}
+                      >
+                        Review Item
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1400,7 +1450,15 @@ export default function Marketplace({
                       
                       {/* Merchant & Location in detail modal */}
                       <div style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        <span style={{ color: 'var(--brand-green)', fontWeight: 700 }}>
+                        <span 
+                          onClick={() => {
+                            const mObj = resolveMerchantForProduct(selectedProduct);
+                            setSelectedMerchant(mObj);
+                            setSelectedProduct(null);
+                          }}
+                          style={{ color: 'var(--brand-green)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                          title="Visit merchant storefront"
+                        >
                           {selectedProduct.merchant || 'Nike Lagos Pop-Up'}
                         </span>
                         <span>•</span>
@@ -1409,25 +1467,25 @@ export default function Marketplace({
                         <span style={{ color: '#FBBF24', fontWeight: 700 }}>
                           ★ {selectedProduct.rating || 4.9} ({formatNumber(selectedProduct.reviewsCount || 120)})
                         </span>
-                        <button
-                          onClick={() => {
-                            const mObj = (allMerchants || VERIFIED_MERCHANTS).find(m => 
-                              (selectedProduct.merchantId && m.id === selectedProduct.merchantId) ||
-                              (selectedProduct.merchant && m.name && m.name.toLowerCase().includes(selectedProduct.merchant.toLowerCase()))
-                            ) || VERIFIED_MERCHANTS[0];
-                            if (onOpenRateSeller) onOpenRateSeller(mObj, selectedProduct);
-                          }}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#9CA3AF',
-                            fontSize: '0.72rem',
-                            cursor: 'pointer',
-                            textDecoration: 'underline'
-                          }}
-                        >
-                          Rate Seller
-                        </button>
+                        {hasPurchasedProduct(selectedProduct) && (
+                          <button
+                            onClick={() => {
+                              const mObj = resolveMerchantForProduct(selectedProduct);
+                              if (onOpenRateSeller) onOpenRateSeller(mObj, selectedProduct);
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--brand-green)',
+                              fontSize: '0.72rem',
+                              cursor: 'pointer',
+                              textDecoration: 'underline',
+                              fontWeight: 600
+                            }}
+                          >
+                            Review Item
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -1612,11 +1670,8 @@ export default function Marketplace({
 
                       <button
                         onClick={() => {
-                          const mObj = (allMerchants || VERIFIED_MERCHANTS).find(m => 
-                            (selectedProduct.merchantId && m.id === selectedProduct.merchantId) ||
-                            (selectedProduct.merchant && m.name && m.name.toLowerCase().includes(selectedProduct.merchant.toLowerCase()))
-                          ) || VERIFIED_MERCHANTS[0];
-                          setSelectedStore(mObj);
+                          const mObj = resolveMerchantForProduct(selectedProduct);
+                          setSelectedMerchant(mObj);
                           setSelectedProduct(null);
                         }}
                         className="btn-pill-secondary"

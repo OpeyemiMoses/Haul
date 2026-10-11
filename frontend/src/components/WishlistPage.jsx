@@ -255,25 +255,12 @@ export default function WishlistPage({
                     <span>{item.merchantLocation || 'Victoria Island, Lagos'}</span>
                   </div>
 
-                  {/* Merchant Rating with Rate Seller CTA */}
+                  {/* Merchant Rating */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                     <span style={{ fontSize: '0.72rem', color: '#FBBF24', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
                       <Star size={11} fill="#FBBF24" />
                       {item.rating || '4.9'} ({formatNumber(item.reviewsCount || 120)})
                     </span>
-                    <button
-                      onClick={() => onOpenRateSeller && onOpenRateSeller(item)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#9CA3AF',
-                        fontSize: '0.68rem',
-                        cursor: 'pointer',
-                        textDecoration: 'underline'
-                      }}
-                    >
-                      Rate Seller
-                    </button>
                   </div>
                 </div>
               </div>

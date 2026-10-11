@@ -23,7 +23,6 @@ export default function CreateStoreModal({ isOpen, onClose, onStoreCreated, onNa
 
   const [storeName, setStoreName] = useState('');
   const [handle, setHandle] = useState('');
-  const [category, setCategory] = useState('Footwear & Apparel');
   const [location, setLocation] = useState(userLocation || 'Victoria Island, Lagos');
   const [fullAddress, setFullAddress] = useState('');
   const [selectedBanner, setSelectedBanner] = useState(DEFAULT_BANNER);
@@ -90,7 +89,7 @@ export default function CreateStoreModal({ isOpen, onClose, onStoreCreated, onNa
       const storeObj = createStore({
         name: storeName.trim(),
         handle: cleanHandle,
-        category,
+        category: 'General Store',
         location,
         fullAddress: fullAddress.trim() ? fullAddress.trim() : (location || userLocation),
         avatar: selectedLogo,
@@ -380,53 +379,26 @@ export default function CreateStoreModal({ isOpen, onClose, onStoreCreated, onNa
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.72rem', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '4px', fontWeight: 600 }}>
-                    Category
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      borderRadius: '10px',
-                      background: 'rgba(6, 10, 10, 0.7)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      color: '#FFFFFF',
-                      fontSize: '0.78rem',
-                      outline: 'none'
-                    }}
-                  >
-                    <option value="Footwear & Apparel">Footwear & Apparel</option>
-                    <option value="Audio & Sound">Audio & Sound</option>
-                    <option value="Consumer Tech">Consumer Tech</option>
-                    <option value="Watches & Timepieces">Watches & Timepieces</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.72rem', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '4px', fontWeight: 600 }}>
-                    Store Location (City, State, Country)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Ebonyi State, Victoria Island, London, New York..."
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      borderRadius: '10px',
-                      background: 'rgba(6, 10, 10, 0.7)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      color: '#FFFFFF',
-                      fontSize: '0.78rem',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.72rem', color: 'rgba(255, 255, 255, 0.7)', marginBottom: '4px', fontWeight: 600 }}>
+                  Store Location (City, State, Country)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Ebonyi State, Victoria Island, London, New York..."
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    background: 'rgba(6, 10, 10, 0.7)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: '#FFFFFF',
+                    fontSize: '0.78rem',
+                    outline: 'none'
+                  }}
+                />
               </div>
 
               <div>
