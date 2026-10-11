@@ -308,6 +308,13 @@ export default function Marketplace({
   const [selectedSize, setSelectedSize] = useState(10);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
+  // Always reset scroll to top on product or store view navigation
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [selectedProduct, selectedMerchant, storeTab]);
+
   // Instant Button Feedback States
   const [addedModalCart, setAddedModalCart] = useState(false);
   const [addedCardId, setAddedCardId] = useState(null);

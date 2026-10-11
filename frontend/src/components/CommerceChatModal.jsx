@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
 import ModalPortal from './ModalPortal';
+import { sendCustomerMessage, getAllSharedConversations } from '../lib/messageRegistry';
 
 export default function CommerceChatModal({ 
   isOpen, 
@@ -29,20 +30,23 @@ export default function CommerceChatModal({
   const merchantName = merchant?.name || product?.merchant || 'Nike Lagos Pop-Up';
   const merchantLocation = merchant?.location || product?.merchantLocation || 'Victoria Island, Lagos';
   const merchantRep = merchant?.chatRep || 'Tade (Store Associate • Online)';
+  const storeId = merchant?.id || product?.merchantId || 'nike-lagos';
+  const buyerId = user?.address || user?.email || user?.id || 'guest';
+  const convId = `conv-${storeId}-${buyerId.toLowerCase()}`;
 
-  // Initial messages based on product context
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'merchant',
-      senderName: merchantName,
-      text: `Hello ${displayName}! Welcome to ${merchantName}. We're located at ${merchantLocation}. How can we assist you with this item today?`,
-      time: 'Just now'
-    }
-  ]);
+  // Load existing real messages from shared message registry
+  const [messages, setMessages] = useState(() => {
+    const all = getAllSharedConversations();
+    const existing = all.find(c => 
+      c.id === convId || 
+      (c.storeId === storeId && (c.buyerIdentifier?.toLowerCase() === buyerId.toLowerCase() || c.buyerIdentifier === 'default'))
+    );
+    return existing?.messages || [];
+  });
 
   const [inputVal, setInputVal] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [sentNotice, setSentNotice] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -51,9 +55,23 @@ export default function CommerceChatModal({
 
   useEffect(() => {
     if (isOpen) {
+      const all = getAllSharedConversations();
+      const existing = all.find(c => 
+        c.id === convId || 
+        (c.storeId === storeId && (c.buyerIdentifier?.toLowerCase() === buyerId.toLowerCase() || c.buyerIdentifier === 'default'))
+      );
+      if (existing?.messages) {
+        setMessages(existing.messages);
+      }
       scrollToBottom();
     }
-  }, [isOpen, messages, isTyping]);
+  }, [isOpen, storeId, buyerId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      scrollToBottom();
+    }
+  }, [isOpen, messages]);
 
   if (!isOpen) return null;
 
@@ -66,40 +84,21 @@ export default function CommerceChatModal({
       sender: 'user',
       senderName: displayName,
       text: text,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages(prev => [...prev, userMsg]);
     setInputVal('');
-    setIsTyping(true);
+    setSentNotice(true);
+    setTimeout(() => setSentNotice(false), 5000);
 
-    // Simulated Intelligent Merchant Reply
-    setTimeout(() => {
-      let replyText = `Thanks for asking! Yes, this item is authentic, verified on Monad, and ready for pickup at our ${merchantLocation} location or same-day dispatch to ${buyerLocation}.`;
-
-      const lower = text.toLowerCase();
-      if (lower.includes('pickup') || lower.includes('pick up') || lower.includes('store')) {
-        replyText = `Yes! We have this ready in our backroom right now. Once you check out with USDC, your QR Pickup Pass will be generated instantly for immediate in-store collection at ${merchantLocation}.`;
-      } else if (lower.includes('size') || lower.includes('fit')) {
-        replyText = `All listed sizes (including Size 10) are verified in physical inventory. Fits true to size, and you can try it on in our lounge during collection!`;
-      } else if (lower.includes('delivery') || lower.includes('deliver') || lower.includes('lekki') || lower.includes('lagos')) {
-        replyText = `We do express dispatch across Lagos within 2 to 4 hours. Since your location is ${buyerLocation}, courier transit will take around 35 minutes!`;
-      } else if (lower.includes('passport') || lower.includes('warranty') || lower.includes('onchain')) {
-        replyText = `Every purchase automatically mints a Living Product Passport to your Privy embedded Monad wallet. It contains factory warranty coverage and enables one-click resale or transfer.`;
-      }
-
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          sender: 'merchant',
-          senderName: merchantName,
-          text: replyText,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
-      setIsTyping(false);
-    }, 1100);
+    // Save directly to shared cross-user & merchant registry (no fake bot replying)
+    sendCustomerMessage({
+      store: merchant || { id: storeId, name: merchantName, location: merchantLocation },
+      buyer: user,
+      text,
+      product: product || null
+    });
   };
 
   const quickPrompts = [
@@ -249,6 +248,14 @@ export default function CommerceChatModal({
           flexDirection: 'column',
           gap: '14px'
         }}>
+          {messages.length === 0 && (
+            <div style={{ textAlign: 'center', margin: 'auto', padding: '24px', color: '#9CA3AF', fontSize: '0.8rem' }}>
+              <Store size={32} color="var(--brand-green)" style={{ margin: '0 auto 12px', opacity: 0.8 }} />
+              <div style={{ color: '#FFFFFF', fontWeight: 600, marginBottom: '4px' }}>Direct Store Inquiry</div>
+              <div>Send a message to {merchantName}. Inquiries are delivered directly to the store manager's inbox.</div>
+            </div>
+          )}
+
           {messages.map((m) => {
             const isMe = m.sender === 'user';
             return (
@@ -269,7 +276,7 @@ export default function CommerceChatModal({
                   paddingLeft: isMe ? 0 : '4px',
                   paddingRight: isMe ? '4px' : 0
                 }}>
-                  {m.senderName} • {m.time}
+                  {m.senderName} • {m.timestamp || m.time || 'Just now'}
                 </div>
 
                 <div style={{
@@ -289,9 +296,10 @@ export default function CommerceChatModal({
             );
           })}
 
-          {isTyping && (
-            <div style={{ alignSelf: 'flex-start', padding: '8px 14px', background: '#162424', borderRadius: '16px', fontSize: '0.74rem', color: '#9CA3AF' }}>
-              <span className="animate-pulse">{merchantName} is typing...</span>
+          {sentNotice && (
+            <div style={{ alignSelf: 'flex-end', padding: '6px 12px', background: 'rgba(132, 244, 59, 0.12)', border: '1px solid var(--brand-green-border)', borderRadius: '12px', fontSize: '0.72rem', color: 'var(--brand-green)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CheckCircle2 size={13} />
+              <span>Delivered to merchant inbox • Store owner will reply directly</span>
             </div>
           )}
 

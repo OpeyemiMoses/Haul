@@ -1,7 +1,4 @@
-/**
- * Groq AI Client & Context Engine for Hual Marketplace
- * Model: llama-3.3-70b-versatile / llama-3.1-8b-instant
- */
+import { CURATED_CATALOG, VERIFIED_MERCHANTS } from './catalogData';
 
 export const GROQ_MODELS = [
   { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile (Recommended)', provider: 'Groq' },
@@ -39,7 +36,7 @@ export function getOrderPin(passport) {
 
 /**
  * Construct comprehensive system prompt incorporating live account state,
- * order inventory, escrow balances, and store manager context.
+ * order inventory, entire site catalog, store directory, escrow balances, and site policies.
  */
 export function buildSystemPrompt(context) {
   const {
@@ -48,11 +45,45 @@ export function buildSystemPrompt(context) {
     userStore,
     usdcBalance = 0,
     passports = [],
-    activeOrder = null
+    activeOrder = null,
+    catalog = CURATED_CATALOG,
+    merchants = VERIFIED_MERCHANTS
   } = context;
 
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Valued Member');
   const userAddr = user?.address || '0x...';
+
+  // Format entire site catalog
+  const catalogList = (catalog && catalog.length > 0 ? catalog : CURATED_CATALOG);
+  const catalogSummary = catalogList.map((item, idx) => {
+    const sizes = Array.isArray(item.sizes) ? item.sizes.join(', ') : (item.sizes || 'Standard');
+    return `[Product #${idx + 1}]
+- Name: ${item.name}
+- Brand: ${item.brand || 'Luxury'}
+- Category: ${item.category || 'General'}
+- Price: $${Number(item.priceUsd || 0).toLocaleString()} USDC
+- Sizes: ${sizes}
+- Color: ${item.color || 'Standard'}
+- Stock Available: ${item.stock ?? 5} units
+- Merchant Store: ${item.merchant || 'Verified Flagship'} (${item.merchantLocation || 'Lagos, Nigeria'})
+- Serial: ${item.serialNumber || 'SN-HUAL'}
+- Pickup: ${item.allowsPickup !== false ? 'Yes (Ready in 30 mins)' : 'No'} | Delivery: ${item.allowsDelivery !== false ? 'Yes (2-4 hrs courier)' : 'No'}
+- Description: ${item.description || ''}`;
+  }).join('\n\n');
+
+  // Format verified merchants directory
+  const merchantsList = (merchants && merchants.length > 0 ? merchants : VERIFIED_MERCHANTS);
+  const storesSummary = merchantsList.map((m, idx) => {
+    return `[Store #${idx + 1}: ${m.name}]
+- Handle: ${m.handle}
+- Category: ${m.category}
+- Physical Address: ${m.fullAddress || m.location || 'Victoria Island, Lagos'}
+- Operating Hours: ${m.operatingHours || 'Mon - Sat: 9:00 AM - 7:00 PM'} (Open: ${m.openingTime || '09:00 AM'}, Close: ${m.closingTime || '07:00 PM'})
+- Contact Phone: ${m.phone || '+234 1 800 4825'}
+- Pickup Window: ${m.pickupTime || 'Ready in 30 mins'}
+- Courier Dispatch: ${m.deliveryTime || '2-4 hrs express courier'}
+- Description: ${m.description || ''}`;
+  }).join('\n\n');
 
   // Summarize orders
   let ordersSummary = 'No active orders registered on account yet.';
@@ -68,11 +99,11 @@ export function buildSystemPrompt(context) {
       const isRefunded = p.currentState === 'REFUNDED';
       
       let statusStr = 'ESCROWED (Pending In-Store Pickup)';
-      if (isRefunded) statusStr = 'CANCELLED & 100% REFUNDED';
+      if (isRefunded) statusStr = 'CANCELLED & 100% REFUNDED (Cannot be reviewed)';
       else if (isCollected) statusStr = 'COLLECTED & VERIFIED IN HAND (Completed)';
       else if (isDispatched) statusStr = 'DISPATCHED TO COURIER (In Transit)';
 
-      return `[Order #${index + 1}]
+      return `[User Order #${index + 1}]
 - Product: ${p.productName || p.name || 'Luxury Item'} (${p.productBrand || p.brand || 'Verified'})
 - Token ID / Order ID: ${p.tokenId || p.id || 'N/A'}
 - Serial Number: ${p.serialNumber || 'N/A'}
@@ -118,7 +149,7 @@ Store Profile:
 You can assist this user as a Store Operations Manager (advise on customer pickup validation, handling store counter QR scans, adjusting operating hours, and customer relations).`;
   }
 
-  return `You are Hual AI Concierge, the official intelligent assistant and account companion for the Hual Luxury & Authentic Goods Web3 Marketplace.
+  return `You are Hual AI Companion (Concierge), the official intelligent companion for the Hual Luxury & Authentic Goods Web3 Marketplace.
 
 USER PROFILE:
 - Name: ${displayName}
@@ -131,28 +162,38 @@ ${ordersSummary}
 ${activeOrderSection}
 ${storeManagerSection}
 
-CORE KNOWLEDGE & OPERATING RULES:
-1. ORDER CODES & PICKUP PINS (DISAMBIGUATION RULE):
-   - If the user asks for their PIN code, pickup pass, or verification code without specifying which order:
-     - If the user has multiple orders on their account and NO specific order is currently focused:
-       DO NOT arbitrarily pick an order by yourself!
-       Instead, explicitly ask: "You have multiple orders on your account. Which order do you need the PIN verification code for?"
-       List each of their orders by name and Order ID.
-     - If the user names/specifies an order (or if there is only 1 order, or if an order is already focused in CURRENTLY FOCUSED ORDER):
-       Directly output the exact 4-digit PIN code and escrow status for that specific order in a bold card format.
-2. ESCROW & SETTLEMENT ARCHITECTURE:
-   All orders on Hual are non-custodial and protected by Monad Smart Contract Escrow.
-   - When a buyer pays, USDC is locked in the contract, NOT sent directly to the seller yet.
-   - In-Store Pickup: The customer visits the store and presents their 4-digit PIN / QR pass. The merchant enters the PIN into the Store Counter, releasing escrow immediately.
-   - Courier Delivery: Funds are held until the buyer taps "Confirm Receipt" in the app after physical delivery.
-   - Cancellations: Buyers can cancel any order that is still in Escrow anytime for a 100% instant USDC refund to their wallet.
-3. CRITICAL ROUTING GUARDRAIL (STORE-SPECIFIC INQUIRIES):
-   If the user asks questions that require store-level decisions or physical store inventory check (such as: "Do you have size 10 in red in stock?", "Can the store open 1 hour earlier for me?", "Can I negotiate a bulk discount?", "Does the store have other colors?"):
-   - You MUST politely instruct them to message the store in question directly.
-   - Explicitly tell them: "For store inventory inquiries, custom sizing, or special merchant requests, please message [Store Name] directly using the 'Message Store' button on their storefront or in your Messages tab."
-   - Do NOT invent store inventory or offer unauthorized store policies.
-4. PERSONALITY & TONE:
-   Concierge luxury standard: warm, crisp, authoritative, clear, and concise. Format important details (like Order PIN, Token ID, status) using bold markdown and bullet points.`;
+COMPLETE HAUL SITE CATALOG (AVAILABLE PRODUCTS):
+${catalogSummary}
+
+VERIFIED HAUL STORES DIRECTORY:
+${storesSummary}
+
+HAUL PLATFORM RULES, POLICIES & CAPABILITIES:
+1. DEEP REASONING & CONTEXTUAL RESPONSES:
+   - Your reasoning is NOT limited. You must NEVER give generic, evasive, or repetitive robotic blurbs.
+   - You have full access to everything concerning the whole Haul site, its products, stores, orders, escrow, passports, and policies.
+   - Always analyze what is specifically asked and give exact, contextual answers with real product names, prices, store addresses, opening hours, specifications, order IDs, or PIN codes.
+   - If a user asks what shoes are available, list the exact footwear models in the catalog with prices and sizes. If they ask about audio, tell them about Sony headphones or Teenage Engineering synthesizers. If they ask where a store is, provide the physical address and opening hours.
+
+2. STRICT BOUNDARY (HAUL SCOPE):
+   - You are exclusively dedicated to everything concerning Haul: Haul products, orders, escrow payments, stores, merchants, returns/cancellations, living passports, and verified commerce on Monad.
+   - If a user asks a question completely unrelated to Haul (such as world politics, non-Haul trivia, or unrelated general coding), politely and elegantly clarify that your expertise is dedicated to the Haul platform and guide them back to Haul products, orders, or services.
+
+3. MONAD ESCROW & ORDER LIFECYCLE:
+   - All purchases on Haul are non-custodial and protected by Monad Smart Contract Escrow.
+   - In-Store Pickup: Customer presents their 4-digit PIN / QR pass at the store counter. The merchant enters the PIN into their till to release escrow.
+   - Courier Delivery: Funds are held until courier delivery and confirmed handover.
+   - Cancellations: Buyers can cancel any pending escrow order anytime for a 100% instant USDC refund to their wallet.
+   - Review Policy: Orders that were cancelled CANNOT be reviewed. Only fulfilled orders where the buyer took possession can be rated or reviewed.
+
+4. ORDER PIN & VERIFICATION CODES (DISAMBIGUATION RULE):
+   - If the user asks for their PIN or verification code without specifying which order:
+     - If the user has multiple orders and none is currently focused, ask: "You have multiple orders on your account. Which order do you need the PIN verification code for?" and list their orders.
+     - If the user specifies an order (or has only 1 order, or an order is focused), output the exact 4-digit PIN code in a bold card format.
+
+5. TONE & FORMATTING:
+   - Tone: Premium luxury concierge, crisp, authoritative, friendly, and helpful.
+   - Use GitHub-style markdown with bold highlights, bullet points, and clean blockquotes for key details.`;
 }
 
 /**
@@ -253,29 +294,86 @@ Here is your pickup pass for **${single.productName || single.name}**:
     return `### Your Account Orders & Escrow Summary\n\n${orderLines}\n\n*Need assistance with a specific order? You can tap **"Contact Support"** on any order card in your Passports tab to focus our conversation on it.*`;
   }
 
-  // 3. Store-specific inquiry guardrail
-  if (
-    query.includes('size') || 
-    query.includes('stock') || 
-    query.includes('discount') || 
-    query.includes('inventory') || 
-    query.includes('color') || 
-    query.includes('custom') ||
-    query.includes('bargain') ||
-    query.includes('negotiate') ||
-    query.includes('return in person')
-  ) {
-    const storeName = activeOrder?.originalMerchant || activeOrder?.merchant || 'the store';
-    return `### Merchant Store Inquiry Notice
+  // 3. Product Catalog & Inventory inquiry (shoes, phones, headphones, sizes, colors, prices)
+  const isProductQuery = 
+    query.includes('shoe') || query.includes('footwear') || query.includes('cloth') || 
+    query.includes('apparel') || query.includes('sneaker') || query.includes('air max') || 
+    query.includes('sony') || query.includes('headphone') || query.includes('apple') || 
+    query.includes('vision pro') || query.includes('synthesizer') || query.includes('op-1') || 
+    query.includes('price') || query.includes('cost') || query.includes('stock') || 
+    query.includes('size') || query.includes('color') || query.includes('what do you sell') ||
+    query.includes('products') || query.includes('catalog') || query.includes('items') ||
+    query.includes('backpack');
 
-For item sizing availability, specific inventory stock levels, custom color requests, or merchant negotiations, **please message ${storeName} directly**.
+  if (isProductQuery) {
+    const catalogList = context.catalog || CURATED_CATALOG;
+    // Find matched products
+    const matches = catalogList.filter(p => {
+      const pName = (p.name || '').toLowerCase();
+      const pBrand = (p.brand || '').toLowerCase();
+      const pCat = (p.category || '').toLowerCase();
+      const pDesc = (p.description || '').toLowerCase();
+      return query.split(' ').some(w => w.length > 3 && (pName.includes(w) || pBrand.includes(w) || pCat.includes(w) || pDesc.includes(w)));
+    });
 
-Stores manage their own physical shelves, so they can check their backroom immediately and reply to you in real time!
+    const displayItems = matches.length > 0 ? matches.slice(0, 4) : catalogList.slice(0, 4);
+    const itemCards = displayItems.map((item, idx) => {
+      const sizes = Array.isArray(item.sizes) ? item.sizes.join(', ') : (item.sizes || 'Standard');
+      return `### ${idx + 1}. ${item.name} (${item.brand})
+* **Price:** $${Number(item.priceUsd || 0).toLocaleString()} USDC
+* **Category:** ${item.category} • **Color:** ${item.color || 'Standard'}
+* **Available Sizes:** ${sizes}
+* **Stock In Vault:** ${item.stock ?? 5} units available
+* **Store:** **${item.merchant}** (${item.merchantLocation})
+* **Fulfillment:** ${item.allowsPickup !== false ? 'In-Store Pickup (Ready in 30m)' : ''} | ${item.allowsDelivery !== false ? 'Same-Day Courier' : ''}
+> *${item.description}*`;
+    }).join('\n\n');
 
-**What to do:** Tap the **"Message Store"** button on ${storeName}'s storefront or open the **Messages** tab in your navigation bar to start a direct chat with the store staff.`;
+    return `### Haul Verified Products
+Here is what we currently have in our verified physical vaults on Haul:
+
+${itemCards}
+
+*All purchases are protected by Monad Smart Contract Escrow and mint a Living Digital Passport with verified warranty!*`;
   }
 
-  // 4. Store Manager mode inquiry
+  // 4. Store Directory & Locations inquiry
+  if (query.includes('store') || query.includes('shop') || query.includes('location') || query.includes('address') || query.includes('lagos') || query.includes('hours') || query.includes('opening')) {
+    const merchantsList = context.merchants || VERIFIED_MERCHANTS;
+    const matchedStore = merchantsList.find(m => {
+      const mName = m.name.toLowerCase();
+      return query.includes(mName.slice(0, 4)) || (m.handle && query.includes(m.handle.slice(1, 5)));
+    });
+
+    if (matchedStore) {
+      return `### ${matchedStore.name} Store Profile
+* **Handle:** ${matchedStore.handle} (Verified Partner)
+* **Physical Address:** ${matchedStore.fullAddress || matchedStore.location}
+* **Operating Hours:** ${matchedStore.operatingHours || 'Mon - Sat: 9:00 AM - 7:00 PM'}
+* **Contact Phone:** ${matchedStore.phone || '+234 1 800 4825'}
+* **Pickup Window:** ${matchedStore.pickupTime || 'Ready in 30 mins'}
+* **Courier Dispatch:** ${matchedStore.deliveryTime || '2-4 hrs courier'}
+
+> **Description:** ${matchedStore.description}
+
+*You can visit in person for pickup or order online for insured express delivery!*`;
+    }
+
+    const storeCards = merchantsList.map((m, idx) => {
+      return `* **${m.name}** (${m.category})
+  - **Location:** ${m.location} (${m.fullAddress})
+  - **Hours:** ${m.operatingHours || 'Mon - Sat 9:00 AM - 7:00 PM'}`;
+    }).join('\n\n');
+
+    return `### Verified Stores on Haul
+We feature authenticated flagship boutiques across Lagos with instant in-store collection and living digital passports:
+
+${storeCards}
+
+*Which store would you like more details about?*`;
+  }
+
+  // 5. Store Manager mode inquiry
   if ((userStore || userRole === 'merchant') && (query.includes('store') || query.includes('manager') || query.includes('sales') || query.includes('counter') || query.includes('pickup verification'))) {
     return `### Store Manager Companion Overview
 
@@ -291,7 +389,7 @@ Here is your current storefront status:
 *Tip: You can edit your location, operating hours, and banner anytime by clicking "Edit Store Details" on your store page!*`;
   }
 
-  // 5. Escrow & Payments
+  // 6. Escrow & Payments
   if (query.includes('escrow') || query.includes('payment') || query.includes('usdc') || query.includes('monad') || query.includes('safety') || query.includes('guarantee')) {
     return `### How Monad Smart Contract Escrow Works
 
@@ -303,27 +401,28 @@ Here is your current storefront status:
 4. **Instant Cancellation:** If you change your mind before collecting the item, you can cancel the order for a 100% instant USDC refund back to your wallet.`;
   }
 
-  // 6. Cancellation & Refunds
-  if (query.includes('cancel') || query.includes('refund') || query.includes('return')) {
-    return `### Cancellation & Refund Policy
+  // 7. Cancellation, Refunds & Verified Reviews Policy
+  if (query.includes('cancel') || query.includes('refund') || query.includes('return') || query.includes('review')) {
+    return `### Cancellation, Refund & Review Policy on Haul
 
-* **Before Collection (In Escrow):** You can cancel any escrowed order at any time before in-store handover or courier dispatch. Your USDC will be refunded instantly back to your wallet.
-* **After Collection:** Once you provide your 4-digit PIN and take possession of the goods, the item is transferred to your Living Passport with active warranty protection.
-* To cancel a pending order, navigate to your **Living Passports** tab and tap **"Cancel Order"** on the item card.`;
+* **Instant Escrow Cancellation:** You can cancel any escrowed order at any time before in-store handover or courier dispatch. Your USDC is refunded 100% instantly back to your wallet.
+* **Verified Reviews Protection:** On Haul, **orders that were cancelled cannot be reviewed**. Reviews are strictly reserved for verified purchases where the buyer actually collected or received the physical item. This prevents fake reviews and ensures 100% genuine buyer ratings.
+* **Living Digital Passports:** Once an order is completed, your living digital passport activates with full factory warranty and authentic ownership history on Monad.`;
   }
 
-  // 7. General greeting / assistant capabilities
-  return `### Hello, I'm your Hual AI Account Companion
+  // 8. General greeting or inquiry
+  return `### Hello! I am your Hual AI Companion
 
-I have live access to your account and verified orders on the Monad network. Here is how I can assist you:
+I have complete live access to the entire Haul marketplace, verified stores, product catalog, and your account orders on Monad.
 
-1. **Order Codes & Pickup PINs:** Ask *"What is my pickup PIN?"* to retrieve your verification pass.
-2. **Order Lifecycle & Tracking:** Ask *"What is the status of my order?"* to check escrow, courier transit, or completed collections.
-3. **Escrow & Payments:** Ask *"How does escrow work?"* or *"How do I get a refund?"*.
-4. **Store Manager Companion:** If you run a store, I can help you monitor operating hours, counter pickups, and store stats.
-5. **Store Inquiries:** For product sizing, stock, or custom requests, I will guide you to chat directly with the store via **Message Store**.
+Here is what I can assist you with:
+1. **Catalog & Inventory:** Inquire about our shoes, tech, synthesizers, sizes, colors, and prices.
+2. **Order Verification & PINs:** Ask *"What is my pickup PIN?"* to view your 4-digit code.
+3. **Store Directory & Addresses:** Ask for the address or hours of Nike, Sony, Apple, or Teenage Engineering.
+4. **Smart Escrow & Refunds:** Learn how Monad smart escrow protects your funds and enables instant cancellations.
+5. **Living Passports:** Track warranty status and onchain proof of ownership.
 
-How can I help you today?`;
+What would you like to know about Haul today?`;
 }
 
 /**

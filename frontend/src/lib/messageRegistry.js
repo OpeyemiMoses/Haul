@@ -218,13 +218,6 @@ export function sendCustomerMessage({ store, buyer, text, product = null }) {
       lastMessageTime: 'Just now',
       pinnedProduct: product,
       messages: [
-        {
-          id: `welcome-${Date.now()}`,
-          sender: 'merchant',
-          senderName: store.chatRep || store.name,
-          text: `Hello! Welcome to ${store.name || 'our store'}. How can we assist you today?`,
-          timestamp
-        },
         newMsg
       ]
     };
@@ -232,35 +225,6 @@ export function sendCustomerMessage({ store, buyer, text, product = null }) {
   }
 
   saveSharedConversations(all);
-
-  // If this is an automated store (Nike, Sony, Apple, Teenage Engineering), generate an intelligent live reply
-  const isAutomatedStore = ['nike-lagos', 'sony-flagship', 'apple-boutique', 'teenage-engineering'].includes(storeId);
-  if (isAutomatedStore) {
-    setTimeout(() => {
-      const repName = updatedConv.chatRep.split(' ')[0] || 'Store Lead';
-      const automatedReply = {
-        id: `auto-${Date.now()}`,
-        sender: 'merchant',
-        senderName: updatedConv.chatRep,
-        text: `Thanks for your inquiry regarding "${text.trim()}". We have verified physical stock and our Monad smart contract escrows all payments until handover. Would you prefer in-store pickup or courier dispatch?`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        createdAt: Date.now()
-      };
-
-      const freshAll = getAllSharedConversations();
-      const freshIndex = freshAll.findIndex(c => c.id === convId);
-      if (freshIndex >= 0) {
-        freshAll[freshIndex] = {
-          ...freshAll[freshIndex],
-          messages: [...freshAll[freshIndex].messages, automatedReply],
-          lastMessageTime: 'Just now',
-          unreadForBuyer: (freshAll[freshIndex].unreadForBuyer || 0) + 1
-        };
-        saveSharedConversations(freshAll);
-      }
-    }, 700);
-  }
-
   return updatedConv;
 }
 

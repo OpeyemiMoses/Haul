@@ -8,7 +8,8 @@ import {
   Layers, 
   Store,
   PlusCircle,
-  Heart
+  Heart,
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
 
@@ -41,6 +42,12 @@ export default function BottomNav({
       id: 'categories',
       label: 'Categories',
       icon: Layers,
+      badge: null
+    },
+    {
+      id: 'assistant',
+      label: 'AI Concierge',
+      icon: Sparkles,
       badge: null
     },
     {

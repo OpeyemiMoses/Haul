@@ -21,6 +21,7 @@ import CreateStoreModal from './components/CreateStoreModal';
 import StoresPage from './components/StoresPage';
 import SettingsPage from './components/SettingsPage';
 import AISupportModal from './components/AISupportModal';
+import AIAssistantPage from './components/AIAssistantPage';
 import AISupportFAB from './components/AISupportFAB';
 import PrivyModal from './lib/auth/PrivyModal';
 import AgeVerificationModal from './components/AgeVerificationModal';
@@ -146,6 +147,13 @@ function MainApp() {
     }
   }, [activeTab]);
 
+  // All pages, tabs, and views always start strictly from the top
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [activeTab, currentView, selectedStore]);
+
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [privyModalOpen, setPrivyModalOpen] = useState(false);
   const [userProfileOpen, setUserProfileOpen] = useState(false);
@@ -163,12 +171,12 @@ function MainApp() {
   const [aiSupportOrderContext, setAiSupportOrderContext] = useState(null);
 
   const handleOpenAiSupport = (orderContext = null) => {
-    if (!authenticated) {
-      setPrivyModalOpen(true);
-      return;
-    }
     setAiSupportOrderContext(orderContext);
-    setAiSupportOpen(true);
+    setCurrentView('storefront');
+    setActiveTab('assistant');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
   };
 
   useScrollReveal([currentView, activeTab, selectedStore]);
@@ -904,6 +912,34 @@ function MainApp() {
                       const merchantObj = VERIFIED_MERCHANTS.find(m => m.id === item.merchantId) || VERIFIED_MERCHANTS[0];
                       handleOpenRateSeller(merchantObj, item);
                     }}
+                  />
+                )}
+
+                {/* 6. AI COMPANION FULL PAGE */}
+                {activeTab === 'assistant' && (
+                  <AIAssistantPage
+                    user={user}
+                    authenticated={authenticated}
+                    onLogin={() => setPrivyModalOpen(true)}
+                    onNavigateTab={(tab) => {
+                      if (tab === 'shop') setSelectedStore(null);
+                      setActiveTab(tab);
+                    }}
+                    onOpenStore={(merchantObj) => {
+                      setSelectedStore(merchantObj);
+                      setActiveTab('shop');
+                    }}
+                    onStartCheckout={(product) => {
+                      addToCart(product);
+                      setActiveTab('cart');
+                    }}
+                    userStore={userStore}
+                    userRole={userRole}
+                    usdcBalance={usdcBalance}
+                    passports={myPassports}
+                    activeOrderContext={aiSupportOrderContext}
+                    catalog={products}
+                    merchants={VERIFIED_MERCHANTS}
                   />
                 )}
 
