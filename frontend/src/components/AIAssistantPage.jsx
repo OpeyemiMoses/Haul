@@ -18,7 +18,8 @@ import {
   HelpCircle,
   Tag,
   Clock,
-  ArrowRight
+  ArrowRight,
+  X
 } from 'lucide-react';
 import { 
   sendGroqChatMessage, 
@@ -236,6 +237,18 @@ What would you like to explore today?`;
     setTimeout(() => setCopiedPin(null), 2500);
   };
 
+  const handleFocusOrder = (ord, queryText = null) => {
+    setCurrentActiveOrder(ord);
+    const orderTitle = ord.productName || ord.name || 'Order';
+    const orderId = ord.tokenId || ord.id || '101';
+    const text = queryText || `What is my verification PIN code and escrow status for ${orderTitle} (#${orderId})?`;
+    handleSendMessage(text, ord);
+  };
+
+  const handleClearFocus = () => {
+    setCurrentActiveOrder(null);
+  };
+
   const handleResetSession = () => {
     setMessages([]);
     setCurrentActiveOrder(null);
@@ -386,6 +399,16 @@ What would you like to explore today?`;
           >
             {messages.map((m) => {
               const isUser = m.role === 'user';
+              const lower = (m.content || '').toLowerCase();
+              const mentionsOrderCards = !isUser && (
+                lower.includes('tap any order card') ||
+                lower.includes('need assistance with a specific order') ||
+                lower.includes('which order do you need') ||
+                lower.includes('which one would you like') ||
+                lower.includes('account orders & escrow summary') ||
+                lower.includes('which order do you need assistance with')
+              );
+
               return (
                 <div
                   key={m.id}
@@ -431,6 +454,166 @@ What would you like to explore today?`;
                     fontWeight: isUser ? 600 : 400
                   }}>
                     <FormattedMessage text={m.content} isUser={isUser} />
+
+                    {/* Inline Interactive Order Cards when assistant mentions orders */}
+                    {mentionsOrderCards && allUserOrders && allUserOrders.length > 0 && (
+                      <div style={{
+                        marginTop: '16px',
+                        paddingTop: '14px',
+                        borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '0.72rem',
+                          color: '#9CA3AF',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em'
+                        }}>
+                          <span>Tap an order card to focus conversation:</span>
+                          <span style={{ color: 'var(--brand-green)' }}>{allUserOrders.length} available</span>
+                        </div>
+
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                          gap: '10px'
+                        }}>
+                          {allUserOrders.map((ord, oIdx) => {
+                            const pin = getOrderPin(ord);
+                            const isSelected = Boolean(
+                              (currentActiveOrder?.tokenId && String(currentActiveOrder.tokenId) === String(ord.tokenId)) ||
+                              (currentActiveOrder?.id && String(currentActiveOrder.id) === String(ord.id)) ||
+                              (currentActiveOrder?.productName && currentActiveOrder.productName === ord.productName) ||
+                              (currentActiveOrder?.name && currentActiveOrder.name === ord.name)
+                            );
+                            const isCancelled = ord.currentState === 'REFUNDED';
+                            const orderTitle = ord.productName || ord.name || 'Order';
+                            const orderId = ord.tokenId || ord.id || '101';
+
+                            return (
+                              <div
+                                key={ord.tokenId || ord.id || oIdx}
+                                onClick={() => handleFocusOrder(ord)}
+                                role="button"
+                                tabIndex={0}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '12px',
+                                  padding: '10px 14px',
+                                  borderRadius: '14px',
+                                  background: isSelected 
+                                    ? 'linear-gradient(135deg, rgba(132, 244, 59, 0.16) 0%, rgba(18, 28, 28, 0.95) 100%)' 
+                                    : '#0C1414',
+                                  border: isSelected 
+                                    ? '1.5px solid var(--brand-green)' 
+                                    : '1px solid rgba(255, 255, 255, 0.08)',
+                                  color: '#FFFFFF',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.18s ease',
+                                  boxShadow: isSelected ? '0 0 16px rgba(132, 244, 59, 0.2)' : 'none',
+                                  position: 'relative'
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isSelected) {
+                                    e.currentTarget.style.borderColor = 'rgba(132, 244, 59, 0.4)';
+                                    e.currentTarget.style.background = '#111D1D';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isSelected) {
+                                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                                    e.currentTarget.style.background = '#0C1414';
+                                  }
+                                }}
+                              >
+                                <div style={{
+                                  width: '38px',
+                                  height: '38px',
+                                  borderRadius: '10px',
+                                  overflow: 'hidden',
+                                  background: '#080F0F',
+                                  flexShrink: 0,
+                                  border: '1px solid rgba(255, 255, 255, 0.08)'
+                                }}>
+                                  <img 
+                                    src={ord.imageUri || '/assets/air_max_95.jpg'} 
+                                    alt={orderTitle} 
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                  />
+                                </div>
+
+                                <div style={{ minWidth: 0, flex: 1 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                                    <span style={{
+                                      fontSize: '0.8rem',
+                                      fontWeight: 700,
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis'
+                                    }}>
+                                      {orderTitle}
+                                    </span>
+                                    {isSelected && (
+                                      <span style={{
+                                        fontSize: '0.6rem',
+                                        fontWeight: 800,
+                                        color: 'var(--brand-green)',
+                                        background: 'rgba(132, 244, 59, 0.18)',
+                                        border: '1px solid rgba(132, 244, 59, 0.4)',
+                                        padding: '1px 5px',
+                                        borderRadius: '4px',
+                                        flexShrink: 0
+                                      }}>
+                                        FOCUSED
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    fontSize: '0.68rem',
+                                    color: '#9CA3AF',
+                                    marginTop: '2px'
+                                  }}>
+                                    <span>#{orderId}</span>
+                                    <span>•</span>
+                                    <span style={{
+                                      color: isCancelled ? '#EF4444' : 'var(--brand-green)',
+                                      fontWeight: 600
+                                    }}>
+                                      {isCancelled ? 'CANCELLED' : (ord.currentState || 'ESCROWED')}
+                                    </span>
+                                    {pin && (
+                                      <>
+                                        <span>•</span>
+                                        <span style={{ fontFamily: 'var(--font-mono, monospace)', color: '#FFFFFF' }}>
+                                          PIN {pin}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <ChevronRight 
+                                  size={14} 
+                                  color={isSelected ? 'var(--brand-green)' : '#6B7280'} 
+                                  style={{ flexShrink: 0 }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -500,6 +683,150 @@ What would you like to explore today?`;
               </button>
             ))}
           </div>
+
+          {/* Active Focused Order Context Bar */}
+          {currentActiveOrder && (
+            <div 
+              style={{
+                padding: '10px 18px',
+                background: 'linear-gradient(90deg, rgba(132, 244, 59, 0.09) 0%, rgba(13, 22, 22, 0.98) 100%)',
+                borderTop: '1px solid rgba(132, 244, 59, 0.25)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  background: '#080F0F',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  flexShrink: 0
+                }}>
+                  <img 
+                    src={currentActiveOrder.imageUri || '/assets/air_max_95.jpg'} 
+                    alt="Active Order" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--brand-green)', fontWeight: 700, textTransform: 'uppercase' }}>
+                      Focused:
+                    </span>
+                    <strong style={{ fontSize: '0.8rem', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {currentActiveOrder.productName || currentActiveOrder.name}
+                    </strong>
+                    <span style={{
+                      fontSize: '0.62rem',
+                      fontWeight: 700,
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      background: currentActiveOrder.currentState === 'REFUNDED' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(132, 244, 59, 0.15)',
+                      color: currentActiveOrder.currentState === 'REFUNDED' ? '#EF4444' : 'var(--brand-green)'
+                    }}>
+                      {currentActiveOrder.currentState || 'ESCROWED'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>
+                    #{currentActiveOrder.tokenId || currentActiveOrder.id || '101'} • {currentActiveOrder.originalMerchant || currentActiveOrder.merchant || 'Flagship'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick focused action chips */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                {getOrderPin(currentActiveOrder) && (
+                  <button
+                    type="button"
+                    onClick={() => handleCopyPin(getOrderPin(currentActiveOrder), currentActiveOrder.tokenId || 'focused')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '4px 10px',
+                      borderRadius: '8px',
+                      background: '#121E1E',
+                      border: '1px solid rgba(132, 244, 59, 0.3)',
+                      color: 'var(--brand-green)',
+                      fontSize: '0.72rem',
+                      fontFamily: 'var(--font-mono, monospace)',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                    title="Copy pickup PIN"
+                  >
+                    <Key size={11} />
+                    <span>PIN: {getOrderPin(currentActiveOrder)}</span>
+                    {copiedPin === (currentActiveOrder.tokenId || 'focused') ? <Check size={11} /> : <Copy size={11} />}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => handleSendMessage(`Where is the pickup store for ${currentActiveOrder.productName || currentActiveOrder.name} and what are their operating hours?`, currentActiveOrder)}
+                  disabled={isTyping}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    background: '#121C1C',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    color: '#D1D5DB',
+                    fontSize: '0.7rem',
+                    cursor: isTyping ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Store Info
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSendMessage(`Can I refund or cancel my order for ${currentActiveOrder.productName || currentActiveOrder.name} and how does escrow protection work?`, currentActiveOrder)}
+                  disabled={isTyping}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    background: '#121C1C',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    color: '#D1D5DB',
+                    fontSize: '0.7rem',
+                    cursor: isTyping ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Refund / Escrow Rules
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleClearFocus}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '4px 8px',
+                    borderRadius: '8px',
+                    background: 'rgba(255, 255, 255, 0.06)',
+                    border: '1px solid rgba(255, 255, 255, 0.12)',
+                    color: '#9CA3AF',
+                    fontSize: '0.7rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title="Clear focused order"
+                >
+                  <X size={12} />
+                  <span>Clear Focus</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Message Input Dock */}
           <form 
@@ -619,35 +946,57 @@ What would you like to explore today?`;
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '310px', overflowY: 'auto' }}>
                 {allUserOrders.map((ord, idx) => {
                   const pin = getOrderPin(ord);
-                  const isSelected = currentActiveOrder?.tokenId === ord.tokenId;
+                  const isSelected = Boolean(
+                    (currentActiveOrder?.tokenId && String(currentActiveOrder.tokenId) === String(ord.tokenId)) ||
+                    (currentActiveOrder?.id && String(currentActiveOrder.id) === String(ord.id)) ||
+                    (currentActiveOrder?.productName && currentActiveOrder.productName === ord.productName) ||
+                    (currentActiveOrder?.name && currentActiveOrder.name === ord.name)
+                  );
                   const isCancelled = ord.currentState === 'REFUNDED';
                   return (
                     <div
                       key={ord.tokenId || ord.id || idx}
-                      onClick={() => {
-                        setCurrentActiveOrder(ord);
-                        handleSendMessage(`What is my verification PIN code and escrow status for ${ord.productName || ord.name}?`, ord);
-                      }}
+                      onClick={() => handleFocusOrder(ord)}
+                      role="button"
+                      tabIndex={0}
                       style={{
                         padding: '12px 14px',
-                        background: isSelected ? 'rgba(132, 244, 59, 0.08)' : '#121C1C',
-                        border: isSelected ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.07)',
+                        background: isSelected ? 'rgba(132, 244, 59, 0.1)' : '#121C1C',
+                        border: isSelected ? '1.5px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.07)',
                         borderRadius: '16px',
                         cursor: 'pointer',
-                        transition: 'all 0.15s ease'
+                        transition: 'all 0.15s ease',
+                        boxShadow: isSelected ? '0 0 16px rgba(132, 244, 59, 0.18)' : 'none'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                        <strong style={{ fontSize: '0.8rem', color: '#FFFFFF' }}>
-                          {ord.productName || ord.name}
-                        </strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                          <strong style={{ fontSize: '0.8rem', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {ord.productName || ord.name}
+                          </strong>
+                          {isSelected && (
+                            <span style={{
+                              fontSize: '0.58rem',
+                              fontWeight: 800,
+                              color: 'var(--brand-green)',
+                              background: 'rgba(132, 244, 59, 0.18)',
+                              border: '1px solid rgba(132, 244, 59, 0.4)',
+                              padding: '1px 4px',
+                              borderRadius: '4px',
+                              flexShrink: 0
+                            }}>
+                              FOCUSED
+                            </span>
+                          )}
+                        </div>
                         <span style={{
                           fontSize: '0.66rem',
                           fontWeight: 700,
                           color: isCancelled ? '#EF4444' : 'var(--brand-green)',
                           background: isCancelled ? 'rgba(239, 68, 68, 0.12)' : 'var(--brand-green-dim)',
                           padding: '1px 6px',
-                          borderRadius: '6px'
+                          borderRadius: '6px',
+                          flexShrink: 0
                         }}>
                           {isCancelled ? 'CANCELLED' : (ord.currentState || 'ESCROWED')}
                         </span>

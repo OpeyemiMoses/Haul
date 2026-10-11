@@ -608,32 +608,56 @@ How can I help you today?`;
                     </div>
                   </div>
 
-                  {/* PIN Quick Pill */}
-                  {getOrderPin(currentActiveOrder) && (
-                    <div 
-                      onClick={() => handleCopyPin(getOrderPin(currentActiveOrder))}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* PIN Quick Pill */}
+                    {getOrderPin(currentActiveOrder) && (
+                      <div 
+                        onClick={() => handleCopyPin(getOrderPin(currentActiveOrder))}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 12px',
+                          borderRadius: '10px',
+                          background: '#080F0F',
+                          border: '1px solid var(--brand-green)',
+                          color: 'var(--brand-green)',
+                          fontSize: '0.78rem',
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          boxShadow: '0 0 10px rgba(132, 244, 59, 0.15)'
+                        }}
+                        title="Click to copy pickup verification PIN"
+                      >
+                        <Key size={12} />
+                        <span>PIN: {getOrderPin(currentActiveOrder)}</span>
+                        {copiedPin === getOrderPin(currentActiveOrder) ? <Check size={12} /> : <Copy size={12} />}
+                      </div>
+                    )}
+
+                    {/* Clear Focus Button */}
+                    <button
+                      type="button"
+                      onClick={() => setCurrentActiveOrder(null)}
                       style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        border: '1px solid rgba(255, 255, 255, 0.14)',
+                        color: '#9CA3AF',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 12px',
-                        borderRadius: '10px',
-                        background: '#080F0F',
-                        border: '1px solid var(--brand-green)',
-                        color: 'var(--brand-green)',
-                        fontSize: '0.78rem',
-                        fontFamily: 'var(--font-mono)',
-                        fontWeight: 800,
+                        justifyContent: 'center',
                         cursor: 'pointer',
-                        boxShadow: '0 0 10px rgba(132, 244, 59, 0.15)'
+                        transition: 'all 0.15s ease'
                       }}
-                      title="Click to copy pickup verification PIN"
+                      title="Clear focused order"
                     >
-                      <Key size={12} />
-                      <span>PIN: {getOrderPin(currentActiveOrder)}</span>
-                      {copiedPin === getOrderPin(currentActiveOrder) ? <Check size={12} /> : <Copy size={12} />}
-                    </div>
-                  )}
+                      <X size={13} />
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -653,7 +677,12 @@ How can I help you today?`;
                   const isUser = m.role === 'user';
                   const lower = m.content.toLowerCase();
                   const mentionsStore = lower.includes('message the store') || lower.includes('message store') || lower.includes('direct chat with the store');
-                  const asksWhichOrder = lower.includes('which order do you need') || lower.includes('which one would you like');
+                  const asksWhichOrder = 
+                    lower.includes('which order do you need') || 
+                    lower.includes('which one would you like') ||
+                    lower.includes('tap any order card') ||
+                    lower.includes('need assistance with a specific order') ||
+                    lower.includes('account orders & escrow summary');
                   const targetStoreName = currentActiveOrder?.originalMerchant || currentActiveOrder?.merchant || 'the store';
 
                   return (
@@ -726,40 +755,68 @@ How can I help you today?`;
                               Tap to select your order:
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
-                              {allUserOrders.map((ord, oIdx) => (
-                                <button
-                                  key={ord.tokenId || ord.id || oIdx}
-                                  onClick={() => handlePickOrder(ord)}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '10px',
-                                    padding: '8px 12px',
-                                    borderRadius: '12px',
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    border: '1px solid rgba(132, 244, 59, 0.3)',
-                                    color: '#FFFFFF',
-                                    cursor: 'pointer',
-                                    textAlign: 'left',
-                                    transition: 'all 0.2s'
-                                  }}
-                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(132, 244, 59, 0.12)'}
-                                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
-                                >
-                                  <div style={{ width: '28px', height: '28px', borderRadius: '6px', overflow: 'hidden', background: '#080F0F', flexShrink: 0 }}>
-                                    <img src={ord.imageUri || '/assets/air_max_95.jpg'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                  </div>
-                                  <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
-                                    <div style={{ fontSize: '0.78rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                      {ord.productName || ord.name}
+                              {allUserOrders.map((ord, oIdx) => {
+                                const isSelected = Boolean(
+                                  (currentActiveOrder?.tokenId && String(currentActiveOrder.tokenId) === String(ord.tokenId)) ||
+                                  (currentActiveOrder?.id && String(currentActiveOrder.id) === String(ord.id)) ||
+                                  (currentActiveOrder?.productName && currentActiveOrder.productName === ord.productName) ||
+                                  (currentActiveOrder?.name && currentActiveOrder.name === ord.name)
+                                );
+                                return (
+                                  <button
+                                    key={ord.tokenId || ord.id || oIdx}
+                                    onClick={() => handlePickOrder(ord)}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '10px',
+                                      padding: '8px 12px',
+                                      borderRadius: '12px',
+                                      background: isSelected ? 'rgba(132, 244, 59, 0.14)' : 'rgba(255, 255, 255, 0.05)',
+                                      border: isSelected ? '1.5px solid var(--brand-green)' : '1px solid rgba(132, 244, 59, 0.3)',
+                                      color: '#FFFFFF',
+                                      cursor: 'pointer',
+                                      textAlign: 'left',
+                                      transition: 'all 0.2s',
+                                      boxShadow: isSelected ? '0 0 12px rgba(132, 244, 59, 0.2)' : 'none'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (!isSelected) e.currentTarget.style.background = 'rgba(132, 244, 59, 0.12)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (!isSelected) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                    }}
+                                  >
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', overflow: 'hidden', background: '#080F0F', flexShrink: 0 }}>
+                                      <img src={ord.imageUri || '/assets/air_max_95.jpg'} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </div>
-                                    <div style={{ fontSize: '0.66rem', color: 'var(--brand-green)' }}>
-                                      #{ord.tokenId || ord.id} • {ord.currentState || 'ESCROWED'}
+                                    <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                                        <span style={{ fontSize: '0.78rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                          {ord.productName || ord.name}
+                                        </span>
+                                        {isSelected && (
+                                          <span style={{
+                                            fontSize: '0.58rem',
+                                            fontWeight: 800,
+                                            color: 'var(--brand-green)',
+                                            background: 'rgba(132, 244, 59, 0.2)',
+                                            border: '1px solid rgba(132, 244, 59, 0.4)',
+                                            padding: '1px 4px',
+                                            borderRadius: '4px'
+                                          }}>
+                                            FOCUSED
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div style={{ fontSize: '0.66rem', color: 'var(--brand-green)' }}>
+                                        #{ord.tokenId || ord.id} • {ord.currentState || 'ESCROWED'}
+                                      </div>
                                     </div>
-                                  </div>
-                                  <ChevronRight size={13} color="var(--brand-green)" />
-                                </button>
-                              ))}
+                                    <ChevronRight size={13} color="var(--brand-green)" />
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
                         )}

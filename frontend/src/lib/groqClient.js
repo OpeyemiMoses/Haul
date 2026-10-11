@@ -257,7 +257,7 @@ You have ${passports.length} orders on your account. Which one would you like th
 
 ${list}
 
-Tap one of the order buttons on the right or type the item name, and I will instantly reveal your 4-digit pickup PIN!`;
+Tap any order card below or on the right to focus our conversation on it, or type the item name!`;
     }
 
     // If single order
@@ -294,7 +294,7 @@ Present this 4-digit PIN (\`${pin}\`) to the merchant when collecting your item.
       return `${idx + 1}. ${p.productName || p.name}\n• Status: ${statusLabel}\n• PIN: \`${pin}\` • Order ID: #${p.tokenId || p.id}\n• Merchant: ${p.originalMerchant || p.merchant || 'Flagship'}`;
     }).join('\n\n');
 
-    return `Your Account Orders & Escrow Summary\n\n${orderLines}\n\nNeed assistance with a specific order? You can tap any order card on the right to focus our conversation on it.`;
+    return `Your Account Orders & Escrow Summary\n\n${orderLines}\n\nNeed assistance with a specific order? Tap any order card below or on the right to focus our conversation on it.`;
   }
 
   // 3. Product Catalog & Inventory inquiry (shoes, phones, headphones, sizes, colors, prices)
