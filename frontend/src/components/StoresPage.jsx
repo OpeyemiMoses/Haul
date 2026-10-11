@@ -36,6 +36,13 @@ export default function StoresPage({
   const { user, authenticated, userStore, userLocation } = useAuth();
   const buyerLocation = userLocation || 'Victoria Island, Lagos';
 
+  // Always start Stores page strictly from the top of the browser window
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   const [internalSearch, setInternalSearch] = useState('');
   const activeSearch = searchQuery !== undefined ? searchQuery : internalSearch;
   const handleSearchChange = (val) => {

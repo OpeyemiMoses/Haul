@@ -41,7 +41,7 @@ import { getConversationsForUser } from './lib/messageRegistry';
 const INITIAL_DEMO_PASSPORTS = [
   {
     tokenId: 101,
-    productId: 1,
+    productId: 'demo-sony-fx3',
     productName: 'Sony FX3 Cinema Line Full-Frame Camera',
     productBrand: 'Sony Pro Imaging',
     serialNumber: 'SN-FX3-98214',
@@ -57,7 +57,7 @@ const INITIAL_DEMO_PASSPORTS = [
   },
   {
     tokenId: 102,
-    productId: 2,
+    productId: 'demo-teenage-op1',
     productName: 'Teenage Engineering OP-1 Field Synthesizer',
     productBrand: 'Teenage Engineering',
     serialNumber: 'SN-TE-41908',
@@ -420,15 +420,16 @@ function MainApp() {
     let attachedPassport = passport && isPassportInHand(passport) ? passport : null;
     if (!attachedPassport && myPassports && myPassports.length > 0) {
       if (product) {
-        // When reviewing a specific product, MUST strictly match THAT product!
-        const prodId = String(product.productId || product.id || '');
+        // When reviewing a specific product, MUST strictly match THAT exact product!
+        const prodId = String(product.productId || product.id || '').trim();
         const prodName = (product.name || product.productName || '').toLowerCase().trim();
         attachedPassport = myPassports.find(p => {
           if (!isPassportInHand(p)) return false;
-          const pId = String(p.productId || p.id || '');
+          const pId = String(p.productId || p.id || '').trim();
           const pName = (p.productName || p.name || '').toLowerCase().trim();
-          return (prodId && (pId === prodId || String(p.tokenId) === prodId)) ||
-                 (prodName && pName && (prodName === pName || prodName.includes(pName) || pName.includes(prodName)));
+          if (prodId && pId && prodId === pId) return true;
+          if (prodName && pName && prodName.length >= 4 && pName.length >= 4 && prodName === pName) return true;
+          return false;
         });
       } else {
         // General merchant review: find any in-hand item from this merchant
@@ -461,11 +462,7 @@ function MainApp() {
         name: product.name || product.productName,
         imageUri: product.imageUri || product.images?.[0] || attachedPassport?.imageUri,
         productId: product.productId || product.id
-      } : (attachedPassport ? {
-        name: attachedPassport.productName || 'Purchased Item',
-        imageUri: attachedPassport.imageUri,
-        productId: attachedPassport.productId || attachedPassport.id
-      } : null),
+      } : null,
       passport: attachedPassport
     });
     setRatingModalOpen(true);

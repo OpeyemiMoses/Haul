@@ -348,28 +348,6 @@ export default function Navbar({
                 </span>
               )}
             </button>
-
-            <button
-              id="nav-tab-assistant"
-              onClick={() => setActiveTab && setActiveTab('assistant')}
-              style={{
-                padding: '6px 13px',
-                borderRadius: '999px',
-                background: activeTab === 'assistant' ? 'var(--brand-green)' : 'transparent',
-                border: 'none',
-                color: activeTab === 'assistant' ? '#080F0F' : '#9CA3AF',
-                fontSize: '0.78rem',
-                fontWeight: activeTab === 'assistant' ? 700 : 500,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Sparkles size={13} color={activeTab === 'assistant' ? '#080F0F' : 'var(--brand-green)'} />
-              <span>AI Concierge</span>
-            </button>
           </div>
         </div>
       </div>

@@ -40,17 +40,18 @@ export default function StoreReviewModal({
     }
   };
 
-  const activeProduct = product || passport;
-  const activeProductName = product?.name || product?.productName || passport?.productName || passport?.name || 'Authenticated Luxury Item';
-  const activeProductImage = product?.imageUri || passport?.imageUri || (product?.images?.[0]) || '/assets/air_max_95.jpg';
-  const activeTokenId = product?.tokenId || passport?.tokenId || null;
-  const activeSerial = product?.serialNumber || passport?.serialNumber || null;
+  const isProductReview = Boolean(product && (product.productId || product.id || product.name));
+  const activeProduct = isProductReview ? product : null;
+  const activeProductName = activeProduct ? (product?.name || product?.productName || null) : null;
+  const activeProductImage = activeProduct ? (product?.imageUri || (product?.images?.[0]) || null) : null;
+  const activeTokenId = passport?.tokenId || product?.tokenId || null;
+  const activeSerial = passport?.serialNumber || product?.serialNumber || null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!merchant?.id) return;
 
-    const prodId = activeProduct?.productId || activeProduct?.id || null;
+    const prodId = isProductReview ? (product?.productId || product?.id || null) : null;
 
     const newReview = {
       id: `rev-${Date.now()}`,
@@ -220,7 +221,7 @@ export default function StoreReviewModal({
             </div>
 
             {/* Verified Onchain Purchase Card */}
-            {activeProduct && (
+            {isProductReview && activeProductName ? (
               <div style={{
                 background: 'rgba(132, 244, 59, 0.05)',
                 border: '1px solid rgba(132, 244, 59, 0.25)',
@@ -231,11 +232,13 @@ export default function StoreReviewModal({
                 gap: '12px',
                 marginBottom: '20px'
               }}>
-                <img 
-                  src={activeProductImage} 
-                  alt={activeProductName} 
-                  style={{ width: '42px', height: '42px', borderRadius: '10px', objectFit: 'contain', background: '#0D1616', border: '1px solid rgba(255, 255, 255, 0.08)', flexShrink: 0 }} 
-                />
+                {activeProductImage && (
+                  <img 
+                    src={activeProductImage} 
+                    alt={activeProductName} 
+                    style={{ width: '42px', height: '42px', borderRadius: '10px', objectFit: 'contain', background: '#0D1616', border: '1px solid rgba(255, 255, 255, 0.08)', flexShrink: 0 }} 
+                  />
+                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
                     <span style={{ 
@@ -250,7 +253,7 @@ export default function StoreReviewModal({
                       gap: '4px'
                     }}>
                       <ShieldCheck size={12} />
-                      <span>VERIFIED ONCHAIN PURCHASE</span>
+                      <span>VERIFIED ITEM IN HAND</span>
                     </span>
                     {activeTokenId && (
                       <span style={{ fontSize: '0.66rem', color: '#9CA3AF' }}>
@@ -268,7 +271,23 @@ export default function StoreReviewModal({
                   )}
                 </div>
               </div>
-            )}
+            ) : passport ? (
+              <div style={{
+                background: 'rgba(132, 244, 59, 0.05)',
+                border: '1px solid rgba(132, 244, 59, 0.25)',
+                borderRadius: '14px',
+                padding: '10px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                marginBottom: '20px'
+              }}>
+                <ShieldCheck size={18} color="var(--brand-green)" style={{ flexShrink: 0 }} />
+                <div style={{ fontSize: '0.74rem', color: '#D1D5DB' }}>
+                  Verified store patron with onchain purchase passport <strong style={{ color: '#FFFFFF' }}>#{passport.tokenId || passport.serialNumber || 'Verified'}</strong>
+                </div>
+              </div>
+            ) : null}
 
             {/* Interactive Star Selection */}
             <div style={{ textAlign: 'center', margin: '20px 0 16px' }}>

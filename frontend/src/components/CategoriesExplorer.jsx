@@ -76,6 +76,13 @@ const CATEGORIES_DATA = [
 ];
 
 export default function CategoriesExplorer({ onSelectCategory }) {
+  // Always start Categories Explorer strictly from the top of the browser window
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   return (
     <div className="page-fade-in" style={{ maxWidth: '1440px', margin: '0 auto', padding: '0 0 60px' }}>
       

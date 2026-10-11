@@ -145,6 +145,13 @@ export default function ProfilePage({
     }
   }, [activeTab, initialSubTab]);
 
+  // Always start Profile & Passports pages strictly from the top of the browser window
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [activeTab, subTab]);
+
   useScrollReveal([subTab, passports?.length]);
 
   // User Reviews list

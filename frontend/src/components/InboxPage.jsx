@@ -76,7 +76,15 @@ export default function InboxPage({
 
   const [inputText, setInputText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const messagesEndRef = useRef(null);
+  const chatScrollRef = useRef(null);
+  const isInitialMountRef = useRef(true);
+
+  // Always start Inbox page strictly from the top of the browser window
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
 
   // If targetContext changes (e.g. user clicked "Message Store" on a store or product)
   useEffect(() => {
@@ -121,9 +129,19 @@ export default function InboxPage({
   // Active conversation object
   const selectedConv = currentList.find(c => c.id === selectedConvId) || currentList[0] || buyerConvs[0] || conversationsPool[0];
 
+  // Scroll only internal chat feed, NEVER scroll window down
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [selectedConv?.messages?.length]);
+    if (!chatScrollRef.current) return;
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      return;
+    }
+    chatScrollRef.current.scrollTo({
+      top: chatScrollRef.current.scrollHeight,
+      behavior: 'smooth'
+    });
+  }, [selectedConv?.messages?.length, selectedConvId]);
 
   const handleSendMessage = (e) => {
     if (e) e.preventDefault();
@@ -608,14 +626,17 @@ export default function InboxPage({
             )}
 
             {/* Message Feed */}
-            <div style={{
-              flex: 1,
-              overflowY: 'auto',
-              padding: '20px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}>
+            <div 
+              ref={chatScrollRef}
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}
+            >
               {selectedConv.messages.map((msg) => {
                 const isFromMe = (activeFolder === 'buyer' && msg.sender === 'user') || (activeFolder === 'store' && msg.sender === 'merchant');
 
@@ -656,7 +677,6 @@ export default function InboxPage({
                   </div>
                 );
               })}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Input Form */}

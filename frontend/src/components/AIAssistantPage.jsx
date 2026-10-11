@@ -55,7 +55,8 @@ export default function AIAssistantPage({
   const [showConfig, setShowConfig] = useState(false);
   const [customKey, setCustomKey] = useState(() => getGroqApiKey());
 
-  const messagesEndRef = useRef(null);
+  const chatScrollContainerRef = useRef(null);
+  const isInitialMount = useRef(true);
   const inputRef = useRef(null);
 
   // Extract all user orders comprehensively from props and localStorage
@@ -145,10 +146,26 @@ What would you like to explore today?`;
     ]);
   }, [activeOrderContext, user, userStore, userRole]);
 
-  // Auto-scroll chat stream
+  // Always start AI Concierge page strictly from the top of the window
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+  // Auto-scroll internal chat container only, never hijack window scroll
+  useEffect(() => {
+    if (!chatScrollContainerRef.current) return;
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      chatScrollContainerRef.current.scrollTop = chatScrollContainerRef.current.scrollHeight;
+      return;
+    }
+    chatScrollContainerRef.current.scrollTo({
+      top: chatScrollContainerRef.current.scrollHeight,
+      behavior: 'smooth'
+    });
+  }, [messages.length, isTyping]);
 
   useScrollReveal([messages.length, currentActiveOrder]);
 
@@ -284,19 +301,6 @@ What would you like to explore today?`;
               <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
                 Haul AI Companion
               </h1>
-              <span style={{
-                background: 'var(--brand-green-dim)',
-                color: 'var(--brand-green)',
-                border: '1px solid var(--brand-green-border)',
-                padding: '2px 8px',
-                borderRadius: '999px',
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.04em'
-              }}>
-                Llama 3.3 70B
-              </span>
             </div>
             <p style={{ margin: '4px 0 0', color: '#9CA3AF', fontSize: '0.82rem' }}>
               Specialized concierge with unconstrained reasoning across the entire Haul catalog, verified stores, and Monad escrow orders.
@@ -368,6 +372,7 @@ What would you like to explore today?`;
         >
           {/* Messages Scroll Area */}
           <div 
+            ref={chatScrollContainerRef}
             className="hide-scrollbar"
             style={{
               flex: 1,
@@ -449,7 +454,6 @@ What would you like to explore today?`;
               </div>
             )}
 
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Quick Suggestion Chips */}

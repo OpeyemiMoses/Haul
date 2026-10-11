@@ -274,17 +274,26 @@ export default function Marketplace({
     );
   };
 
-  // Check if current user has an item in hand for this product
+  // Check if current user has an item in hand for this EXACT product (never other store items)
   const hasPurchasedProduct = (prod) => {
     if (!passports || !passports.length || !prod) return false;
-    const prodId = String(prod.productId || prod.id || '');
-    const prodName = (prod.name || prod.productName || '').toLowerCase().trim();
+    const targetProdId = String(prod.productId || prod.id || '').trim();
+    const targetProdName = (prod.name || prod.productName || '').trim().toLowerCase();
+    if (!targetProdId && !targetProdName) return false;
+
     return passports.some(p => {
-      if (!isPassportInHand(p)) return false; // Must strictly have item in hand!
-      const pId = String(p.productId || p.id || '');
-      const pName = (p.productName || p.name || '').toLowerCase().trim();
-      if (prodId && (pId === prodId || String(p.tokenId) === prodId)) return true;
-      if (prodName && pName && (prodName === pName || prodName.includes(pName) || pName.includes(prodName))) return true;
+      if (!isPassportInHand(p)) return false; // Must strictly have collected item in hand!
+      const pProdId = String(p.productId || '').trim();
+      const pName = (p.productName || p.name || '').trim().toLowerCase();
+
+      // 1. Strict Product ID match
+      if (targetProdId && pProdId && targetProdId === pProdId) return true;
+
+      // 2. Exact full normalized product name match (never partial word matching!)
+      if (targetProdName && pName && targetProdName.length >= 4 && pName.length >= 4 && targetProdName === pName) {
+        return true;
+      }
+
       return false;
     });
   };
@@ -357,32 +366,30 @@ export default function Marketplace({
         if (!matchesMerchant) return false;
       }
 
-      // Category filter matching
+      // Category filter matching (strictly by product category, NOT brand or product name keywords)
       const currentCat = (activeCategory || selectedCategory || 'All').trim().toLowerCase();
       let matchesCat = currentCat === 'all' || currentCat === 'all curations' || currentCat === '';
       if (!matchesCat) {
-        const prodCat = (p.category || '').toLowerCase();
-        const prodBrand = (p.brand || '').toLowerCase();
-        const prodName = (p.name || '').toLowerCase();
+        const prodCat = (p.category || '').toLowerCase().trim();
 
-        if (currentCat === 'footwear' || currentCat.includes('shoe') || currentCat.includes('footwear')) {
-          matchesCat = prodCat.includes('footwear') || prodCat.includes('shoe') || prodCat.includes('sneaker') || prodName.includes('air max') || prodName.includes('jordan') || prodBrand.includes('nike');
-        } else if (currentCat === 'apparel' || currentCat.includes('clothing') || currentCat.includes('apparel')) {
-          matchesCat = prodCat.includes('apparel') || prodCat.includes('clothing') || prodCat.includes('jacket') || prodCat.includes('fleece') || prodCat.includes('shirt') || prodCat.includes('hoodie');
-        } else if (currentCat === 'accessories' || currentCat.includes('bag') || currentCat.includes('accessori')) {
-          matchesCat = prodCat.includes('accessories') || prodCat.includes('bag') || prodCat.includes('backpack') || prodCat.includes('cap') || prodCat.includes('hat') || prodCat.includes('wallet');
+        if (currentCat === 'footwear' || currentCat.includes('shoe')) {
+          matchesCat = prodCat === 'footwear' || prodCat === 'shoes' || prodCat === 'sneakers';
+        } else if (currentCat === 'apparel' || currentCat.includes('clothing')) {
+          matchesCat = prodCat === 'apparel' || prodCat === 'clothing';
+        } else if (currentCat === 'accessories' || currentCat.includes('bag')) {
+          matchesCat = prodCat === 'accessories' || prodCat === 'bags';
         } else if (currentCat === 'audio' || currentCat.includes('sound')) {
-          matchesCat = prodCat.includes('audio') || prodCat.includes('headphone') || prodCat.includes('speaker') || prodCat.includes('acoustics') || prodCat.includes('sound') || prodBrand.includes('sony') || prodBrand.includes('bowers');
-        } else if (currentCat === 'tech' || currentCat.includes('device') || currentCat.includes('phone') || currentCat.includes('comput')) {
-          matchesCat = prodCat.includes('tech') || prodCat.includes('computing') || prodCat.includes('camera') || prodCat.includes('phone') || prodCat.includes('iphone') || prodCat.includes('laptop') || prodCat.includes('device') || prodCat.includes('hardware') || prodBrand.includes('apple') || prodBrand.includes('sony');
-        } else if (currentCat === 'synthesizers' || currentCat.includes('synth') || currentCat.includes('instrument')) {
-          matchesCat = prodCat.includes('synthesizer') || prodCat.includes('instruments') || prodName.includes('op-1') || prodName.includes('synthesizer') || prodBrand.includes('teenage');
-        } else if (currentCat === 'watches' || currentCat.includes('watch') || currentCat.includes('horology') || currentCat.includes('timepiece')) {
-          matchesCat = prodCat.includes('watch') || prodCat.includes('horology') || prodCat.includes('timepiece') || prodName.includes('submariner') || prodName.includes('rolex') || prodBrand.includes('rolex');
+          matchesCat = prodCat === 'audio' || prodCat.includes('audio');
+        } else if (currentCat === 'tech' || currentCat.includes('device')) {
+          matchesCat = prodCat === 'tech' || prodCat === 'technology' || prodCat === 'smart devices';
+        } else if (currentCat === 'synthesizers' || currentCat.includes('synth')) {
+          matchesCat = prodCat === 'synthesizers' || prodCat === 'synthesizer';
+        } else if (currentCat === 'watches' || currentCat.includes('watch')) {
+          matchesCat = prodCat === 'watches' || prodCat === 'watch';
         } else if (currentCat === 'eyewear' || currentCat.includes('optic') || currentCat.includes('glass')) {
-          matchesCat = prodCat.includes('eyewear') || prodCat.includes('optics') || prodCat.includes('glasses') || prodCat.includes('sunglasses') || prodBrand.includes('gentle monster');
+          matchesCat = prodCat === 'eyewear' || prodCat === 'optics';
         } else {
-          matchesCat = prodCat.includes(currentCat) || currentCat.includes(prodCat) || prodName.includes(currentCat) || prodBrand.includes(currentCat);
+          matchesCat = prodCat === currentCat;
         }
       }
 
@@ -503,7 +510,7 @@ export default function Marketplace({
 
       const newPassport = {
         tokenId,
-        productId: checkoutProduct.productId || 1,
+        productId: checkoutProduct.productId || checkoutProduct.id || ('prod-' + (checkoutProduct.name ? checkoutProduct.name.toLowerCase().replace(/[^a-z0-9]/g, '') : tokenId)),
         productName: checkoutProduct.name,
         productBrand: checkoutProduct.brand,
         imageUri: checkoutProduct.imageUri || '/assets/air_max_95.jpg',

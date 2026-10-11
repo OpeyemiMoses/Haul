@@ -32,6 +32,12 @@ export default function SettingsPage({ onNavigateTab }) {
   const [resetSuccess, setResetSuccess] = useState(false);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+  useEffect(() => {
     applyTheme(themeMode);
   }, [themeMode]);
 

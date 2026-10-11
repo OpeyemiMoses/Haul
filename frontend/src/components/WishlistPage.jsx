@@ -24,6 +24,13 @@ export default function WishlistPage({
   onOpenStore,
   onOpenRateSeller
 }) {
+  // Always start Wishlist page strictly from the top of the browser window
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   return (
     <div className="page-fade-in" style={{ maxWidth: '1440px', margin: '0 auto', width: '100%', padding: '0 0 60px' }}>
       
