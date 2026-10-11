@@ -40,6 +40,13 @@ export default function SidebarNav({
       onClick: () => setActiveTab('shop')
     },
     {
+      id: 'stores',
+      label: 'Stores',
+      icon: Store,
+      badge: null,
+      onClick: () => setActiveTab('stores')
+    },
+    {
       id: 'passports',
       label: 'My Certificates',
       icon: ShieldCheck,

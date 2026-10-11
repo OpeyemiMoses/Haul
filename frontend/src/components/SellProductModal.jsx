@@ -193,10 +193,38 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
         console.warn('Listing local fallback used:', onchainErr);
       }
 
+      const newProduct = {
+        id: Date.now(),
+        productId: Date.now(),
+        name: name.trim(),
+        brand: brand.trim(),
+        category: finalCategory,
+        imageUri: imageUri.trim() || 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=800&q=80',
+        description: description.trim() || `Authentic ${brand} ${name} backed by living onchain Product Passport.`,
+        priceUsd: parseFloat(priceUsd),
+        priceUsdCents: Math.round(parseFloat(priceUsd) * 100),
+        warrantyDurationSeconds: (parseInt(warrantyMonths, 10) || 12) * 30 * 24 * 3600,
+        warrantyMonths: parseInt(warrantyMonths, 10) || 12,
+        stock: parseInt(stock, 10) || 1,
+        merchant: userStore?.name || user?.name || 'Verified Merchant',
+        merchantId: userStore?.id || 'user-store',
+        merchantLocation: userStore?.location || 'Victoria Island, Lagos',
+        allowsPickup,
+        allowsDelivery,
+        active: true,
+        rating: 5.0,
+        reviewsCount: 1
+      };
+
+      try {
+        const existing = JSON.parse(localStorage.getItem('hual_custom_listed_products') || '[]');
+        localStorage.setItem('hual_custom_listed_products', JSON.stringify([newProduct, ...existing]));
+      } catch {}
+
       setSuccessTx(txHash);
 
       if (onProductListed) {
-        onProductListed();
+        onProductListed(newProduct);
       }
     } catch (err) {
       console.error('Failed to list product:', err);

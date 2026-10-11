@@ -18,6 +18,7 @@ import SellProductModal from './components/SellProductModal';
 import MerchantDashboard from './components/MerchantDashboard';
 import CommerceChatModal from './components/CommerceChatModal';
 import CreateStoreModal from './components/CreateStoreModal';
+import StoresPage from './components/StoresPage';
 import AISupportModal from './components/AISupportModal';
 import AISupportFAB from './components/AISupportFAB';
 import PrivyModal from './lib/auth/PrivyModal';
@@ -445,7 +446,20 @@ function MainApp() {
         user?.address ? fetchOnchainPassports(user.address) : Promise.resolve([]),
         fetchAllOnchainPassports(),
       ]);
-      setProducts(prods);
+
+      const customListed = JSON.parse(localStorage.getItem('hual_custom_listed_products') || '[]');
+      const combinedProds = [...customListed, ...(prods || [])];
+      const seenProdIds = new Set();
+      const uniqueProds = [];
+      for (const p of combinedProds) {
+        if (!p) continue;
+        const pKey = String(p.id || p.productId || p.name);
+        if (!seenProdIds.has(pKey)) {
+          seenProdIds.add(pKey);
+          uniqueProds.push(p);
+        }
+      }
+      setProducts(uniqueProds);
 
       // Passports for authenticated user and local guest sessions
       const addrKey = user?.address ? user.address.toLowerCase() : 'guest';
@@ -698,7 +712,23 @@ function MainApp() {
                   />
                 )}
 
-                {/* 2. CATEGORIES EXPLORER */}
+                {/* 2. DEDICATED STORES PAGE */}
+                {activeTab === 'stores' && (
+                  <StoresPage
+                    products={products}
+                    onSelectStore={(store) => {
+                      setSelectedStore(store);
+                      setActiveTab('shop');
+                    }}
+                    onOpenCreateStore={() => setCreateStoreOpen(true)}
+                    onOpenSellModal={() => setSellModalOpen(true)}
+                    onOpenInbox={handleOpenInbox}
+                    followedStores={followedStores}
+                    onToggleFollowStore={toggleFollowStore}
+                  />
+                )}
+
+                {/* 3. CATEGORIES EXPLORER */}
                 {activeTab === 'categories' && (
                   <CategoriesExplorer
                     onSelectCategory={(catName) => {
@@ -923,10 +953,13 @@ function MainApp() {
         isOpen={sellModalOpen}
         onClose={() => setSellModalOpen(false)}
         onOpenCreateStore={() => setCreateStoreOpen(true)}
-        onProductListed={() => {
+        onProductListed={(newProd) => {
+          if (newProd) {
+            setProducts(prev => [newProd, ...prev.filter(p => String(p.id || p.productId) !== String(newProd.id || newProd.productId))]);
+          }
           loadData();
           setCurrentView('storefront');
-          setActiveTab('shop');
+          setActiveTab('stores');
         }}
       />
 

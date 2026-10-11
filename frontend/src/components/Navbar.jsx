@@ -137,8 +137,29 @@ export default function Navbar({
                 transition: 'all 0.15s ease'
               }}
             >
-              <Store size={13} color={activeTab === 'shop' ? '#080F0F' : 'currentColor'} />
+              <ShoppingBag size={13} color={activeTab === 'shop' ? '#080F0F' : 'currentColor'} />
               <span>Shop</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab && setActiveTab('stores')}
+              style={{
+                padding: '6px 13px',
+                borderRadius: '999px',
+                background: activeTab === 'stores' ? 'var(--brand-green)' : 'transparent',
+                border: 'none',
+                color: activeTab === 'stores' ? '#080F0F' : '#9CA3AF',
+                fontSize: '0.78rem',
+                fontWeight: activeTab === 'stores' ? 700 : 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Store size={13} color={activeTab === 'stores' ? '#080F0F' : 'currentColor'} />
+              <span>Stores</span>
             </button>
 
             {(userStore || userRole === 'merchant') && (

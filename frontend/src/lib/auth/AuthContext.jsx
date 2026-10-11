@@ -271,6 +271,13 @@ export function AuthProvider({ children }) {
     setUserRole('merchant');
     localStorage.setItem('hual_user_store', JSON.stringify(newStore));
     localStorage.setItem('hual_user_role', 'merchant');
+
+    try {
+      const existing = JSON.parse(localStorage.getItem('hual_all_created_stores') || '[]');
+      const updatedList = [newStore, ...existing.filter(s => s.id !== newStore.id)];
+      localStorage.setItem('hual_all_created_stores', JSON.stringify(updatedList));
+    } catch {}
+
     return newStore;
   };
 

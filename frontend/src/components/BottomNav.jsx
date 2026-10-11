@@ -32,6 +32,12 @@ export default function BottomNav({
       badge: null
     },
     {
+      id: 'stores',
+      label: 'Stores',
+      icon: Store,
+      badge: null
+    },
+    {
       id: 'categories',
       label: 'Categories',
       icon: Layers,
