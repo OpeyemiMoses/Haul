@@ -45,9 +45,9 @@ import {
 import { HualIcon } from './HualLogo';
 import HaulQrCode from './HaulQrCode';
 import CommerceChatModal from './CommerceChatModal';
-import ProductReceiptModal from './ProductReceiptModal';
 import ModalPortal from './ModalPortal';
 import useScrollReveal from '../lib/useScrollReveal';
+import ProductDetailPage from './ProductDetailPage';
 
 export default function Marketplace({ 
   products = [], 
@@ -466,8 +466,35 @@ export default function Marketplace({
   return (
     <div style={{ maxWidth: '1440px', margin: '0 auto', width: '100%', padding: '0 0 60px' }}>
       
-      {/* If viewing a specific Merchant store, provide clear back button */}
-      {selectedMerchant && (
+      {/* VIEW C: FULL DEDICATED PRODUCT DETAIL PAGE (NO MODAL) */}
+      {selectedProduct ? (
+        <ProductDetailPage
+          product={selectedProduct}
+          onBack={() => setSelectedProduct(null)}
+          onAddToCart={(prod, sz) => onAddToCart && onAddToCart(prod, sz)}
+          onStartCheckout={(prod) => handleStartCheckout(prod)}
+          onOpenStore={(prod) => {
+            const mObj = resolveMerchantForProduct(prod);
+            setSelectedMerchant(mObj);
+            setSelectedProduct(null);
+          }}
+          onOpenChat={(prod) => {
+            const mObj = resolveMerchantForProduct(prod);
+            handleOpenChat(mObj, prod);
+          }}
+          onOpenRateItem={(prod) => {
+            const mObj = resolveMerchantForProduct(prod);
+            if (onOpenRateSeller) onOpenRateSeller(mObj, prod);
+          }}
+          hasItemInHand={hasPurchasedProduct(selectedProduct)}
+          wishlist={wishlist}
+          onToggleWishlist={onToggleWishlist}
+          buyerLocation={buyerLocation}
+        />
+      ) : (
+        <>
+          {/* If viewing a specific Merchant store, provide clear back button */}
+          {selectedMerchant && (
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -1341,410 +1368,7 @@ export default function Marketplace({
       </div>
       )
     )}
-
-      {/* ========================================================
-          PRODUCT DETAIL MODAL (SCREEN 03 OF FIGMA SPEC)
-          ======================================================== */}
-      {selectedProduct && (
-        <ModalPortal>
-          <div className="modal-overlay" onClick={() => setSelectedProduct(null)}>
-          <div 
-            className="custom-scrollbar"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              maxWidth: '920px',
-              width: '100%',
-              maxHeight: 'calc(100vh - 48px)',
-              overflowY: 'auto',
-              background: '#0D1616',
-              border: '1px solid rgba(132, 244, 59, 0.35)',
-              borderRadius: '24px',
-              position: 'relative',
-              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.9), 0 0 30px rgba(132, 244, 59, 0.18)',
-              margin: '0 auto'
-            }}
-          >
-            {/* Dedicated Top-Right Close Button */}
-            <button
-              onClick={() => setSelectedProduct(null)}
-              style={{
-                position: 'absolute',
-                top: '16px',
-                right: '16px',
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                borderRadius: '50%',
-                width: '34px',
-                height: '34px',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                zIndex: 50,
-                transition: 'all 0.2s'
-              }}
-            >
-              <X size={18} />
-            </button>
-
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-              alignItems: 'stretch'
-            }}>
-              {/* Left: Product Image, Angle Thumbs & Passport Escrow Guarantee */}
-              <div style={{ 
-                padding: '24px', 
-                background: '#080F0F', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between', 
-                borderRight: '1px solid rgba(255, 255, 255, 0.08)' 
-              }}>
-                <div>
-                  <div style={{
-                    width: '100%',
-                    height: '210px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative'
-                  }}>
-                    <img 
-                      src={selectedProduct.alternateImages?.[selectedImageIndex] || selectedProduct.imageUri} 
-                      alt={selectedProduct.name} 
-                      style={{ maxHeight: '95%', maxWidth: '95%', objectFit: 'contain' }}
-                    />
-                  </div>
-
-                  {/* Thumbnails */}
-                  {selectedProduct.alternateImages && (
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '10px' }}>
-                      {selectedProduct.alternateImages.map((img, idx) => (
-                        <div
-                          key={idx}
-                          onClick={() => setSelectedImageIndex(idx)}
-                          style={{
-                            width: '52px',
-                            height: '52px',
-                            borderRadius: '10px',
-                            background: '#121C1C',
-                            border: selectedImageIndex === idx ? '2px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
-                            cursor: 'pointer',
-                            overflow: 'hidden',
-                            padding: '4px'
-                          }}
-                        >
-                          <img src={img} alt="Angle" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Monad Passport & Escrow Till Box */}
-                <div style={{
-                  marginTop: '16px',
-                  padding: '12px 14px',
-                  background: 'rgba(14, 24, 24, 0.75)',
-                  borderRadius: '14px',
-                  border: '1px solid var(--brand-green-border)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <ShieldCheck size={14} color="var(--brand-green)" />
-                      <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--brand-green)', textTransform: 'uppercase' }}>
-                        Living Product Passport #HUAL-{selectedProduct.productId || '4821'}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.66rem', color: '#9CA3AF', fontFamily: 'var(--font-mono)' }}>Monad Devnet</span>
-                  </div>
-
-                  <div style={{ fontSize: '0.72rem', color: '#D1D5DB', lineHeight: 1.4 }}>
-                    Purchasing mints a verifiable onchain certificate of ownership with active manufacturer warranty attached. Payment is locked in smart contract escrow till handover.
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: Product Spec & Buy Actions (Screen 03) */}
-              <div style={{ padding: '24px 26px 28px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', paddingRight: '36px' }}>
-                    <div>
-                      <div style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--brand-green)', fontWeight: 800, marginBottom: '4px' }}>
-                        {selectedProduct.brand || selectedProduct.category || 'Luxury Goods'}
-                      </div>
-                      <h2 className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', margin: 0, lineHeight: 1.2 }}>
-                        {selectedProduct.name}
-                      </h2>
-                      
-                      {/* Merchant & Location in detail modal */}
-                      <div style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                        <span 
-                          onClick={() => {
-                            const mObj = resolveMerchantForProduct(selectedProduct);
-                            setSelectedMerchant(mObj);
-                            setSelectedProduct(null);
-                          }}
-                          style={{ color: 'var(--brand-green)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
-                          title="Visit merchant storefront"
-                        >
-                          {selectedProduct.merchant || 'Nike Lagos Pop-Up'}
-                        </span>
-                        <span>•</span>
-                        <span>{selectedProduct.merchantLocation || 'Victoria Island, Lagos'}</span>
-                        <span>•</span>
-                        <span style={{ color: '#FBBF24', fontWeight: 700 }}>
-                          ★ {selectedProduct.rating || 4.9} ({formatNumber(selectedProduct.reviewsCount || 120)})
-                        </span>
-                        {hasPurchasedProduct(selectedProduct) && (
-                          <button
-                            onClick={() => {
-                              const mObj = resolveMerchantForProduct(selectedProduct);
-                              if (onOpenRateSeller) onOpenRateSeller(mObj, selectedProduct);
-                            }}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--brand-green)',
-                              fontSize: '0.72rem',
-                              cursor: 'pointer',
-                              textDecoration: 'underline',
-                              fontWeight: 600
-                            }}
-                          >
-                            Review Item
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {(() => {
-                      const isSelectedWishlisted = wishlist.some(w => w.productId === selectedProduct.productId);
-                      return (
-                        <button 
-                          onClick={() => onToggleWishlist && onToggleWishlist(selectedProduct)}
-                          title={isSelectedWishlisted ? "Remove from Wishlist" : "Save to Wishlist"}
-                          style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
-                            background: isSelectedWishlisted ? 'rgba(255, 59, 48, 0.25)' : '#162424',
-                            border: isSelectedWishlisted ? '1px solid rgba(255, 59, 48, 0.7)' : '1px solid rgba(255, 255, 255, 0.1)',
-                            color: isSelectedWishlisted ? '#FF3B30' : '#FFFFFF',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            flexShrink: 0
-                          }}
-                        >
-                          <Heart size={16} fill={isSelectedWishlisted ? '#FF3B30' : 'transparent'} />
-                        </button>
-                      );
-                    })()}
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', margin: '12px 0' }}>
-                    <div style={{ fontSize: '2rem', fontWeight: 900, fontFamily: 'var(--font-mono)', color: '#FFFFFF', lineHeight: 1 }}>
-                      {formatCurrency(selectedProduct.priceUsd)}
-                    </div>
-                    <span style={{ fontSize: '0.74rem', color: 'var(--brand-green)', fontWeight: 700 }}>
-                      Instant Monad Settlement
-                    </span>
-                  </div>
-
-                  <p style={{ fontSize: '0.84rem', color: '#9CA3AF', lineHeight: 1.5, marginBottom: '14px' }}>
-                    {selectedProduct.description}
-                  </p>
-
-                  {/* Technical Specifications Table */}
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '8px',
-                    padding: '12px 14px',
-                    background: '#080F0F',
-                    borderRadius: '14px',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    fontSize: '0.76rem',
-                    marginBottom: '14px'
-                  }}>
-                    <div>
-                      <span style={{ color: '#6B7280', display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>Manufacturer Warranty</span>
-                      <strong style={{ color: 'var(--brand-green)' }}>12 Months (Verified Onchain)</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: '#6B7280', display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>Condition</span>
-                      <strong style={{ color: '#FFFFFF' }}>Brand New / Authenticated</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: '#6B7280', display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>Colorway</span>
-                      <strong style={{ color: '#FFFFFF' }}>{selectedProduct.color || 'Matte Black / Neon'}</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: '#6B7280', display: 'block', fontSize: '0.68rem', textTransform: 'uppercase' }}>Serial Number</span>
-                      <strong style={{ color: '#9CA3AF', fontFamily: 'var(--font-mono)' }}>SN-HUAL-{selectedProduct.productId || '9921'}</strong>
-                    </div>
-                  </div>
-
-                  {/* Size Selector */}
-                  {selectedProduct.sizes && (
-                    <div style={{ marginBottom: '14px' }}>
-                      <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', marginBottom: '8px' }}>
-                        Select Size:
-                      </div>
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {selectedProduct.sizes.map((s) => (
-                          <button
-                            key={s}
-                            onClick={() => setSelectedSize(s)}
-                            style={{
-                              minWidth: '42px',
-                              height: '36px',
-                              padding: '0 10px',
-                              borderRadius: '10px',
-                              background: selectedSize === s ? 'var(--brand-green)' : '#162424',
-                              color: selectedSize === s ? '#080F0F' : '#FFFFFF',
-                              border: selectedSize === s ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
-                              fontSize: '0.82rem',
-                              fontWeight: 700,
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* In Stock & In-Store Readiness */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px', padding: '10px 14px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--brand-green)', fontWeight: 700 }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--brand-green)' }} />
-                      <span>In Stock & Ready for In-Store Pickup or Courier</span>
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: '#9CA3AF' }}>
-                      {selectedProduct.merchantLocation || 'Victoria Island, Lagos'} • Ready for pickup in 30 mins
-                    </div>
-                  </div>
-
-                  {/* CTAs with Add to Cart & Message Merchant Button */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button
-                        onClick={() => {
-                          if (onAddToCart) onAddToCart(selectedProduct, selectedSize);
-                          setAddedModalCart(true);
-                          setTimeout(() => setAddedModalCart(false), 2200);
-                        }}
-                        style={{
-                          flex: 1,
-                          padding: '13px',
-                          borderRadius: '999px',
-                          background: addedModalCart ? 'var(--brand-green)' : '#162424',
-                          border: '1.5px solid var(--brand-green)',
-                          color: addedModalCart ? '#080F0F' : 'var(--brand-green)',
-                          fontSize: '0.88rem',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                          boxShadow: addedModalCart ? '0 0 20px var(--brand-green-glow)' : 'none',
-                          transform: addedModalCart ? 'scale(1.02)' : 'scale(1)'
-                        }}
-                      >
-                        {addedModalCart ? <CheckCircle2 size={16} color="#080F0F" /> : <ShoppingBag size={16} />}
-                        <span>{addedModalCart ? 'Added to Cart!' : 'Add to Cart'}</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleStartCheckout(selectedProduct)}
-                        className="btn-pill-primary"
-                        style={{ flex: 1.2, padding: '13px', fontSize: '0.88rem', fontWeight: 800, boxShadow: '0 0 20px var(--brand-green-glow)' }}
-                      >
-                        Buy Now
-                      </button>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <button
-                        onClick={() => handleOpenChat(
-                          VERIFIED_MERCHANTS.find(m => m.name === selectedProduct.merchant) || VERIFIED_MERCHANTS[0],
-                          selectedProduct
-                        )}
-                        style={{
-                          flex: 1,
-                          padding: '10px',
-                          borderRadius: '999px',
-                          background: 'var(--brand-green-dim)',
-                          border: '1px solid var(--brand-green-border)',
-                          color: 'var(--brand-green)',
-                          fontWeight: 700,
-                          fontSize: '0.82rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        <MessageSquare size={14} />
-                        <span>Chat with Seller</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          const mObj = resolveMerchantForProduct(selectedProduct);
-                          setSelectedMerchant(mObj);
-                          setSelectedProduct(null);
-                        }}
-                        className="btn-pill-secondary"
-                        style={{ flex: 1, padding: '10px', fontSize: '0.82rem' }}
-                      >
-                        <span>View Storefront</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Trust Badges */}
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    paddingTop: '14px',
-                    marginTop: '16px',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                    fontSize: '0.72rem',
-                    color: '#9CA3AF'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Truck size={13} color="var(--brand-green)" />
-                      <span>Free Local Pickup</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <RotateCcw size={13} color="var(--brand-green)" />
-                      <span>7-Day Return</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <ShieldCheck size={13} color="var(--brand-green)" />
-                      <span>12-Mo Warranty</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        </ModalPortal>
+        </>
       )}
 
       {/* ========================================================

@@ -378,15 +378,28 @@ function MainApp() {
     // Check if user has an item in hand from this merchant/product
     let attachedPassport = passport && isPassportInHand(passport) ? passport : null;
     if (!attachedPassport && myPassports && myPassports.length > 0) {
-      attachedPassport = myPassports.find(p => {
-        if (!isPassportInHand(p)) return false; // Must strictly have item in hand!
-        const pMerchant = (p.originalMerchant || p.merchant || '').toLowerCase();
-        const targetMerchant = (merchant.name || '').toLowerCase();
-        const matchesMerchant = targetMerchant && (pMerchant.includes(targetMerchant) || targetMerchant.includes(pMerchant));
-        const matchesProductId = product?.productId && (p.productId === product.productId || p.id === product.productId);
-        const matchesId = merchant.id && p.merchantId === merchant.id;
-        return matchesProductId || matchesMerchant || matchesId;
-      });
+      if (product) {
+        // When reviewing a specific product, MUST strictly match THAT product!
+        const prodId = String(product.productId || product.id || '');
+        const prodName = (product.name || product.productName || '').toLowerCase().trim();
+        attachedPassport = myPassports.find(p => {
+          if (!isPassportInHand(p)) return false;
+          const pId = String(p.productId || p.id || '');
+          const pName = (p.productName || p.name || '').toLowerCase().trim();
+          return (prodId && (pId === prodId || String(p.tokenId) === prodId)) ||
+                 (prodName && pName && (prodName === pName || prodName.includes(pName) || pName.includes(prodName)));
+        });
+      } else {
+        // General merchant review: find any in-hand item from this merchant
+        attachedPassport = myPassports.find(p => {
+          if (!isPassportInHand(p)) return false;
+          const pMerchant = (p.originalMerchant || p.merchant || '').toLowerCase();
+          const targetMerchant = (merchant.name || '').toLowerCase();
+          const matchesMerchant = targetMerchant && (pMerchant.includes(targetMerchant) || targetMerchant.includes(pMerchant));
+          const matchesId = merchant.id && p.merchantId === merchant.id;
+          return matchesMerchant || matchesId;
+        });
+      }
     }
 
     // If no verified item in hand found, block rating and show notice modal!
@@ -403,11 +416,15 @@ function MainApp() {
     // If verified purchase exists, attach it to rating target
     setRatingTarget({
       merchant,
-      product: product || {
+      product: product ? {
+        name: product.name || product.productName,
+        imageUri: product.imageUri || product.images?.[0] || attachedPassport?.imageUri,
+        productId: product.productId || product.id
+      } : (attachedPassport ? {
         name: attachedPassport.productName || 'Purchased Item',
         imageUri: attachedPassport.imageUri,
         productId: attachedPassport.productId || attachedPassport.id
-      },
+      } : null),
       passport: attachedPassport
     });
     setRatingModalOpen(true);

@@ -40,22 +40,25 @@ export default function StoreReviewModal({
     }
   };
 
-  const activeProduct = passport || product;
-  const activeProductName = passport?.productName || product?.productName || product?.name || 'Authenticated Luxury Item';
-  const activeProductImage = passport?.imageUri || product?.imageUri || '/assets/air_max_95.jpg';
-  const activeTokenId = passport?.tokenId || product?.tokenId || null;
-  const activeSerial = passport?.serialNumber || product?.serialNumber || null;
+  const activeProduct = product || passport;
+  const activeProductName = product?.name || product?.productName || passport?.productName || passport?.name || 'Authenticated Luxury Item';
+  const activeProductImage = product?.imageUri || passport?.imageUri || (product?.images?.[0]) || '/assets/air_max_95.jpg';
+  const activeTokenId = product?.tokenId || passport?.tokenId || null;
+  const activeSerial = product?.serialNumber || passport?.serialNumber || null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!merchant?.id) return;
 
+    const prodId = activeProduct?.productId || activeProduct?.id || null;
+
     const newReview = {
       id: `rev-${Date.now()}`,
       merchantId: merchant.id,
       merchantName: merchant.name,
-      productId: activeProduct?.productId || activeProduct?.id || null,
+      productId: prodId,
       productName: activeProductName,
+      productImage: activeProductImage,
       passportTokenId: activeTokenId,
       serialNumber: activeSerial,
       rating,
@@ -74,6 +77,15 @@ export default function StoreReviewModal({
       const existingReviews = existingStr ? JSON.parse(existingStr) : [];
       const updated = [newReview, ...existingReviews];
       localStorage.setItem(storageKey, JSON.stringify(updated));
+
+      // Also save to product reviews key if product is present
+      if (prodId) {
+        const prodStorageKey = `hual_product_reviews_${prodId}`;
+        const existingProdStr = localStorage.getItem(prodStorageKey);
+        const existingProdRevs = existingProdStr ? JSON.parse(existingProdStr) : [];
+        localStorage.setItem(prodStorageKey, JSON.stringify([newReview, ...existingProdRevs]));
+        window.dispatchEvent(new CustomEvent('hual_review_added', { detail: newReview }));
+      }
 
       // Also save to user's scoped reviews key
       const userKey = currentUser?.id || (currentUser?.email ? currentUser.email.toLowerCase() : 'guest');
