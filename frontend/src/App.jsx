@@ -347,10 +347,39 @@ function MainApp() {
   const handleOpenRateSeller = (merchant, product = null, passport = null) => {
     if (!merchant) return;
 
-    // Check if user has purchased any item from this merchant
-    let attachedPassport = passport;
+    const isPassportInHand = (p) => {
+      if (!p) return false;
+      const isCancelled = Boolean(
+        p.isCancelled || 
+        p.currentState === 'CANCELLED' || 
+        p.currentState === 'CANCELED' || 
+        p.status === 'cancelled' || 
+        p.status === 'canceled'
+      );
+      const isRefunded = Boolean(
+        p.isRefunded || 
+        p.currentState === 'REFUNDED' || 
+        p.status === 'refunded'
+      );
+      if (isCancelled || isRefunded) return false;
+
+      // Must be collected/delivered into the buyer's physical possession
+      return Boolean(
+        p.currentState === 'COLLECTED' || 
+        p.currentState === 'ACTIVE_OWNERSHIP' || 
+        p.currentState === 'DELIVERED' || 
+        p.currentState === 'COMPLETED' || 
+        p.currentState === 'OWNED' || 
+        p.isCollected || 
+        p.isDelivered
+      );
+    };
+
+    // Check if user has an item in hand from this merchant/product
+    let attachedPassport = passport && isPassportInHand(passport) ? passport : null;
     if (!attachedPassport && myPassports && myPassports.length > 0) {
       attachedPassport = myPassports.find(p => {
+        if (!isPassportInHand(p)) return false; // Must strictly have item in hand!
         const pMerchant = (p.originalMerchant || p.merchant || '').toLowerCase();
         const targetMerchant = (merchant.name || '').toLowerCase();
         const matchesMerchant = targetMerchant && (pMerchant.includes(targetMerchant) || targetMerchant.includes(pMerchant));
@@ -360,7 +389,7 @@ function MainApp() {
       });
     }
 
-    // If no verified purchase / passport found, block rating and show verified purchase modal!
+    // If no verified item in hand found, block rating and show notice modal!
     if (!attachedPassport) {
       setVerifiedReviewNotice({
         isOpen: true,
@@ -1088,11 +1117,11 @@ function MainApp() {
 
             {/* Title Header */}
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', margin: '4px 0 8px' }}>
-              Verified Purchase Required
+              Verified Item In Hand Required
             </h3>
 
             <p style={{ fontSize: '0.86rem', color: '#D1D5DB', lineHeight: 1.5, margin: '0 0 18px' }}>
-              To ensure 100% genuine feedback, you can only rate <strong style={{ color: '#FFFFFF' }}>{verifiedReviewNotice.merchantName}</strong> after purchasing an item from their store. Ratings on Hual are cryptographically linked to your onchain Product Passport.
+              To ensure 100% authentic ratings on Hual, you can only review an item or merchant once you have collected the item and have it in hand. Orders that were cancelled, refunded, or are still in escrow cannot be reviewed.
             </p>
 
             <div style={{
@@ -1108,12 +1137,12 @@ function MainApp() {
               fontSize: '0.78rem'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#9CA3AF' }}>Store:</span>
+                <span style={{ color: '#9CA3AF' }}>Store / Merchant:</span>
                 <span style={{ color: '#FFFFFF', fontWeight: 700 }}>{verifiedReviewNotice.merchantName}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#9CA3AF' }}>Eligibility:</span>
-                <span style={{ color: '#FBBF24', fontWeight: 700 }}>0 Valid Passports Found</span>
+                <span style={{ color: '#9CA3AF' }}>Item Status:</span>
+                <span style={{ color: '#FBBF24', fontWeight: 700 }}>No Collected Items in Hand</span>
               </div>
             </div>
 

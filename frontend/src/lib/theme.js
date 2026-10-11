@@ -1,8 +1,8 @@
 // Theme Management for Haul: System, Light, and Dark Mode
 
 export function getSavedTheme() {
-  if (typeof window === 'undefined') return 'system';
-  return localStorage.getItem('hual_theme_mode') || 'system';
+  if (typeof window === 'undefined') return 'dark';
+  return localStorage.getItem('hual_theme_mode') || 'dark';
 }
 
 let systemListener = null;

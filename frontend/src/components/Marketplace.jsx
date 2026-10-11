@@ -195,12 +195,43 @@ export default function Marketplace({
     return found || list[0] || VERIFIED_MERCHANTS[0];
   };
 
-  // Check if current user has purchased a product
+  // Verify that an item is ACTUALLY in the buyer's physical possession (In Hand)
+  // Orders that are cancelled, refunded, or still in escrow awaiting collection CANNOT be reviewed.
+  const isPassportInHand = (p) => {
+    if (!p) return false;
+    const isCancelled = Boolean(
+      p.isCancelled || 
+      p.currentState === 'CANCELLED' || 
+      p.currentState === 'CANCELED' || 
+      p.status === 'cancelled' || 
+      p.status === 'canceled'
+    );
+    const isRefunded = Boolean(
+      p.isRefunded || 
+      p.currentState === 'REFUNDED' || 
+      p.status === 'refunded'
+    );
+    if (isCancelled || isRefunded) return false;
+
+    // Must be collected/delivered into the buyer's physical possession
+    return Boolean(
+      p.currentState === 'COLLECTED' || 
+      p.currentState === 'ACTIVE_OWNERSHIP' || 
+      p.currentState === 'DELIVERED' || 
+      p.currentState === 'COMPLETED' || 
+      p.currentState === 'OWNED' || 
+      p.isCollected || 
+      p.isDelivered
+    );
+  };
+
+  // Check if current user has an item in hand for this product
   const hasPurchasedProduct = (prod) => {
     if (!passports || !passports.length || !prod) return false;
     const prodId = String(prod.productId || prod.id || '');
     const prodName = (prod.name || prod.productName || '').toLowerCase().trim();
     return passports.some(p => {
+      if (!isPassportInHand(p)) return false; // Must strictly have item in hand!
       const pId = String(p.productId || p.id || '');
       const pName = (p.productName || p.name || '').toLowerCase().trim();
       if (prodId && (pId === prodId || String(p.tokenId) === prodId)) return true;
@@ -209,12 +240,13 @@ export default function Marketplace({
     });
   };
 
-  // Check if current user has purchased from a specific merchant
+  // Check if current user has at least one item in hand from a specific merchant
   const hasPurchasedFromMerchant = (merchant) => {
     if (!passports || !passports.length || !merchant) return false;
     const mName = (merchant.name || '').toLowerCase().trim();
     const mId = merchant.id ? String(merchant.id) : null;
     return passports.some(p => {
+      if (!isPassportInHand(p)) return false; // Must strictly have item in hand!
       if (mId && p.merchantId && String(p.merchantId) === mId) return true;
       const pMerchant = (p.originalMerchant || p.merchant || '').toLowerCase().trim();
       if (mName && pMerchant && (mName.includes(pMerchant) || pMerchant.includes(mName))) return true;
@@ -709,28 +741,30 @@ export default function Marketplace({
                     <span>Edit Store Details</span>
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    if (onOpenRateSeller) onOpenRateSeller(selectedMerchant);
-                  }}
-                  style={{
-                    padding: '8px 18px',
-                    borderRadius: '999px',
-                    background: 'rgba(251, 191, 36, 0.12)',
-                    color: '#FBBF24',
-                    border: '1px solid rgba(251, 191, 36, 0.35)',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <Star size={14} fill="#FBBF24" />
-                  <span>Rate Store</span>
-                </button>
+                {hasPurchasedFromMerchant(selectedMerchant) && (
+                  <button
+                    onClick={() => {
+                      if (onOpenRateSeller) onOpenRateSeller(selectedMerchant);
+                    }}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '999px',
+                      background: 'rgba(251, 191, 36, 0.12)',
+                      color: '#FBBF24',
+                      border: '1px solid rgba(251, 191, 36, 0.35)',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <Star size={14} fill="#FBBF24" />
+                    <span>Rate Store</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => handleOpenChat(selectedMerchant)}
