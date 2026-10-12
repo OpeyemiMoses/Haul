@@ -41,7 +41,8 @@ import {
   XCircle,
   Trash2,
   Edit3,
-  Bot
+  Bot,
+  Package
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
 import { cancelAndRefundOnchain } from '../lib/web3';
@@ -237,7 +238,11 @@ export default function ProfilePage({
   });
 
   const handleInitiateResale = (passport) => {
-    const target = passport || effectivePassports[0] || INITIAL_FEATURED_PASSPORT;
+    const target = passport || effectivePassports[0];
+    if (!target) {
+      alert('You have no verified products in your vault to list for resale.');
+      return;
+    }
     if (!userStore && userRole !== 'merchant') {
       // Must first create a merchant store before listing for resale
       setPendingResalePassport(target);
@@ -424,16 +429,18 @@ export default function ProfilePage({
 
   // Handle external modal trigger
   React.useEffect(() => {
+    const defaultPassport = effectivePassports[0] || null;
+    if (!defaultPassport) return;
     if (forcedModal === 'transfer') {
-      setTransferPassport(INITIAL_FEATURED_PASSPORT);
+      setTransferPassport(defaultPassport);
     } else if (forcedModal === 'resale') {
-      handleInitiateResale(INITIAL_FEATURED_PASSPORT);
+      handleInitiateResale(defaultPassport);
     } else if (forcedModal === 'warranty') {
-      setWarrantyPassport(INITIAL_FEATURED_PASSPORT);
+      setWarrantyPassport(defaultPassport);
     } else if (forcedModal === 'pickup') {
-      setPickupPassport(INITIAL_FEATURED_PASSPORT);
+      setPickupPassport(defaultPassport);
     }
-  }, [forcedModal, userStore, userRole]);
+  }, [forcedModal, userStore, userRole, effectivePassports]);
 
   const isGuest = !user;
   const activeUser = user || {
@@ -472,19 +479,26 @@ export default function ProfilePage({
     return resolveRecipient(transferRecipient);
   }, [transferRecipient]);
 
-  // Reactive local passports state initialized from props and localStorage
+  // Reactive local passports state initialized from props and scoped localStorage
   const [localPassports, setLocalPassports] = useState(() => {
     try {
-      const stored = localStorage.getItem(`hual_my_passports_${userKey}`) || localStorage.getItem('hual_my_passports');
+      const stored = (userKey && userKey !== 'guest' ? localStorage.getItem(`hual_my_passports_${userKey}`) : null) ||
+                     (user?.address ? localStorage.getItem(`hual_my_passports_${user.address.toLowerCase()}`) : null) ||
+                     (!user ? localStorage.getItem('hual_my_passports_guest') : null);
       if (stored !== null) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821');
+        }
       }
     } catch {}
     if (localStorage.getItem('hual_my_passports_cleared') === 'true') {
       return [];
     }
-    return (passports && passports.length > 0) ? passports : [INITIAL_FEATURED_PASSPORT];
+    if (passports && passports.length > 0) {
+      return passports.filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821');
+    }
+    return [];
   });
 
   const [deletedTxIds, setDeletedTxIds] = useState(() => {
@@ -504,6 +518,7 @@ export default function ProfilePage({
       
       const filtered = passports
         .filter(p => {
+          if (!p || String(p.tokenId) === '4821' || p.serialNumber === 'SN-AM95-4821') return false;
           const tStr = String(p.tokenId || '');
           const sStr = String(p.serialNumber || '');
           const iStr = String(p.id || '');
@@ -524,6 +539,8 @@ export default function ProfilePage({
         });
 
       setLocalPassports(filtered);
+    } else {
+      setLocalPassports([]);
     }
   }, [passports]);
 
@@ -1678,8 +1695,29 @@ export default function ProfilePage({
                 <span style={{ fontSize: '0.68rem', color: 'var(--brand-green)', fontWeight: 700 }}>Monad Testnet</span>
               </div>
 
-              {(() => {
-                const hubPassport = effectivePassports[0] || INITIAL_FEATURED_PASSPORT;
+              {effectivePassports.length === 0 ? (
+                <div style={{
+                  padding: '24px 16px',
+                  textAlign: 'center',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px dashed rgba(255, 255, 255, 0.1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <Package size={24} color="#6B7280" />
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#FFFFFF' }}>
+                    No Active Passports or Orders
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: '#9CA3AF', margin: 0, maxWidth: '280px', lineHeight: 1.45 }}>
+                    Your digital warranties, pickup passes, and verified escrow orders will appear here once purchased.
+                  </p>
+                </div>
+              ) : (() => {
+                const hubPassport = effectivePassports[0];
+                if (!hubPassport) return null;
                 const hubIsDeliveredOrCollected = 
                   hubPassport?.currentState === 'COLLECTED' || 
                   hubPassport?.currentState === 'ACTIVE_OWNERSHIP' || 
@@ -3318,8 +3356,10 @@ export default function ProfilePage({
                       {(!tx.status?.includes('Released') && !tx.status?.includes('Cancelled')) && (
                         <button
                           onClick={() => {
-                            const match = effectivePassports.find(p => String(p.tokenId || p.serialNumber) === tx.id || p.productName === tx.productName) || INITIAL_FEATURED_PASSPORT;
-                            setCancelOrderPassport(match);
+                            const match = effectivePassports.find(p => String(p.tokenId || p.serialNumber) === tx.id || p.productName === tx.productName);
+                            if (match) {
+                              setCancelOrderPassport(match);
+                            }
                           }}
                           style={{
                             padding: '6px 12px',
@@ -3666,7 +3706,7 @@ export default function ProfilePage({
               </p>
             </div>
             <button
-              onClick={() => handleInitiateResale(effectivePassports[0] || INITIAL_FEATURED_PASSPORT)}
+              onClick={() => handleInitiateResale(effectivePassports[0])}
               className="btn-pill-primary btn-pill-sm"
               style={{ padding: '8px 18px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
@@ -3783,7 +3823,7 @@ export default function ProfilePage({
                   You have not listed any items for resale yet. Select any product from your vault to list it.
                 </p>
                 <button
-                  onClick={() => handleInitiateResale(effectivePassports[0] || INITIAL_FEATURED_PASSPORT)}
+                  onClick={() => handleInitiateResale(effectivePassports[0])}
                   className="btn-pill-primary btn-pill-sm"
                   style={{ padding: '8px 18px', fontWeight: 800 }}
                 >

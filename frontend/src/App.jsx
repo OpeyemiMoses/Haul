@@ -251,7 +251,7 @@ function MainApp() {
       setFollowedStores(storedFollow ? JSON.parse(storedFollow) : ['nike-lagos']);
 
       const storedPassports = localStorage.getItem(`hual_my_passports_${userKey}`);
-      setMyPassports(storedPassports ? JSON.parse(storedPassports) : []);
+      setMyPassports(storedPassports ? JSON.parse(storedPassports).filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821') : []);
 
       const storedConvs = localStorage.getItem(`hual_inbox_conversations_${userKey}`);
       if (storedConvs) {
@@ -581,14 +581,7 @@ function MainApp() {
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const [products, setProducts] = useState(CURATED_CATALOG);
-  const [myPassports, setMyPassports] = useState(() => {
-    try {
-      const stored = localStorage.getItem('hual_my_passports');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [myPassports, setMyPassports] = useState([]);
   const [allPassports, setAllPassports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -619,20 +612,32 @@ function MainApp() {
       setProducts(uniqueProds);
 
       // Passports for authenticated user and local guest sessions
-      const addrKey = user?.address ? user.address.toLowerCase() : 'guest';
-      const localStored = JSON.parse(
-        localStorage.getItem(`hual_my_passports_${addrKey}`) || 
-        localStorage.getItem('hual_my_passports') || 
-        '[]'
-      );
-      
+      const addrKey = user?.address ? user.address.toLowerCase() : null;
+      const userKey = user?.id || user?.sub || null;
+      let localStored = [];
+      if (addrKey || userKey) {
+        const scopedRaw = (userKey ? localStorage.getItem(`hual_my_passports_${userKey}`) : null) ||
+                          (addrKey ? localStorage.getItem(`hual_my_passports_${addrKey}`) : null);
+        if (scopedRaw) {
+          try { localStored = JSON.parse(scopedRaw); } catch { localStored = []; }
+        }
+      } else {
+        const guestRaw = localStorage.getItem('hual_my_passports_guest');
+        if (guestRaw) {
+          try { localStored = JSON.parse(guestRaw); } catch { localStored = []; }
+        }
+      }
+      if (!Array.isArray(localStored)) localStored = [];
+
+      // Filter out any mock/demo items (e.g. initial placeholder token 4821)
+      localStored = localStored.filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821');
+
       const deletedIds = new Set(JSON.parse(localStorage.getItem('hual_deleted_passports') || '[]'));
       const refundedMap = JSON.parse(localStorage.getItem('hual_refunded_passports') || '{}');
-      const isCleared = localStorage.getItem('hual_my_passports_cleared') === 'true';
 
       const combined = (localStored.length > 0 || (myPass && myPass.length > 0))
-        ? [...localStored, ...(myPass || [])]
-        : (isCleared ? [] : [INITIAL_FEATURED_PASSPORT]);
+        ? [...localStored, ...(myPass || [])].filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821')
+        : [];
 
       const seen = new Set();
       const unique = [];
