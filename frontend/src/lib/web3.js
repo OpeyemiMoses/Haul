@@ -73,11 +73,35 @@ export async function fetchOnchainProducts() {
       if (stored) createdStores = JSON.parse(stored);
     } catch {}
 
+    const SEED_PRODUCT_KEYWORDS = [
+      'sony wh-1000xm5',
+      'fujifilm x100vi',
+      'seiko prospex',
+      'aether 01',
+      'air max 95'
+    ];
+
     const onchain = rawProducts
       .filter(p => {
         const idKey = String(Number(p.productId));
         const onchainKey = `onchain-${idKey}`;
         const nameKey = (p.name || '').toLowerCase().trim();
+        const brandKey = (p.brand || '').toLowerCase().trim();
+        const merchantAddr = (p.merchant || '').toLowerCase();
+
+        // 1. Exclude deployer demo seed items
+        if (
+          SEED_PRODUCT_KEYWORDS.some(k => nameKey.includes(k) || brandKey.includes(k)) ||
+          brandKey === 'sony electronics' ||
+          brandKey === 'fujifilm' ||
+          brandKey === 'seiko horology' ||
+          brandKey === 'aether studio' ||
+          merchantAddr === '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
+        ) {
+          return false;
+        }
+
+        // 2. Exclude user deleted items
         return !deletedSet.has(idKey) && !deletedSet.has(onchainKey) && !deletedSet.has(nameKey);
       })
       .map((p) => {
@@ -99,7 +123,7 @@ export async function fetchOnchainProducts() {
           name: pName,
           brand: pBrand,
           category: pCat,
-          imageUri: p.imageUri || '/assets/air_max_95.jpg',
+          imageUri: p.imageUri || '/assets/hual_pwa_icon.png',
           description: p.description || '',
           priceUsd: Number(p.priceUsdCents) / 100,
           priceUsdCents: Number(p.priceUsdCents),
@@ -109,9 +133,9 @@ export async function fetchOnchainProducts() {
           merchant: matchedStore?.name || p.brand || 'Verified Merchant',
           merchantId: matchedStore?.id || `merchant-${p.merchant?.slice(0, 8)}`,
           merchantLocation: matchedStore?.location || 'Victoria Island, Lagos',
-          merchantAvatar: matchedStore?.avatar || p.imageUri || '/assets/air_max_95.jpg',
-          storeAvatar: matchedStore?.avatar || p.imageUri || '/assets/air_max_95.jpg',
-          storeImage: matchedStore?.banner || '/assets/nike_store_banner.jpg',
+          merchantAvatar: matchedStore?.avatar || p.imageUri || '/assets/hual_pwa_icon.png',
+          storeAvatar: matchedStore?.avatar || p.imageUri || '/assets/hual_pwa_icon.png',
+          storeImage: matchedStore?.banner || '',
           allowsPickup: p.allowsPickup,
           allowsDelivery: p.allowsDelivery,
           active: p.active,
@@ -347,9 +371,13 @@ export async function buyWithUsdcEscrow(arg1, arg2, arg3, arg4) {
  * Fetch passports by owner address
  */
 export async function fetchOnchainPassports(ownerAddress) {
+  if (!ownerAddress || !ethers.isAddress(ownerAddress)) return [];
+  // Never query the hardcoded seed consumer address for real users
+  if (ownerAddress.toLowerCase() === CONSUMER_ADDR.toLowerCase()) return [];
+
   try {
     const passport = getPassportContract();
-    const list = await passport.getPassportsByOwner(ownerAddress || CONSUMER_ADDR);
+    const list = await passport.getPassportsByOwner(ownerAddress);
     return formatPassports(list);
   } catch (err) {
     console.warn('Passports onchain sync notice:', err?.message || err);
@@ -384,7 +412,13 @@ function formatPassports(rawList) {
     'REFUNDED',
   ];
 
-  return rawList.map((p) => {
+  return rawList
+    .filter(p => {
+      const tok = Number(p.tokenId);
+      const sn = String(p.serialNumber || '');
+      return tok !== 4821 && !sn.includes('AM95');
+    })
+    .map((p) => {
     const expiryTs = Number(p.warrantyExpiresAt);
     const nowTs = Math.floor(Date.now() / 1000);
     const secondsRemaining = Math.max(0, expiryTs - nowTs);

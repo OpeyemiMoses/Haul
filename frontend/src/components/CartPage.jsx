@@ -34,15 +34,44 @@ export default function CartPage({
   const { user, usdcBalance, refreshBalance, deductUsdc, faucetUsdc, authenticated, login, userLocation } = useAuth();
   
   const [checkingOut, setCheckingOut] = useState(false);
-  const [cartDeliveryMethod, setCartDeliveryMethod] = useState('delivery'); // 'pickup' | 'delivery'
+  const userAddr = user?.address ? user.address.toLowerCase() : null;
+  const userKey = user?.id || (user?.email ? user.email.toLowerCase() : 'guest');
+
   const [activeOrders, setActiveOrders] = useState(() => {
     try {
       const stored = localStorage.getItem('hual_escrow_orders');
-      return stored ? JSON.parse(stored) : [];
+      const parsed = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(ord => {
+        if (!ord) return false;
+        const bAddr = ord.buyerAddress ? ord.buyerAddress.toLowerCase() : null;
+        const bKey = ord.buyerId || ord.userKey;
+        return (userAddr && bAddr && userAddr === bAddr) || (userKey && bKey && userKey === bKey);
+      });
     } catch {
       return [];
     }
   });
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('hual_escrow_orders');
+      const parsed = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(parsed)) {
+        setActiveOrders([]);
+        return;
+      }
+      const filtered = parsed.filter(ord => {
+        if (!ord) return false;
+        const bAddr = ord.buyerAddress ? ord.buyerAddress.toLowerCase() : null;
+        const bKey = ord.buyerId || ord.userKey;
+        return (userAddr && bAddr && userAddr === bAddr) || (userKey && bKey && userKey === bKey);
+      });
+      setActiveOrders(filtered);
+    } catch {
+      setActiveOrders([]);
+    }
+  }, [userAddr, userKey]);
 
   const [activeTab, setActiveTab] = useState('cart'); // 'cart' | 'orders'
   const [releasingItem, setReleasingItem] = useState(null);

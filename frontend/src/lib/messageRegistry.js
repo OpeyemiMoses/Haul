@@ -5,125 +5,33 @@
 
 const STORAGE_KEY = 'hual_shared_conversations_v2';
 
-export const DEFAULT_STORE_CONVERSATIONS = [
-  {
-    id: 'conv-nike-lagos',
-    storeId: 'nike-lagos',
-    storeName: 'Nike Lagos Pop-Up',
-    storeHandle: '@nike.lagos',
-    storeAvatar: '/assets/air_max_95.jpg',
-    storeLocation: 'Victoria Island, Lagos',
-    verified: true,
-    chatRep: 'Tade (Nike Store Lead • Online)',
-    buyerIdentifier: 'default',
-    buyerName: 'You',
-    unreadForBuyer: 1,
-    unreadForStore: 0,
-    lastMessageTime: 'Just now',
-    messages: [
-      { id: '1', sender: 'merchant', senderName: 'Tade (Nike Lead)', text: 'Hello! Welcome to the Nike Lagos Pop-Up vault on Hual. Are you looking to reserve the Air Max 95 or schedule an in-store private fitting?', timestamp: '10:14 AM' },
-      { id: '2', sender: 'user', senderName: 'You', text: 'Hi! Is the Neon colorway in Size US 10 available for in-store pickup today in Victoria Island?', timestamp: '10:15 AM' },
-      { id: '3', sender: 'merchant', senderName: 'Tade (Nike Lead)', text: 'Yes! We have 2 authenticated pairs remaining in our physical vault. Once you checkout with Monad Escrow, your living digital passport is minted and your pair will be bagged for collection in 25 minutes.', timestamp: '10:16 AM' }
-    ],
-    pinnedProduct: {
-      productId: '1',
-      name: 'Nike Air Max 95 OG "Neon"',
-      priceUsd: 190,
-      imageUri: '/assets/air_max_95.jpg',
-      brand: 'Nike'
-    }
-  },
-  {
-    id: 'conv-sony-flagship',
-    storeId: 'sony-flagship',
-    storeName: 'Sony Flagship Lounge',
-    storeHandle: '@sony.official',
-    storeAvatar: '/assets/sony_passport.jpg',
-    storeLocation: 'Ikoyi, Lagos',
-    verified: true,
-    chatRep: 'Kemi (Pro Audio Specialist • Online)',
-    buyerIdentifier: 'default',
-    buyerName: 'You',
-    unreadForBuyer: 0,
-    unreadForStore: 0,
-    lastMessageTime: '24m ago',
-    messages: [
-      { id: '1', sender: 'merchant', senderName: 'Kemi (Sony Audio)', text: 'Greetings from the Sony Master Studio in Ikoyi. All WH-1000XM5 headphones come with 12 months verified onchain warranty.', timestamp: '09:30 AM' },
-      { id: '2', sender: 'user', senderName: 'You', text: 'Does courier delivery support express same-day to Lekki?', timestamp: '09:42 AM' },
-      { id: '3', sender: 'merchant', senderName: 'Kemi (Sony Audio)', text: 'Yes, our armored courier dispatches same-day across Lagos within 2 hours.', timestamp: '09:44 AM' }
-    ],
-    pinnedProduct: {
-      productId: '2',
-      name: 'Sony WH-1000XM5 Noise Canceling',
-      priceUsd: 399,
-      imageUri: '/assets/sony_passport.jpg',
-      brand: 'Sony'
-    }
-  },
-  {
-    id: 'conv-apple-boutique',
-    storeId: 'apple-boutique',
-    storeName: 'Apple Verified Boutique',
-    storeHandle: '@apple.lagos',
-    storeAvatar: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&q=80',
-    storeLocation: 'The Palms Mall, Lekki / VI Expressway',
-    verified: true,
-    chatRep: 'Chidi (Apple Genius • Online)',
-    buyerIdentifier: 'default',
-    buyerName: 'You',
-    unreadForBuyer: 0,
-    unreadForStore: 0,
-    lastMessageTime: '2h ago',
-    messages: [
-      { id: '1', sender: 'merchant', senderName: 'Chidi (Apple Lead)', text: 'Welcome to Apple Authorized Lagos! All devices have live AppleCare sync with verifiable hardware passports.', timestamp: '08:15 AM' }
-    ],
-    pinnedProduct: {
-      productId: '3',
-      name: 'Apple Vision Pro Spatial Computer (512GB)',
-      priceUsd: 3499,
-      imageUri: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=300&q=80',
-      brand: 'Apple'
-    }
-  },
-  {
-    id: 'conv-teenage-engineering',
-    storeId: 'teenage-engineering',
-    storeName: 'Teenage Engineering Lab',
-    storeHandle: '@teenage.design',
-    storeAvatar: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=300&q=80',
-    storeLocation: 'Lekki Phase 1, Lagos',
-    verified: true,
-    chatRep: 'Jonas (Synthesizer Architect • Online)',
-    buyerIdentifier: 'default',
-    buyerName: 'You',
-    unreadForBuyer: 0,
-    unreadForStore: 0,
-    lastMessageTime: 'Yesterday',
-    messages: [
-      { id: '1', sender: 'merchant', senderName: 'Jonas (Teenage Lab)', text: 'Boutique synthesizers in stock. Let us know if you want a live audio demo before picking up.', timestamp: 'Yesterday' }
-    ],
-    pinnedProduct: {
-      productId: '4',
-      name: 'Teenage Engineering OP-1 Field Synthesizer',
-      priceUsd: 1999,
-      imageUri: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200&q=85',
-      brand: 'Teenage Engineering'
-    }
-  }
-];
+export const DEFAULT_STORE_CONVERSATIONS = [];
 
 export function getAllSharedConversations() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_STORE_CONVERSATIONS));
-      return DEFAULT_STORE_CONVERSATIONS;
+      return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_STORE_CONVERSATIONS;
+    if (!Array.isArray(parsed)) return [];
+    
+    // Purge any legacy mock store conversations
+    const MOCK_STORE_IDS = new Set(['nike-lagos', 'sony-flagship', 'apple-boutique', 'teenage-engineering']);
+    const filtered = parsed.filter(c => {
+      if (!c) return false;
+      if (MOCK_STORE_IDS.has(c.storeId)) return false;
+      const sName = (c.storeName || '').toLowerCase();
+      if (sName.includes('nike') || sName.includes('sony') || sName.includes('apple') || sName.includes('teenage engineering')) return false;
+      return true;
+    });
+    if (filtered.length !== parsed.length) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+    }
+    return filtered;
   } catch (err) {
     console.warn('Error reading shared conversations:', err);
-    return DEFAULT_STORE_CONVERSATIONS;
+    return [];
   }
 }
 
@@ -143,14 +51,16 @@ export function saveSharedConversations(conversations) {
  */
 export function getConversationsForUser(userIdentifier, userStore = null) {
   const all = getAllSharedConversations();
-  const buyerId = (userIdentifier || 'default').toLowerCase();
+  if (!userIdentifier || userIdentifier === 'default' || userIdentifier === 'guest') {
+    return { buyerConvs: [], storeConvs: [], all: [] };
+  }
+  const buyerId = userIdentifier.toLowerCase();
   const storeId = userStore?.id || null;
 
   // 1. Conversations where this user is buying/asking questions
   const buyerConvs = all.filter(c => {
-    const cBuyer = (c.buyerIdentifier || 'default').toLowerCase();
-    // Default system stores are accessible to everyone
-    return cBuyer === buyerId || cBuyer === 'default';
+    const cBuyer = (c.buyerIdentifier || '').toLowerCase();
+    return cBuyer === buyerId;
   });
 
   // 2. Inquiries sent by customers to this user's store

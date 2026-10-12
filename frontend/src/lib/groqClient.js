@@ -173,7 +173,7 @@ HAUL PLATFORM RULES, POLICIES & CAPABILITIES:
    - Your reasoning is NOT limited. You must NEVER give generic, evasive, or repetitive robotic blurbs.
    - You have full access to everything concerning the whole Haul site, its products, stores, orders, escrow, passports, and policies.
    - Always analyze what is specifically asked and give exact, contextual answers with real product names, prices, store addresses, opening hours, specifications, order IDs, or PIN codes.
-   - If a user asks what shoes are available, list the exact footwear models in the catalog with prices and sizes. If they ask about audio, tell them about Sony headphones or Teenage Engineering synthesizers. If they ask where a store is, provide the physical address and opening hours.
+   - If a user asks what products are available, list the exact items in the catalog with prices and specs. If they ask where a store is, provide the physical address and opening hours from the directory.
 
 2. STRICT BOUNDARY (HAUL SCOPE):
    - You are exclusively dedicated to everything concerning Haul: Haul products, orders, escrow payments, stores, merchants, returns/cancellations, living passports, and verified commerce on Monad.
@@ -309,7 +309,10 @@ Present this 4-digit PIN (\`${pin}\`) to the merchant when collecting your item.
     query.includes('backpack');
 
   if (isProductQuery) {
-    const catalogList = context.catalog || CURATED_CATALOG;
+    const catalogList = Array.isArray(context.catalog) ? context.catalog : [];
+    if (catalogList.length === 0) {
+      return `### Haul Marketplace Catalog\n\nThere are currently no products listed in the catalog. Store owners can list products from their Store Dashboard.`;
+    }
     // Find matched products
     const matches = catalogList.filter(p => {
       const pName = (p.name || '').toLowerCase();
@@ -322,18 +325,18 @@ Present this 4-digit PIN (\`${pin}\`) to the merchant when collecting your item.
     const displayItems = matches.length > 0 ? matches.slice(0, 4) : catalogList.slice(0, 4);
     const itemCards = displayItems.map((item, idx) => {
       const sizes = Array.isArray(item.sizes) ? item.sizes.join(', ') : (item.sizes || 'Standard');
-      return `### ${idx + 1}. ${item.name} (${item.brand})
+      return `### ${idx + 1}. ${item.name} (${item.brand || 'Verified'})
 * **Price:** $${Number(item.priceUsd || 0).toLocaleString()} USDC
-* **Category:** ${item.category} • **Color:** ${item.color || 'Standard'}
+* **Category:** ${item.category || 'Curated'} • **Color:** ${item.color || 'Standard'}
 * **Available Sizes:** ${sizes}
-* **Stock In Vault:** ${item.stock ?? 5} units available
-* **Store:** **${item.merchant}** (${item.merchantLocation})
+* **Stock In Vault:** ${item.stock ?? 1} units available
+* **Store:** **${item.merchant || 'Flagship'}** (${item.merchantLocation || 'Lagos'})
 * **Fulfillment:** ${item.allowsPickup !== false ? 'In-Store Pickup (Ready in 30m)' : ''} | ${item.allowsDelivery !== false ? 'Same-Day Courier' : ''}
-> *${item.description}*`;
+> *${item.description || ''}*`;
     }).join('\n\n');
 
     return `### Haul Verified Products
-Here is what we currently have in our verified physical vaults on Haul:
+Here is what is currently available in the active catalog on Haul:
 
 ${itemCards}
 
@@ -342,34 +345,37 @@ ${itemCards}
 
   // 4. Store Directory & Locations inquiry
   if (query.includes('store') || query.includes('shop') || query.includes('location') || query.includes('address') || query.includes('lagos') || query.includes('hours') || query.includes('opening')) {
-    const merchantsList = context.merchants || [];
+    const merchantsList = Array.isArray(context.merchants) ? context.merchants : [];
+    if (merchantsList.length === 0) {
+      return `### Merchant Stores on Haul\n\nNo merchant stores are currently registered. You can create a store profile in the app to become a verified merchant on Haul!`;
+    }
     const matchedStore = merchantsList.find(m => {
-      const mName = m.name.toLowerCase();
-      return query.includes(mName.slice(0, 4)) || (m.handle && query.includes(m.handle.slice(1, 5)));
+      const mName = (m.name || '').toLowerCase();
+      return (mName && query.includes(mName.slice(0, 4))) || (m.handle && query.includes(m.handle.slice(1, 5)));
     });
 
     if (matchedStore) {
       return `### ${matchedStore.name} Store Profile
 * **Handle:** ${matchedStore.handle} (Verified Partner)
-* **Physical Address:** ${matchedStore.fullAddress || matchedStore.location}
+* **Physical Address:** ${matchedStore.fullAddress || matchedStore.location || 'Lagos'}
 * **Operating Hours:** ${matchedStore.operatingHours || 'Mon - Sat: 9:00 AM - 7:00 PM'}
 * **Contact Phone:** ${matchedStore.phone || '+234 1 800 4825'}
 * **Pickup Window:** ${matchedStore.pickupTime || 'Ready in 30 mins'}
 * **Courier Dispatch:** ${matchedStore.deliveryTime || '2-4 hrs courier'}
 
-> **Description:** ${matchedStore.description}
+> **Description:** ${matchedStore.description || 'Verified merchant storefront on Haul.'}
 
 *You can visit in person for pickup or order online for insured express delivery!*`;
     }
 
     const storeCards = merchantsList.map((m, idx) => {
-      return `* **${m.name}** (${m.category})
-  - **Location:** ${m.location} (${m.fullAddress})
+      return `* **${m.name}** (${m.category || 'Goods'})
+  - **Location:** ${m.location || 'Lagos'} (${m.fullAddress || m.location || 'Lagos'})
   - **Hours:** ${m.operatingHours || 'Mon - Sat 9:00 AM - 7:00 PM'}`;
     }).join('\n\n');
 
     return `### Verified Stores on Haul
-We feature authenticated flagship boutiques across Lagos with instant in-store collection and living digital passports:
+Here are the registered merchant storefronts on Haul:
 
 ${storeCards}
 
@@ -419,9 +425,9 @@ Here is your current storefront status:
 I have complete live access to the entire Haul marketplace, verified stores, product catalog, and your account orders on Monad.
 
 Here is what I can assist you with:
-1. **Catalog & Inventory:** Inquire about our shoes, tech, synthesizers, sizes, colors, and prices.
+1. **Catalog & Inventory:** Inquire about our products, stock, specifications, sizes, colors, and prices.
 2. **Order Verification & PINs:** Ask *"What is my pickup PIN?"* to view your 4-digit code.
-3. **Store Directory & Addresses:** Ask for the address or hours of Nike, Sony, Apple, or Teenage Engineering.
+3. **Store Directory & Addresses:** Ask for the address or hours of any registered merchant store.
 4. **Smart Escrow & Refunds:** Learn how Monad smart escrow protects your funds and enables instant cancellations.
 5. **Living Passports:** Track warranty status and onchain proof of ownership.
 

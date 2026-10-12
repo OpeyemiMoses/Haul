@@ -27,7 +27,7 @@ export default function CommerceChatModal({
   const { user } = useAuth();
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Shopper');
   
-  const merchantName = merchant?.name || product?.merchant || 'Nike Lagos Pop-Up';
+  const merchantName = merchant?.name || product?.merchant || 'Verified Merchant';
   const merchantLocation = merchant?.location || product?.merchantLocation || 'Victoria Island, Lagos';
   const merchantRep = merchant?.chatRep || 'Tade (Store Associate • Online)';
   const storeId = merchant?.id || product?.merchantId || 'nike-lagos';

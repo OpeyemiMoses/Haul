@@ -52,7 +52,7 @@ export default function StoresPage({
   };
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  // Collect all stores: User's created store, community created stores from storage, and verified flagship merchants
+  // Collect all stores: User's created store and community created stores from storage
   const allStores = useMemo(() => {
     let createdList = [];
     try {
@@ -60,10 +60,18 @@ export default function StoresPage({
       if (stored) createdList = JSON.parse(stored);
     } catch {}
 
+    const MOCK_STORE_IDS = new Set(['nike-lagos', 'sony-flagship', 'apple-boutique', 'teenage-engineering', 'puma-lekki', 'adidas-vi']);
     const list = [];
     if (userStore) list.push(userStore);
-    if (Array.isArray(createdList)) list.push(...createdList);
-    list.push(...VERIFIED_MERCHANTS);
+    if (Array.isArray(createdList)) {
+      list.push(...createdList.filter(s => {
+        if (!s) return false;
+        if (MOCK_STORE_IDS.has(s.id)) return false;
+        const name = (s.name || '').toLowerCase();
+        if (name.includes('nike lagos') || name.includes('sony flagship') || name.includes('apple verified') || name.includes('adidas vi')) return false;
+        return true;
+      }));
+    }
 
     // Deduplicate by ID and name
     const seenIds = new Set();

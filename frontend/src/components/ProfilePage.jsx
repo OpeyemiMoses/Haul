@@ -460,7 +460,13 @@ export default function ProfilePage({
       if (stored !== null) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          return parsed.filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821');
+          return parsed.filter(p => {
+            if (!p) return false;
+            const sn = String(p.serialNumber || '');
+            const tok = String(p.tokenId || p.id || '');
+            const name = (p.productName || p.name || '').toLowerCase();
+            return tok !== '4821' && !sn.includes('AM95') && !sn.includes('4821') && !name.includes('air max');
+          });
         }
       }
     } catch {}
@@ -468,7 +474,13 @@ export default function ProfilePage({
       return [];
     }
     if (passports && passports.length > 0) {
-      return passports.filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821');
+      return passports.filter(p => {
+        if (!p) return false;
+        const sn = String(p.serialNumber || '');
+        const tok = String(p.tokenId || p.id || '');
+        const name = (p.productName || p.name || '').toLowerCase();
+        return tok !== '4821' && !sn.includes('AM95') && !sn.includes('4821') && !name.includes('air max');
+      });
     }
     return [];
   });
@@ -490,7 +502,12 @@ export default function ProfilePage({
       
       const filtered = passports
         .filter(p => {
-          if (!p || String(p.tokenId) === '4821' || p.serialNumber === 'SN-AM95-4821') return false;
+          if (!p) return false;
+          const sn = String(p.serialNumber || '');
+          const tok = String(p.tokenId || p.id || '');
+          const name = (p.productName || p.name || '').toLowerCase();
+          if (tok === '4821' || sn.includes('AM95') || sn.includes('4821') || name.includes('air max')) return false;
+
           const tStr = String(p.tokenId || '');
           const sStr = String(p.serialNumber || '');
           const iStr = String(p.id || '');
@@ -611,9 +628,16 @@ export default function ProfilePage({
       }
     });
 
-    // 2. From batch escrow orders in localStorage
+    // 2. From batch escrow orders in localStorage (strictly filtered to active user)
     try {
-      const escrowOrders = JSON.parse(localStorage.getItem('hual_escrow_orders') || '[]');
+      const allEscrowOrders = JSON.parse(localStorage.getItem('hual_escrow_orders') || '[]');
+      const userAddr = user?.address ? user.address.toLowerCase() : null;
+      const escrowOrders = allEscrowOrders.filter(ord => {
+        if (!ord) return false;
+        const bAddr = ord.buyerAddress ? ord.buyerAddress.toLowerCase() : null;
+        const bKey = ord.buyerId || ord.userKey;
+        return (userAddr && bAddr && userAddr === bAddr) || (userKey && bKey && userKey === bKey);
+      });
       escrowOrders.forEach(ord => {
         (ord.items || []).forEach(item => {
           const id = String(item.orderItemId || ord.orderId);
@@ -860,11 +884,10 @@ export default function ProfilePage({
       }
 
       // Check Store Authorization: ensure item belongs to current merchant store
-      const currentStoreName = userStore?.name || 'Nike Lagos Flagship';
-      const itemMerchant = matched.originalMerchant || matched.merchant || 'Nike Lagos Flagship';
+      const currentStoreName = userStore?.name || 'Your Store';
+      const itemMerchant = matched.originalMerchant || matched.merchant || 'Your Store';
       
-      const isMyStore = itemMerchant.toLowerCase().trim() === currentStoreName.toLowerCase().trim() ||
-                        currentStoreName.toLowerCase().includes('nike') && itemMerchant.toLowerCase().includes('nike');
+      const isMyStore = itemMerchant.toLowerCase().trim() === currentStoreName.toLowerCase().trim();
 
       setCounterLookupResult({
         found: true,
@@ -1939,8 +1962,8 @@ export default function ProfilePage({
               const fBrand = activeFeatured.productBrand || activeFeatured.brand || 'Authentic Brand';
               const fSerial = activeFeatured.serialNumber || `SN-HUAL-${activeFeatured.tokenId || '4821'}`;
               const fImage = activeFeatured.imageUri || '/assets/air_max_95.jpg';
-              const fMerchant = activeFeatured.originalMerchant || activeFeatured.merchant || 'Nike Lagos Flagship';
-              const fLocation = activeFeatured.merchantLocation || 'Victoria Island, Lagos';
+              const fMerchant = activeFeatured.originalMerchant || activeFeatured.merchant || 'Verified Storefront';
+              const fLocation = activeFeatured.merchantLocation || 'Lagos, Nigeria';
               const fPrice = activeFeatured.originalPriceUsd || activeFeatured.priceUsd || 250.00;
               const fTxRef = activeFeatured.paymentTxRef || '0x7f34...8f2e';
               const fShortTx = fTxRef.startsWith('0x') ? `${fTxRef.slice(0, 6)}...${fTxRef.slice(-4)}` : fTxRef;
@@ -2528,7 +2551,7 @@ export default function ProfilePage({
                 Boolean(p.isDelivered);
               const isDispatched = p.deliveryMethod === 'dispatch' || p.deliveryMethod === 'delivery' || p.currentState === 'IN_TRANSIT';
               const pImage = p.imageUri || '/assets/air_max_95.jpg';
-              const pMerchant = p.originalMerchant || p.merchant || 'Nike Lagos Flagship';
+              const pMerchant = p.originalMerchant || p.merchant || 'Verified Storefront';
               const pTx = p.paymentTxRef || '0x7f34...8f2e';
               const pShortTx = pTx.startsWith('0x') ? `${pTx.slice(0, 6)}...${pTx.slice(-4)}` : pTx;
 
@@ -2998,7 +3021,7 @@ export default function ProfilePage({
                     Store Counter & Code Verification
                   </h3>
                   <div style={{ fontSize: '0.78rem', color: '#9CA3AF' }}>
-                    Active Store: <strong style={{ color: '#FFFFFF' }}>{userStore?.name || 'Nike Lagos Flagship'}</strong> • Owner Payout Wallet: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-green)' }}>{(userStore?.ownerAddress || user?.address || '0x7f3411b93ef2d38e81c04910283f').slice(0, 10)}...</span>
+                    Active Store: <strong style={{ color: '#FFFFFF' }}>{userStore?.name || 'Your Flagship Store'}</strong> • Owner Payout Wallet: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-green)' }}>{(userStore?.ownerAddress || user?.address || '0x7f3411b93ef2d38e81c04910283f').slice(0, 10)}...</span>
                   </div>
                 </div>
               </div>
@@ -4424,7 +4447,7 @@ export default function ProfilePage({
       {/* ================= MODAL 3: IN-STORE PICKUP QR CODE (AUTHENTIC ESCROW HANDOVER) ================= */}
       {pickupPassport && (() => {
         const itemPin = pickupPassport.pickupPIN || String((Math.abs(Number(pickupPassport.tokenId || 4821) * 7919 + 31415)) % 9000 + 1000);
-        const merchName = pickupPassport.originalMerchant || pickupPassport.merchant || 'Nike Lagos Flagship';
+        const merchName = pickupPassport.originalMerchant || pickupPassport.merchant || 'Verified Storefront';
         const merchLoc = pickupPassport.merchantLocation || 'Victoria Island, Lagos';
         const pImage = pickupPassport.imageUri || '/assets/air_max_95.jpg';
 

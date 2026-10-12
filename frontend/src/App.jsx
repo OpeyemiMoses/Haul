@@ -328,7 +328,7 @@ function MainApp() {
       setWishlist(storedWish ? JSON.parse(storedWish) : []);
 
       const storedFollow = localStorage.getItem(`hual_followed_stores_${userKey}`);
-      setFollowedStores(storedFollow ? JSON.parse(storedFollow) : ['nike-lagos']);
+      setFollowedStores(storedFollow ? JSON.parse(storedFollow) : []);
 
       const storedPassports = localStorage.getItem(`hual_my_passports_${userKey}`);
       setMyPassports(storedPassports ? JSON.parse(storedPassports).filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821') : []);
@@ -1159,7 +1159,13 @@ function MainApp() {
                     passports={myPassports}
                     activeOrderContext={aiSupportOrderContext}
                     catalog={products}
-                    merchants={VERIFIED_MERCHANTS}
+                    merchants={(() => {
+                      try {
+                        return JSON.parse(localStorage.getItem('hual_all_created_stores') || '[]');
+                      } catch {
+                        return [];
+                      }
+                    })()}
                   />
                 )}
 

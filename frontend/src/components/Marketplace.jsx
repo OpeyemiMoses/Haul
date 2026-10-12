@@ -644,7 +644,7 @@ export default function Marketplace({
         category: checkoutProduct.category || 'Curated',
         description: checkoutProduct.description || '',
         serialNumber: checkoutProduct.serialNumber || `SN-${checkoutProduct.name.replace(/\s+/g, '-').slice(0, 4).toUpperCase()}-${String(tokenId).padStart(4, '0')}`,
-        originalMerchant: checkoutProduct.merchant || selectedMerchant?.name || 'Nike Lagos Flagship',
+        originalMerchant: checkoutProduct.merchant || selectedMerchant?.name || 'Verified Merchant',
         merchantLocation: checkoutProduct.merchantLocation || selectedMerchant?.location || 'Victoria Island, Lagos',
         originalPriceUsd: checkoutProduct.priceUsd,
         purchaseTimestamp: new Date().toLocaleString(),
@@ -2086,7 +2086,7 @@ export default function Marketplace({
                       <div>
                         <div style={{ fontSize: '0.7rem', color: '#6B7280', textTransform: 'uppercase' }}>Merchant Store Location</div>
                         <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#FFFFFF', marginTop: '2px' }}>
-                          {checkoutProduct.merchant || selectedMerchant?.name || 'Nike Lagos Pop-Up'}
+                          {checkoutProduct.merchant || selectedMerchant?.name || 'Verified Merchant Store'}
                         </div>
                         <div style={{ fontSize: '0.74rem', color: '#9CA3AF' }}>
                           {checkoutProduct.merchantLocation || selectedMerchant?.fullAddress || 'Plot 14B Adetokunbo Ademola St, VI, Lagos'}

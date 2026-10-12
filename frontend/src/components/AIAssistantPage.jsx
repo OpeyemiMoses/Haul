@@ -128,9 +128,9 @@ You can ask me about catalog listings, customer pickup PIN verification, counter
       const orderCount = allUserOrders.length;
       intro = `Welcome to Haul AI Companion
 
-I'm your intelligent concierge with unconstrained access to the entire Haul site:
-• Site Catalog & Stock: Inquire about sneakers, headphones, phones, prices, sizes, and colors.
-• Verified Storefronts: Inquire about store locations, addresses, and operating hours across Lagos.
+I'm your intelligent concierge for the Haul marketplace:
+• Site Catalog & Stock: Inquire about available products, inventory, prices, and specifications.
+• Verified Storefronts: Inquire about registered merchant stores, pickup locations, and operating hours.
 • Your Orders & PINs: You currently have ${orderCount} active ${orderCount === 1 ? 'order' : 'orders'} on your account. Ask "What is my pickup PIN?" to view your pass.
 • Escrow & Policies: Ask about Monad smart contract protection, cancellations, and why cancelled items cannot be reviewed.
 
@@ -266,13 +266,12 @@ What would you like to explore today?`;
   };
 
   const quickPrompts = [
-    'What footwear and shoes do you have in stock?',
-    'What is my pickup PIN verification code?',
-    'Where is the Nike Lagos Pop-Up located?',
-    'How much is the Sony WH-1000XM5 headphones?',
-    'Can I review an order that I cancelled?',
     'How does Monad Smart Contract Escrow work?',
-    'Where is the Apple Verified Boutique in Lagos?'
+    'What is my pickup PIN verification code?',
+    'How do I claim a warranty with my Product Passport?',
+    'Can I review an order that I cancelled?',
+    'What is the store pickup handover process?',
+    'How do instant USDC refunds work upon order cancellation?'
   ];
 
   return (
@@ -1044,37 +1043,43 @@ What would you like to explore today?`;
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
               <Store size={18} color="var(--brand-green)" />
               <h2 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#FFFFFF' }}>
-                Featured Lagos Stores
+                Featured Merchant Stores
               </h2>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {merchants.map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => {
-                    if (onOpenStore) onOpenStore(m);
-                    else handleSendMessage(`Tell me about the ${m.name} in ${m.location}. What items do they sell and what are their hours?`);
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '10px 12px',
-                    background: '#121C1C',
-                    borderRadius: '14px',
-                    border: '1px solid rgba(255, 255, 255, 0.06)',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#FFFFFF' }}>{m.name}</div>
-                    <div style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{m.location}</div>
+              {merchants && merchants.length > 0 ? (
+                merchants.map((m) => (
+                  <div
+                    key={m.id}
+                    onClick={() => {
+                      if (onOpenStore) onOpenStore(m);
+                      else handleSendMessage(`Tell me about the ${m.name} in ${m.location}. What items do they sell and what are their hours?`);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 12px',
+                      background: '#121C1C',
+                      borderRadius: '14px',
+                      border: '1px solid rgba(255, 255, 255, 0.06)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#FFFFFF' }}>{m.name}</div>
+                      <div style={{ fontSize: '0.68rem', color: '#9CA3AF' }}>{m.location || 'Lagos, Nigeria'}</div>
+                    </div>
+                    <ChevronRight size={14} color="#6B7280" />
                   </div>
-                  <ChevronRight size={14} color="#6B7280" />
+                ))
+              ) : (
+                <div style={{ fontSize: '0.76rem', color: '#6B7280', padding: '12px 4px', textAlign: 'center' }}>
+                  No merchant stores created yet.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
