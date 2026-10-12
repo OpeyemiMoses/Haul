@@ -177,8 +177,6 @@ function MainApp() {
         verified: true,
         category: item.category || 'Curated Goods',
         location: item.merchantLocation || 'Victoria Island, Lagos',
-        rating: 5.0,
-        reviewsCount: 1,
         followersCount: '1.2k',
         avatar: item.merchantAvatar || item.storeAvatar || item.storeImage || item.imageUri || '/assets/hual_pwa_icon.png',
         banner: item.storeBanner || '',
@@ -198,8 +196,6 @@ function MainApp() {
       verified: true,
       category: item?.category || 'Curated Goods',
       location: item?.merchantLocation || 'Victoria Island, Lagos',
-      rating: 5.0,
-      reviewsCount: 1,
       followersCount: '1',
       avatar: item?.merchantAvatar || item?.storeAvatar || item?.storeImage || item?.imageUri || '/assets/hual_pwa_icon.png',
       banner: item?.storeBanner || '',
@@ -648,7 +644,32 @@ function MainApp() {
       deletedProductIds.add('test watch');
       deletedProductIds.add('testbrand');
 
-      const combinedProds = [...customListed, ...(prods || [])];
+      const SEED_PRODUCT_KEYWORDS = [
+        'sony wh-1000xm5',
+        'fujifilm x100vi',
+        'seiko prospex',
+        'aether 01',
+        'air max 95',
+        'diagnostic test watch',
+        'diagnostic',
+        'test watch',
+        'testbrand'
+      ];
+
+      // Purge any seed items from custom listed products in localStorage
+      const cleanCustomListed = customListed.filter(p => {
+        if (!p) return false;
+        const n = (p.name || '').toLowerCase();
+        const b = (p.brand || '').toLowerCase();
+        return !SEED_PRODUCT_KEYWORDS.some(k => n.includes(k) || b.includes(k));
+      });
+      if (cleanCustomListed.length !== customListed.length) {
+        try {
+          localStorage.setItem('hual_custom_listed_products', JSON.stringify(cleanCustomListed));
+        } catch {}
+      }
+
+      const combinedProds = [...cleanCustomListed, ...(prods || [])];
       const seenProdIds = new Set();
       const uniqueProds = [];
       for (const p of combinedProds) {
@@ -662,8 +683,7 @@ function MainApp() {
           (pProdIdStr && deletedProductIds.has(pProdIdStr)) ||
           (normName && deletedProductIds.has(normName)) ||
           pIdStr === '5' || pProdIdStr === '5' ||
-          normName.includes('diagnostic') || normName.includes('test watch') ||
-          normBrand.includes('testbrand')
+          SEED_PRODUCT_KEYWORDS.some(k => normName.includes(k) || normBrand.includes(k))
         ) {
           continue;
         }
@@ -1256,6 +1276,7 @@ function MainApp() {
                 {(activeTab === 'passports' || activeTab === 'profile') && (
                   <ProfilePage
                     activeTab={activeTab}
+                    products={products}
                     passports={myPassports}
                     wishlist={wishlist}
                     onToggleWishlist={toggleWishlist}

@@ -67,6 +67,7 @@ import useScrollReveal from '../lib/useScrollReveal';
 
 export default function ProfilePage({ 
   activeTab = 'profile',
+  products = [],
   initialSubTab,
   passports = [], 
   wishlist = [],
@@ -164,6 +165,73 @@ export default function ProfilePage({
 
   useScrollReveal([subTab, passports?.length]);
 
+  // Dynamic count of real listed goods for this user's store
+  const storeActiveGoodsCount = React.useMemo(() => {
+    if (!userStore) return 0;
+    try {
+      const SEED_PRODUCT_KEYWORDS = [
+        'sony wh-1000xm5',
+        'fujifilm x100vi',
+        'seiko prospex',
+        'aether 01',
+        'air max 95',
+        'diagnostic test watch',
+        'diagnostic',
+        'test watch',
+        'testbrand'
+      ];
+
+      const customListed = JSON.parse(localStorage.getItem('hual_custom_listed_products') || '[]');
+      const deletedIds = new Set(JSON.parse(localStorage.getItem('hual_deleted_product_ids') || '[]').map(String));
+      deletedIds.add('5');
+      deletedIds.add('onchain-5');
+
+      const sId = String(userStore.id || '');
+      const sName = (userStore.name || '').toLowerCase().trim();
+      const sAddr = (userStore.ownerAddress || userStore.address || user?.address || '').toLowerCase();
+
+      const allCandidateProducts = [...(products || []), ...customListed];
+      const seenIds = new Set();
+      const storeProducts = [];
+
+      for (const p of allCandidateProducts) {
+        if (!p) continue;
+        const pIdStr = p.id ? String(p.id) : '';
+        const pProdIdStr = p.productId !== undefined ? String(p.productId) : '';
+        const pNameLower = (p.name || '').toLowerCase().trim();
+        const pBrandLower = (p.brand || '').toLowerCase().trim();
+
+        if (
+          (pIdStr && deletedIds.has(pIdStr)) ||
+          (pProdIdStr && deletedIds.has(pProdIdStr)) ||
+          (pNameLower && deletedIds.has(pNameLower)) ||
+          SEED_PRODUCT_KEYWORDS.some(k => pNameLower.includes(k) || pBrandLower.includes(k))
+        ) {
+          continue;
+        }
+
+        const pStoreId = String(p.merchantId || p.sellerId || '');
+        const pStoreName = (p.merchant || p.store || '').toLowerCase().trim();
+        const pSellerAddr = (p.seller || p.ownerAddress || p.merchantAddress || '').toLowerCase();
+
+        const isMyProduct = (sId && pStoreId === sId) ||
+          (sName && pStoreName === sName) ||
+          (sAddr && pSellerAddr && sAddr === pSellerAddr);
+
+        if (isMyProduct) {
+          const key = pIdStr || pProdIdStr || pNameLower;
+          if (!seenIds.has(key)) {
+            seenIds.add(key);
+            storeProducts.push(p);
+          }
+        }
+      }
+      return storeProducts.length;
+    } catch {
+      return 0;
+    }
+  }, [userStore, user?.address, products]);
+
   // User Reviews list
   const [myReviews, setMyReviews] = useState(() => {
     try {
@@ -222,20 +290,7 @@ export default function ProfilePage({
       const saved = localStorage.getItem(`hual_user_resales_${userKey}`);
       if (saved) return JSON.parse(saved);
     } catch (e) {}
-    return [
-      {
-        id: 'rs-1',
-        tokenId: 4821,
-        productName: 'Air Max 95 OG Neon',
-        originalPrice: 250.00,
-        resalePrice: 230.00,
-        condition: 'Like New (Worn Once)',
-        warrantyRemaining: '364 days remaining',
-        image: '/assets/air_max_95.jpg',
-        status: 'Active on Marketplace',
-        storeName: userStore?.name || 'Verified Storefront'
-      }
-    ];
+    return [];
   });
 
 
@@ -1677,7 +1732,7 @@ export default function ProfilePage({
           { id: 'following', label: `Followed Stores (${followedStores.length})` },
           { id: 'transactions', label: `Transactions (${realTransactions.length})` },
           { id: 'transfers', label: (userTransfers.incoming?.length > 0) ? `Transfers (${userTransfers.incoming.length} Pending)` : `Transfers (${transfersCount})` },
-          { id: 'resale', label: 'Resale (1)' }
+          { id: 'resale', label: `Resale (${myResales?.length || 0})` }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -2395,7 +2450,7 @@ export default function ProfilePage({
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: '12px', overflow: 'hidden', border: '1.5px solid var(--brand-green)', background: '#080F0F', flexShrink: 0 }}>
-                    <img src={userStore?.avatar || profilePicture || '/assets/air_max_95.jpg'} alt="Store Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={userStore?.avatar || profilePicture || '/assets/hual_pwa_icon.png'} alt="Store Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                   <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
                     <div style={{ fontSize: '0.96rem', fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -2407,18 +2462,14 @@ export default function ProfilePage({
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', padding: '10px', background: '#080F0F', borderRadius: '12px', textAlign: 'center', marginBottom: '16px', fontSize: '0.74rem' }}>
-                  <div>
-                    <div style={{ color: '#6B7280', fontSize: '0.66rem' }}>Rating</div>
-                    <div style={{ color: 'var(--brand-green)', fontWeight: 800 }}>5.0 / 5.0</div>
-                  </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '12px', background: '#080F0F', borderRadius: '12px', textAlign: 'center', marginBottom: '16px', fontSize: '0.74rem' }}>
                   <div>
                     <div style={{ color: '#6B7280', fontSize: '0.66rem' }}>Active Goods</div>
-                    <div style={{ color: '#FFFFFF', fontWeight: 800 }}>{passports.length || 3} items</div>
+                    <div style={{ color: '#FFFFFF', fontWeight: 800 }}>{storeActiveGoodsCount} item{storeActiveGoodsCount === 1 ? '' : 's'}</div>
                   </div>
                   <div>
                     <div style={{ color: '#6B7280', fontSize: '0.66rem' }}>Settlement</div>
-                    <div style={{ color: 'var(--brand-green)', fontWeight: 800 }}>Instant</div>
+                    <div style={{ color: 'var(--brand-green)', fontWeight: 800 }}>Instant Escrow</div>
                   </div>
                 </div>
 
@@ -4031,7 +4082,7 @@ export default function ProfilePage({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <div>
               <h3 className="font-display" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                My Ratings & Verified Merchant Reviews
+                My Verified Merchant Reviews & Feedback
               </h3>
               <p style={{ fontSize: '0.82rem', color: '#9CA3AF', margin: '4px 0 0' }}>
                 All reviews submitted by your account for stores and living passport items.
@@ -4041,9 +4092,9 @@ export default function ProfilePage({
 
           {myReviews.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px', background: '#0D1616', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-              <Star size={36} color="#FBBF24" style={{ margin: '0 auto 12px' }} />
+              <MessageSquare size={36} color="var(--brand-green)" style={{ margin: '0 auto 12px' }} />
               <h4 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 6px' }}>No reviews written yet</h4>
-              <p style={{ fontSize: '0.82rem', color: '#9CA3AF' }}>You can rate any verified store or purchased passport item directly in the marketplace.</p>
+              <p style={{ fontSize: '0.82rem', color: '#9CA3AF' }}>You can review any verified store or purchased passport item directly in the marketplace.</p>
             </div>
           ) : (
             <div className="perspective-container stagger-group" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -4067,11 +4118,6 @@ export default function ProfilePage({
                             VERIFIED BUYER
                           </span>
                         )}
-                      </div>
-                      <div style={{ display: 'flex', gap: '2px', color: '#FBBF24' }}>
-                        {[...Array(rev.rating || 5)].map((_, i) => (
-                          <Star key={i} size={14} fill="#FBBF24" />
-                        ))}
                       </div>
                     </div>
                     <span style={{ fontSize: '0.72rem', color: '#6B7280' }}>{rev.date}</span>
@@ -4144,7 +4190,7 @@ export default function ProfilePage({
                       {merchant.name}
                     </h4>
                     <div style={{ fontSize: '0.74rem', color: 'var(--brand-green)', fontWeight: 600 }}>
-                      {merchant.followersCount || '48.2k'} followers • Rating: {merchant.rating}
+                      {merchant.followersCount || '48.2k'} followers
                     </div>
                     <div style={{ fontSize: '0.7rem', color: '#9CA3AF', marginTop: '2px' }}>
                       {merchant.location}
@@ -4257,7 +4303,7 @@ export default function ProfilePage({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. @dami, consumer, or 0x812...4a1b"
+                    placeholder="e.g. username, name@email.com, or 0x..."
                     value={transferRecipient}
                     onChange={(e) => {
                       setTransferRecipient(e.target.value);
@@ -5147,7 +5193,7 @@ export default function ProfilePage({
                     <input
                       type="text"
                       required
-                      placeholder="@dami, name@email.com, or 0x..."
+                      placeholder="username, name@email.com, or 0x..."
                       value={sendRecipient}
                       onChange={(e) => setSendRecipient(e.target.value)}
                       style={{

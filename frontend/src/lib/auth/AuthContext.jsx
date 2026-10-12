@@ -292,8 +292,6 @@ export function AuthProvider({ children }) {
       category: storeData.category || 'Curated Goods',
       location: storeData.location || userLocation,
       fullAddress: storeData.fullAddress || storeData.location || userLocation,
-      rating: 5.0,
-      reviewsCount: 1,
       followersCount: '1.2k',
       avatar: storeData.avatar || '/assets/air_max_95.jpg',
       banner: storeData.banner || '/assets/nike_store_banner.jpg',

@@ -111,10 +111,10 @@ graph TD
 
 | Contract | Address | Description |
 | :--- | :--- | :--- |
-| **HualPassport** | [`0x6daBB7eF8863D3D8528CBcC5365d69D93e359658`](https://testnet.monadexplorer.com/address/0x6daBB7eF8863D3D8528CBcC5365d69D93e359658) | Dynamic ERC-721 living product passport & lifecycle registry |
-| **HualEscrow** | [`0x876Ccc1F4efdfFa786bB5cf1E36d77cE07690dcf`](https://testnet.monadexplorer.com/address/0x876Ccc1F4efdfFa786bB5cf1E36d77cE07690dcf) | Non-custodial escrow holding funds until cryptographic PIN verification |
-| **HualCommerce** | [`0x8576126968f31dfbC4088560ae2B58028571adaA`](https://testnet.monadexplorer.com/address/0x8576126968f31dfbC4088560ae2B58028571adaA) | Main protocol router coordinating inventory, payments, and minting |
-| **TestUSDC** | [`0x1Ba9b061043a40340213861C0BD95148e19Fe338`](https://testnet.monadexplorer.com/address/0x1Ba9b061043a40340213861C0BD95148e19Fe338) | Protocol settlement token with public minting capabilities |
+| **HualPassport** | [`0x6503c1fAE0c50D527fEFd270264a3BC34ff64Bc4`](https://testnet.monadexplorer.com/address/0x6503c1fAE0c50D527fEFd270264a3BC34ff64Bc4) | Dynamic ERC-721 living product passport & lifecycle registry |
+| **HualEscrow** | [`0x6A3ec329593eFef6623493315951183B65faeF6B`](https://testnet.monadexplorer.com/address/0x6A3ec329593eFef6623493315951183B65faeF6B) | Non-custodial escrow holding funds until cryptographic PIN verification |
+| **HualCommerce** | [`0xc3601ccfDb421e71ABBEDbA361f8DF693B5e6d7a`](https://testnet.monadexplorer.com/address/0xc3601ccfDb421e71ABBEDbA361f8DF693B5e6d7a) | Main protocol router coordinating inventory, payments, and minting |
+| **TestUSDC** | [`0xe6aC8c520e61Cd1D48DfaAFa32dc0Ad387d99946`](https://testnet.monadexplorer.com/address/0xe6aC8c520e61Cd1D48DfaAFa32dc0Ad387d99946) | Protocol settlement token with public minting capabilities |
 
 ---
 

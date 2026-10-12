@@ -60,68 +60,7 @@ async function main() {
   await commerce.setAuthorizedRelayer(deployer.address, true);
   console.log("✓ Configured protocol authorizations");
 
-  // 6. List initial merchant products onchain
-  console.log("\n--- Listing Real Products in Onchain Catalog ---");
-
-  // Product 1: Sony WH-1000XM5
-  await commerce.connect(deployer).listProduct(
-    "Sony WH-1000XM5 Wireless Headphones",
-    "Sony Electronics",
-    "Audio",
-    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80",
-    "Industry-leading noise canceling with dual processors and 8 microphones. Stored as living onchain Product Passport on Monad.",
-    25000, // $250.00
-    365 * 24 * 3600, // 12 months
-    12, // stock
-    true, // in-store pickup
-    true // delivery
-  );
-  console.log("✓ Product 1 listed: Sony WH-1000XM5 ($250.00 USDC)");
-
-  // Product 2: Fujifilm X100VI
-  await commerce.connect(deployer).listProduct(
-    "Fujifilm X100VI Limited Edition Camera",
-    "Fujifilm",
-    "Optics",
-    "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&q=80",
-    "40.2MP X-Trans CMOS 5 HR sensor with in-body stabilization. Cryptographic serial passport for authentic secondary transfer.",
-    45000, // $450.00
-    2 * 365 * 24 * 3600, // 24 months
-    6, // stock
-    true,
-    true
-  );
-  console.log("✓ Product 2 listed: Fujifilm X100VI ($450.00 USDC)");
-
-  // Product 3: Seiko Prospex Diver
-  await commerce.connect(deployer).listProduct(
-    "Seiko Prospex Diver 'Great Wave'",
-    "Seiko Horology",
-    "Watches",
-    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80",
-    "Automatic mechanical caliber with 200m water resistance and sapphire crystal. Backed by Monad smart contract warranty.",
-    35000, // $350.00
-    3 * 365 * 24 * 3600, // 36 months
-    8, // stock
-    true,
-    false // pickup only
-  );
-  console.log("✓ Product 3 listed: Seiko Prospex Diver ($350.00 USDC)");
-
-  // Product 4: Aether 01 Cyber-Knit Sneakers
-  await commerce.connect(deployer).listProduct(
-    "Aether 01 Cyber-Knit Sneakers",
-    "Aether Studio",
-    "Footwear",
-    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80",
-    "Recycled carbon weave upper with reactive kinetic soles. Linkable to Hual digital twin passport.",
-    19500, // $195.00
-    180 * 24 * 3600, // 6 months
-    15, // stock
-    false,
-    true // delivery only
-  );
-  console.log("✓ Product 4 listed: Aether 01 Sneakers ($195.00 USDC)");
+  console.log("\n--- Skipping Demo Mock Listings (100% Genuine Privy/Merchant Catalog) ---");
 
   // 7. Export protocol artifacts to frontend
   const artifactsDir = path.join(__dirname, "../artifacts/contracts");

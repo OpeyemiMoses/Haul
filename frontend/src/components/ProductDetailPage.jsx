@@ -27,6 +27,7 @@ import { formatNumber } from '../lib/formatters';
 import useScrollReveal from '../lib/useScrollReveal';
 import { VERIFIED_MERCHANTS } from '../lib/catalogData';
 import { getProductStockOverride } from '../lib/ordersRegistry';
+import { useAuth } from '../lib/auth/AuthContext';
 
 export default function ProductDetailPage({
   product,
@@ -185,12 +186,6 @@ export default function ProductDetailPage({
     setProductReviews(validReviews);
   }, [prodId]);
 
-  // Dynamic average rating
-  const averageRating = useMemo(() => {
-    if (!productReviews || productReviews.length === 0) return null;
-    const sum = productReviews.reduce((acc, r) => acc + (Number(r.rating) || 5), 0);
-    return (sum / productReviews.length).toFixed(1);
-  }, [productReviews]);
 
   // Listen for newly added reviews
   useEffect(() => {
@@ -451,7 +446,7 @@ export default function ProductDetailPage({
               {product.name}
             </h1>
 
-            {/* Rating Snippet (Scrolls to reviews on click) */}
+            {/* Customer Reviews Snippet (Scrolls to reviews on click) */}
             <div 
               onClick={scrollToReviews}
               style={{
@@ -467,15 +462,12 @@ export default function ProductDetailPage({
               title="Click to view customer reviews"
             >
               {productReviews.length > 0 ? (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#FBBF24', fontSize: '0.84rem', fontWeight: 800 }}>
-                    <Star size={14} fill="#FBBF24" />
-                    <span>{averageRating}</span>
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MessageSquare size={13} color="var(--brand-green)" />
                   <span style={{ color: '#9CA3AF', fontSize: '0.76rem', textDecoration: 'underline' }}>
-                    ({productReviews.length} customer review{productReviews.length === 1 ? '' : 's'})
+                    {productReviews.length} customer review{productReviews.length === 1 ? '' : 's'}
                   </span>
-                </>
+                </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#9CA3AF', fontSize: '0.74rem' }}>
                   <ShieldCheck size={13} color="var(--brand-green)" />
@@ -944,7 +936,7 @@ export default function ProductDetailPage({
         }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <Star size={20} fill="#FBBF24" color="#FBBF24" />
+              <MessageSquare size={20} color="var(--brand-green)" />
               <h2 className="font-display" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
                 Customer Reviews for {product.name}
               </h2>
@@ -968,7 +960,7 @@ export default function ProductDetailPage({
                 gap: '7px'
               }}
             >
-              <Star size={14} />
+              <MessageSquare size={14} />
               <span>Write a Review for this Item</span>
             </button>
           ) : (
@@ -1002,56 +994,12 @@ export default function ProductDetailPage({
             <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 6px' }}>
               No reviews yet for this item
             </h3>
-            <p style={{ fontSize: '0.8rem', color: '#9CA3AF', margin: 0, maxWidth: '440px', margin: '0 auto', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.8rem', color: '#9CA3AF', maxWidth: '440px', margin: '0 auto', lineHeight: 1.5 }}>
               Only verified buyers who have received this item in hand can leave an onchain review. Orders that were cancelled or refunded cannot be reviewed.
             </p>
           </div>
         ) : (
           <>
-            {/* Rating Breakdown Bar */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '20px',
-              marginBottom: '32px',
-              padding: '20px',
-              borderRadius: '16px',
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.05)'
-            }}>
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1 }}>
-                  {averageRating || '5.0'}
-                </div>
-                <div style={{ display: 'flex', gap: '3px', margin: '6px 0', color: '#FBBF24' }}>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} size={16} fill="#FBBF24" />
-                  ))}
-                </div>
-                <span style={{ fontSize: '0.76rem', color: '#9CA3AF' }}>
-                  Based on {productReviews.length} verified review{productReviews.length === 1 ? '' : 's'}
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', justifyContent: 'center' }}>
-                {[
-                  { stars: 5, pct: '100%' },
-                  { stars: 4, pct: '0%' },
-                  { stars: 3, pct: '0%' },
-                  { stars: 2, pct: '0%' },
-                  { stars: 1, pct: '0%' }
-                ].map(row => (
-                  <div key={row.stars} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.72rem', color: '#9CA3AF' }}>
-                    <span style={{ width: '24px' }}>{row.stars}★</span>
-                    <div style={{ flex: 1, height: '6px', borderRadius: '999px', background: 'rgba(255, 255, 255, 0.08)', overflow: 'hidden' }}>
-                      <div style={{ width: row.pct, height: '100%', background: 'var(--brand-green)', borderRadius: '999px' }} />
-                    </div>
-                    <span style={{ width: '32px', textAlign: 'right' }}>{row.pct}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Reviews List */}
             <div className="stagger-group" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {productReviews.map((rev) => (
@@ -1087,12 +1035,7 @@ export default function ProductDetailPage({
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', gap: '2px', color: '#FBBF24', margin: '6px 0 2px' }}>
-                    {[...Array(rev.rating || 5)].map((_, i) => (
-                      <Star key={i} size={12} fill="#FBBF24" />
-                    ))}
                   </div>
-                </div>
 
                 <span style={{ fontSize: '0.72rem', color: '#6B7280' }}>
                   {rev.date}

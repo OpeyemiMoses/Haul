@@ -246,7 +246,7 @@ export default function EditProfileModal({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Dami Daniels"
+                    placeholder="e.g. Your Name or Brand"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     style={{

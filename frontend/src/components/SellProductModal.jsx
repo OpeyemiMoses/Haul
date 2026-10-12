@@ -409,9 +409,7 @@ export default function SellProductModal({
         monadTxHash: txHash,
         allowsPickup,
         allowsDelivery,
-        active: true,
-        rating: 5.0,
-        reviewsCount: 1
+        active: true
       };
 
       try {

@@ -161,7 +161,7 @@ export default function Marketplace({
     }
   };
 
-  // Storefront Tab for individual merchant: 'Products' | 'About' | 'Location' | 'Reviews' | 'Sold Items'
+  // Storefront Tab for individual merchant: 'Products' | 'About' | 'Location' | 'Reviews' | 'Sold Items' (store owner only)
   const [storeTab, setStoreTab] = useState('Products');
   const [activeCategory, setActiveCategory] = useState(selectedCategory || 'All');
   const [isFollowing, setIsFollowing] = useState(false);
@@ -171,6 +171,13 @@ export default function Marketplace({
   const [pickupOnly, setPickupOnly] = useState(false);
   const [localSearch, setLocalSearch] = useState('');
   const [stockTick, setStockTick] = useState(0);
+
+  // Strictly enforce: Only the store owner can view sold items
+  useEffect(() => {
+    if (!isMyStore && storeTab === 'Sold Items') {
+      setStoreTab('Products');
+    }
+  }, [isMyStore, storeTab]);
 
   useEffect(() => {
     const handleStockUpdate = () => setStockTick(t => t + 1);
@@ -277,7 +284,6 @@ export default function Marketplace({
       verified: true,
       category: prod?.category || 'Curated Goods',
       location: 'Victoria Island, Lagos',
-      rating: 5.0,
       reviewsCount: 1,
       followersCount: '1',
       avatar: prod?.imageUri || '/assets/hual_pwa_icon.png',
@@ -516,8 +522,6 @@ export default function Marketplace({
       list = [...list].sort((a, b) => (a.priceUsd || 0) - (b.priceUsd || 0));
     } else if (sortBy === 'price-desc') {
       list = [...list].sort((a, b) => (b.priceUsd || 0) - (a.priceUsd || 0));
-    } else if (sortBy === 'rating') {
-      list = [...list].sort((a, b) => (b.rating || 0) - (a.rating || 0));
     } else if (sortBy === 'stock') {
       list = [...list].sort((a, b) => (b.stock || 0) - (a.stock || 0));
     }
@@ -923,7 +927,6 @@ export default function Marketplace({
                   <option value="featured">Sort: Featured</option>
                   <option value="price-asc">Price: Low to High</option>
                   <option value="price-desc">Price: High to Low</option>
-                  <option value="rating">Highest Rated</option>
                   <option value="stock">Most Stock</option>
                 </select>
               </div>
@@ -1167,9 +1170,6 @@ export default function Marketplace({
                     <span>{selectedMerchant.category}</span>
                     <span>•</span>
                     <span>{selectedMerchant.location}</span>
-                    <span>•</span>
-                    <span style={{ color: '#FBBF24', fontWeight: 700 }}>★ {selectedMerchant.rating || 5.0}</span>
-                    <span style={{ color: '#6B7280' }}>({selectedMerchant.reviewsCount || 1} reviews)</span>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.74rem', color: 'var(--brand-green)', marginTop: '6px', fontWeight: 600, flexWrap: 'wrap' }}>
@@ -1229,8 +1229,8 @@ export default function Marketplace({
                       transition: 'all 0.2s'
                     }}
                   >
-                    <Star size={14} fill="#FBBF24" />
-                    <span>Rate Store</span>
+                    <MessageSquare size={14} />
+                    <span>Review Store</span>
                   </button>
                 )}
 
@@ -1283,14 +1283,14 @@ export default function Marketplace({
               </div>
             </div>
 
-            {/* Store Tabs: Products | About | Location | Reviews */}
+            {/* Store Tabs: Products | About | Location | Reviews | (Sold Items for store owners only) */}
             <div style={{
               display: 'flex',
               gap: '8px',
               padding: '0 32px',
               borderTop: '1px solid rgba(255, 255, 255, 0.06)'
             }}>
-              {['Products', 'About', 'Location', 'Reviews', 'Sold Items'].map((tab) => (
+              {['Products', 'About', 'Location', 'Reviews', ...(isMyStore ? ['Sold Items'] : [])].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setStoreTab(tab)}
@@ -1446,8 +1446,8 @@ export default function Marketplace({
                     <div style={{ fontSize: '0.9rem', color: 'var(--brand-green)', fontWeight: 800, marginTop: '2px' }}>Monad Smart Contract Active</div>
                   </div>
                   <div style={{ background: '#080F0F', padding: '16px', borderRadius: '12px' }}>
-                    <div style={{ fontSize: '0.72rem', color: '#6B7280' }}>Store Rating</div>
-                    <div style={{ fontSize: '0.9rem', color: '#FBBF24', fontWeight: 800, marginTop: '2px' }}>Rating: {selectedMerchant.rating} ({selectedMerchant.reviewsCount} verified reviews)</div>
+                    <div style={{ fontSize: '0.72rem', color: '#6B7280' }}>Escrow Settlement</div>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--brand-green)', fontWeight: 800, marginTop: '2px' }}>Instant Release on In-Hand Verification</div>
                   </div>
                   <div style={{ background: '#080F0F', padding: '16px', borderRadius: '12px' }}>
                     <div style={{ fontSize: '0.72rem', color: '#6B7280' }}>Digital Warranty</div>
@@ -1505,7 +1505,7 @@ export default function Marketplace({
                       className="btn-pill-primary btn-pill-sm"
                       style={{ padding: '8px 20px', fontWeight: 800 }}
                     >
-                      <Star size={14} />
+                      <MessageSquare size={14} />
                       <span>Write a Review</span>
                     </button>
                   )}
@@ -1519,7 +1519,7 @@ export default function Marketplace({
                     borderRadius: '16px',
                     border: '1px dashed rgba(255, 255, 255, 0.1)'
                   }}>
-                    <Star size={24} color="#6B7280" style={{ margin: '0 auto 8px' }} />
+                    <MessageSquare size={24} color="var(--brand-green)" style={{ margin: '0 auto 8px', opacity: 0.8 }} />
                     <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>
                       No Customer Reviews Yet
                     </div>
@@ -1541,9 +1541,6 @@ export default function Marketplace({
                           </div>
                           <span style={{ fontSize: '0.74rem', color: '#6B7280' }}>{rev.date}</span>
                         </div>
-                        <div style={{ color: '#FBBF24', fontSize: '0.82rem', marginBottom: '6px' }}>
-                          {'★'.repeat(rev.rating || 5)}{'☆'.repeat(5 - (rev.rating || 5))}
-                        </div>
                         {rev.tags && rev.tags.length > 0 && (
                           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
                             {rev.tags.map((t, ti) => (
@@ -1562,8 +1559,8 @@ export default function Marketplace({
             );
           })()}
 
-          {/* Tab Content: Store Sold Items */}
-          {storeTab === 'Sold Items' && (() => {
+          {/* Tab Content: Store Sold Items (Only visible to the store owner) */}
+          {storeTab === 'Sold Items' && isMyStore && (() => {
             const soldItems = getSoldItemsForStore(selectedMerchant);
             const totalRevenue = soldItems.reduce((acc, item) => acc + (Number(item.priceUsd || 0) * (Number(item.quantity) || 1)), 0);
 
@@ -1577,11 +1574,16 @@ export default function Marketplace({
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '22px' }}>
                   <div>
-                    <h2 className="font-display" style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                      Items Sold by {selectedMerchant.name}
-                    </h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <h2 className="font-display" style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                        Items Sold by {selectedMerchant.name}
+                      </h2>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '2px 8px', borderRadius: '999px', background: 'var(--brand-green-dim)', color: 'var(--brand-green)', border: '1px solid var(--brand-green-border)' }}>
+                        STORE OWNER ONLY
+                      </span>
+                    </div>
                     <div style={{ fontSize: '0.82rem', color: '#9CA3AF', marginTop: '4px' }}>
-                      Real-time ledger of completed and in-escrow sales backed by the Monad settlement layer.
+                      Private merchant ledger of completed and in-escrow sales backed by the Monad settlement layer.
                     </div>
                   </div>
 
@@ -2102,12 +2104,11 @@ export default function Marketplace({
                     {prox.pickupReady} ({prox.transit})
                   </div>
 
-                  {/* Merchant Rating & Rate Seller Action */}
+                  {/* Merchant & Rate Seller Action */}
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.04)' }}>
-                    <div style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', color: '#FBBF24', fontWeight: 700 }}>
-                      <Star size={11} fill="#FBBF24" />
-                      <span>{product.rating || merchantObj.rating || 4.9}</span>
-                      <span style={{ color: '#6B7280', fontWeight: 500 }}>({formatNumber(product.reviewsCount || merchantObj.reviewsCount || 120)})</span>
+                    <div style={{ fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--brand-green)', fontWeight: 700 }}>
+                      <CheckCircle2 size={11} />
+                      <span>Authentic Storefront</span>
                     </div>
 
                     {hasPurchasedProduct(product) && (

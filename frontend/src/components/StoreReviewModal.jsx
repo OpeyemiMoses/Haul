@@ -215,7 +215,7 @@ export default function StoreReviewModal({
                   <CheckCircle2 size={13} color="var(--brand-green)" />
                 </div>
                 <div style={{ fontSize: '0.74rem', color: '#9CA3AF', marginTop: '2px' }}>
-                  {merchant.location || 'Victoria Island, Lagos'} • Rating: {merchant.rating || '4.9'} ({formatNumber(merchant.reviewsCount || 120)} reviews)
+                  {merchant.location || 'Victoria Island, Lagos'}
                 </div>
               </div>
             </div>
@@ -289,43 +289,7 @@ export default function StoreReviewModal({
               </div>
             ) : null}
 
-            {/* Interactive Star Selection */}
-            <div style={{ textAlign: 'center', margin: '20px 0 16px' }}>
-              <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                Your Star Rating
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                {[1, 2, 3, 4, 5].map((starVal) => {
-                  const isFilled = (hoverRating || rating) >= starVal;
-                  return (
-                    <button
-                      key={starVal}
-                      type="button"
-                      onMouseEnter={() => setHoverRating(starVal)}
-                      onMouseLeave={() => setHoverRating(0)}
-                      onClick={() => setRating(starVal)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '4px',
-                        transition: 'transform 0.15s ease'
-                      }}
-                    >
-                      <Star 
-                        size={32} 
-                        color={isFilled ? '#FBBF24' : '#4B5563'} 
-                        fill={isFilled ? '#FBBF24' : 'transparent'} 
-                        style={{ filter: isFilled ? 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.5))' : 'none' }}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-              <div style={{ fontSize: '0.82rem', color: '#FBBF24', fontWeight: 700, marginTop: '8px', minHeight: '18px' }}>
-                {ratingDescriptions[hoverRating || rating]}
-              </div>
-            </div>
+            {/* Header info */}
 
             {/* Quick Experience Tags */}
             <div style={{ marginBottom: '16px' }}>

@@ -276,13 +276,6 @@ export default function WishlistPage({
                     <span>{item.merchantLocation || 'Victoria Island, Lagos'}</span>
                   </div>
 
-                  {/* Merchant Rating */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                    <span style={{ fontSize: '0.72rem', color: '#FBBF24', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                      <Star size={11} fill="#FBBF24" />
-                      {item.rating || '4.9'} ({formatNumber(item.reviewsCount || 120)})
-                    </span>
-                  </div>
                 </div>
               </div>
 
