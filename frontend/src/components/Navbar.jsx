@@ -185,7 +185,7 @@ export default function Navbar({
             </button>
 
             <button
-              onClick={() => setActiveTab && setActiveTab('passports')}
+              onClick={() => (authenticated && user ? setActiveTab && setActiveTab('passports') : onNavigateToSignIn && onNavigateToSignIn())}
               style={{
                 padding: '6px 13px',
                 borderRadius: '999px',
@@ -217,7 +217,7 @@ export default function Navbar({
             </button>
 
             <button
-              onClick={() => setActiveTab && setActiveTab('cart')}
+              onClick={() => (authenticated && user ? setActiveTab && setActiveTab('cart') : onNavigateToSignIn && onNavigateToSignIn())}
               style={{
                 padding: '6px 13px',
                 borderRadius: '999px',
@@ -256,7 +256,7 @@ export default function Navbar({
             </button>
 
             <button
-              onClick={() => setActiveTab && setActiveTab('inbox')}
+              onClick={() => (authenticated && user ? setActiveTab && setActiveTab('inbox') : onNavigateToSignIn && onNavigateToSignIn())}
               style={{
                 padding: '6px 13px',
                 borderRadius: '999px',
@@ -289,7 +289,7 @@ export default function Navbar({
             </button>
 
             <button
-              onClick={() => setActiveTab && setActiveTab('wishlist')}
+              onClick={() => (authenticated && user ? setActiveTab && setActiveTab('wishlist') : onNavigateToSignIn && onNavigateToSignIn())}
               style={{
                 padding: '6px 13px',
                 borderRadius: '999px',
@@ -379,53 +379,55 @@ export default function Navbar({
         {/* Right: Balance, Sell CTA, Profile Avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
           
-          {/* USD Balance Pill */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: '#121C1C',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '999px',
-            padding: '4px 10px 4px 12px',
-          }}>
+          {/* USD Balance Pill - ONLY for authenticated members */}
+          {authenticated && user && (
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '5px',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-              fontFamily: 'var(--font-mono)',
-              color: '#FFFFFF'
+              gap: '8px',
+              background: '#121C1C',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: '999px',
+              padding: '4px 10px 4px 12px',
             }}>
-              <span style={{ color: 'var(--brand-green)', fontSize: '0.72rem', fontWeight: 800 }}>USD</span>
-              <span>{formatCurrency(usdcBalance)}</span>
-            </div>
-
-            <button
-              onClick={handleQuickAddFunds}
-              disabled={fauceting}
-              title="Add $1,000 demo shopping funds"
-              style={{
-                background: 'var(--brand-green-dim)',
-                border: '1px solid var(--brand-green-border)',
-                color: 'var(--brand-green)',
-                borderRadius: '999px',
-                padding: '2px 8px',
-                fontSize: '0.68rem',
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                fontSize: '0.8rem',
                 fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              {fauceting ? '...' : '+ Add $1k'}
-            </button>
-          </div>
+                fontFamily: 'var(--font-mono)',
+                color: '#FFFFFF'
+              }}>
+                <span style={{ color: 'var(--brand-green)', fontSize: '0.72rem', fontWeight: 800 }}>USD</span>
+                <span>{formatCurrency(usdcBalance)}</span>
+              </div>
+
+              <button
+                onClick={handleQuickAddFunds}
+                disabled={fauceting}
+                title="Add $1,000 demo shopping funds"
+                style={{
+                  background: 'var(--brand-green-dim)',
+                  border: '1px solid var(--brand-green-border)',
+                  color: 'var(--brand-green)',
+                  borderRadius: '999px',
+                  padding: '2px 8px',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {fauceting ? '...' : '+ Add $1k'}
+              </button>
+            </div>
+          )}
 
           {/* Create Store for Consumers */}
           {!userStore && userRole !== 'merchant' && onOpenCreateStore && (
             <button
-              onClick={onOpenCreateStore}
+              onClick={() => (authenticated && user ? onOpenCreateStore() : onNavigateToSignIn && onNavigateToSignIn())}
               className="desktop-only-header-btn"
               style={{
                 display: 'inline-flex',
@@ -509,7 +511,7 @@ export default function Navbar({
           {/* Settings & Theme Switcher Button */}
           <button
             id="nav-settings-btn"
-            onClick={() => setActiveTab && setActiveTab('settings')}
+            onClick={() => (authenticated && user ? setActiveTab && setActiveTab('settings') : onNavigateToSignIn && onNavigateToSignIn())}
             style={{
               width: '34px',
               height: '34px',

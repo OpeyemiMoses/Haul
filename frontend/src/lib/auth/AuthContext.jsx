@@ -35,43 +35,29 @@ export function AuthProvider({ children }) {
   }
 
   const [localSession, setLocalSession] = useState(() => PrivyService.getStoredSession());
-  const [usdcBalance, setUsdcBalance] = useState(() => {
-    try {
-      const globalBal = localStorage.getItem('hual_usdc_balance');
-      if (globalBal !== null) return parseFloat(globalBal);
-      const scopedBal = localStorage.getItem('hual_usdc_balance_guest');
-      if (scopedBal !== null) return parseFloat(scopedBal);
-      return 2500;
-    } catch {
-      return 2500;
-    }
-  });
+  const isAuthenticated = Boolean((privyAuth && privyUser) || localSession);
+  const activeUserKey = privyUser?.id || localSession?.userId || (privyUser?.wallet?.address ? privyUser.wallet.address.toLowerCase() : null);
+
+  const [usdcBalance, setUsdcBalance] = useState(0);
   const [loadingBalance, setLoadingBalance] = useState(false);
   const [isNewUserTrigger, setIsNewUserTrigger] = useState(false);
 
   // Profile Picture (Device uploaded base64 data URL)
-  const [profilePicture, setProfilePicture] = useState(() => {
-    return localStorage.getItem('hual_profile_picture') || null;
-  });
+  const [profilePicture, setProfilePicture] = useState(null);
 
   const updateProfilePicture = (dataUrl) => {
     setProfilePicture(dataUrl);
-    if (dataUrl) {
-      localStorage.setItem('hual_profile_picture', dataUrl);
-    } else {
-      localStorage.removeItem('hual_profile_picture');
+    if (activeUserKey) {
+      if (dataUrl) {
+        localStorage.setItem(`hual_profile_picture_${activeUserKey}`, dataUrl);
+      } else {
+        localStorage.removeItem(`hual_profile_picture_${activeUserKey}`);
+      }
     }
   };
 
   // Custom User Profile (Name, Username, Bio)
-  const [customProfile, setCustomProfile] = useState(() => {
-    try {
-      const stored = localStorage.getItem('hual_user_custom_profile');
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [customProfile, setCustomProfile] = useState({});
 
   const updateProfile = (data = {}) => {
     const cleanUser = data.username ? data.username.replace(/^@/, '').trim().toLowerCase() : null;
@@ -87,9 +73,11 @@ export function AuthProvider({ children }) {
       const updated = { ...prev, ...data };
       if (cleanUser) updated.username = cleanUser;
 
-      try {
-        localStorage.setItem('hual_user_custom_profile', JSON.stringify(updated));
-      } catch (err) {}
+      if (activeUserKey) {
+        try {
+          localStorage.setItem(`hual_user_custom_profile_${activeUserKey}`, JSON.stringify(updated));
+        } catch (err) {}
+      }
 
       // Register in public user registry for @username and email resolution
       registerUser({
@@ -218,19 +206,72 @@ export function AuthProvider({ children }) {
   }, []);
 
   // User Role: Always starts as 'consumer' until they create a store!
-  const [userRole, setUserRole] = useState(() => {
-    return localStorage.getItem('hual_user_role') || 'consumer';
-  });
+  const [userRole, setUserRole] = useState('consumer');
 
   // User Store (if created)
-  const [userStore, setUserStore] = useState(() => {
-    try {
-      const stored = localStorage.getItem('hual_user_store');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
+  const [userStore, setUserStore] = useState(null);
+
+  // Synchronize user profile, store, and balance whenever active user changes
+  useEffect(() => {
+    if (!isAuthenticated || !activeUserKey) {
+      setCustomProfile({});
+      setUserStore(null);
+      setUserRole('consumer');
+      setProfilePicture(null);
+      setUsdcBalance(0);
+      return;
     }
-  });
+
+    // 1. Scoped Profile
+    try {
+      const scoped = localStorage.getItem(`hual_user_custom_profile_${activeUserKey}`);
+      setCustomProfile(scoped ? JSON.parse(scoped) : {});
+    } catch {
+      setCustomProfile({});
+    }
+
+    // 2. Scoped Store (ONLY if owned by this user)
+    try {
+      let store = null;
+      const scopedStore = localStorage.getItem(`hual_user_store_${activeUserKey}`);
+      if (scopedStore) {
+        store = JSON.parse(scopedStore);
+      } else {
+        const userAddr = privyUser?.wallet?.address?.toLowerCase() || localSession?.wallet?.address?.toLowerCase();
+        if (userAddr) {
+          const allStores = JSON.parse(localStorage.getItem('hual_all_created_stores') || '[]');
+          const match = allStores.find(s => s.ownerAddress && s.ownerAddress.toLowerCase() === userAddr);
+          if (match) store = match;
+        }
+      }
+      setUserStore(store);
+      setUserRole(store ? 'merchant' : 'consumer');
+    } catch {
+      setUserStore(null);
+      setUserRole('consumer');
+    }
+
+    // 3. Scoped Profile Picture
+    try {
+      const scopedPic = localStorage.getItem(`hual_profile_picture_${activeUserKey}`);
+      setProfilePicture(scopedPic || null);
+    } catch {
+      setProfilePicture(null);
+    }
+
+    // 4. Scoped USDC Balance
+    try {
+      const userAddr = privyUser?.wallet?.address?.toLowerCase() || localSession?.wallet?.address?.toLowerCase();
+      const scopedBal = localStorage.getItem(`hual_usdc_balance_${activeUserKey}`) || (userAddr ? localStorage.getItem(`hual_usdc_balance_${userAddr}`) : null);
+      if (scopedBal !== null && !isNaN(parseFloat(scopedBal))) {
+        setUsdcBalance(parseFloat(scopedBal));
+      } else {
+        setUsdcBalance(1000);
+      }
+    } catch {
+      setUsdcBalance(1000);
+    }
+  }, [isAuthenticated, activeUserKey]);
 
   const updateUserLocation = (newLoc) => {
     setUserLocation(newLoc);
@@ -238,7 +279,7 @@ export function AuthProvider({ children }) {
   };
 
   const createStore = (storeData) => {
-    if (!privyAuth || !privyUser) {
+    if (!isAuthenticated) {
       throw new Error("You must create an account and sign in through Privy to create a store.");
     }
 
@@ -264,13 +305,15 @@ export function AuthProvider({ children }) {
       phone: storeData.phone || '+234 1 800 4825',
       chatRep: `${storeData.name ? storeData.name.split(' ')[0] : 'Store Lead'} (Store Lead • Online)`,
       description: storeData.description || 'Verified merchant boutique on Hual with living Product Passports.',
-      ownerAddress: privyUser.wallet?.address || user?.address
+      ownerAddress: privyUser?.wallet?.address || localSession?.wallet?.address || user?.address
     };
 
     setUserStore(newStore);
     setUserRole('merchant');
-    localStorage.setItem('hual_user_store', JSON.stringify(newStore));
-    localStorage.setItem('hual_user_role', 'merchant');
+    if (activeUserKey) {
+      localStorage.setItem(`hual_user_store_${activeUserKey}`, JSON.stringify(newStore));
+      localStorage.setItem(`hual_user_role_${activeUserKey}`, 'merchant');
+    }
 
     try {
       const existing = JSON.parse(localStorage.getItem('hual_all_created_stores') || '[]');
@@ -287,7 +330,9 @@ export function AuthProvider({ children }) {
         ...(prev || {}),
         ...storeData
       };
-      localStorage.setItem('hual_user_store', JSON.stringify(updated));
+      if (activeUserKey) {
+        localStorage.setItem(`hual_user_store_${activeUserKey}`, JSON.stringify(updated));
+      }
       return updated;
     });
   };
@@ -371,8 +416,7 @@ export function AuthProvider({ children }) {
 
   const [loginModalOpen, setLoginModalOpen] = useState(false);
 
-  // Authenticated ONLY if real Privy account or verified embedded session exists
-  const isAuthenticated = Boolean((privyAuth && privyUser) || localSession);
+  // User identifier key
 
   const userKey = user?.id || (user?.email ? user.email.toLowerCase() : (user?.address ? user.address.toLowerCase() : 'guest'));
 
@@ -446,7 +490,25 @@ export function AuthProvider({ children }) {
     }
     PrivyService.clearSession();
     setLocalSession(null);
+    setUserStore(null);
+    setUserRole('consumer');
+    setCustomProfile({});
+    setProfilePicture(null);
     setUsdcBalance(0);
+
+    // Clear legacy un-scoped items
+    localStorage.removeItem('hual_user_custom_profile');
+    localStorage.removeItem('hual_user_store');
+    localStorage.removeItem('hual_profile_picture');
+    localStorage.removeItem('hual_user_role');
+    localStorage.removeItem('hual_user_name');
+    localStorage.removeItem('hual_my_passports');
+    localStorage.removeItem('hual_cart');
+    localStorage.removeItem('hual_usdc_balance');
+    localStorage.removeItem('hual_onboarded');
+    localStorage.removeItem('privy_hual_session');
+
+    window.dispatchEvent(new Event('hual_auth_signout'));
   };
 
   const faucetUsdc = async (amount = 1000) => {

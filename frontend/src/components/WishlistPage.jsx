@@ -23,9 +23,10 @@ export default function WishlistPage({
   onStartCheckout,
   onOpenChat,
   onOpenStore,
-  onOpenRateSeller
+  onOpenRateSeller,
+  onNavigateToSignIn
 }) {
-  const { user, userStore } = useAuth();
+  const { user, authenticated, userStore } = useAuth();
 
   const isMyItem = (item) => {
     if (!item) return false;
@@ -302,7 +303,13 @@ export default function WishlistPage({
                 <div style={{ display: 'flex', gap: '6px' }}>
                   {!isMyItem(item) && (
                     <button
-                      onClick={() => onOpenChat && onOpenChat(item)}
+                      onClick={() => {
+                        if (!authenticated || !user) {
+                          if (onNavigateToSignIn) onNavigateToSignIn();
+                          return;
+                        }
+                        if (onOpenChat) onOpenChat(item);
+                      }}
                       title="Chat with merchant about this product"
                       style={{
                         background: '#121C1C',
@@ -321,7 +328,13 @@ export default function WishlistPage({
                   )}
 
                   <button
-                    onClick={() => onStartCheckout && onStartCheckout(item)}
+                    onClick={() => {
+                      if (!authenticated || !user) {
+                        if (onNavigateToSignIn) onNavigateToSignIn();
+                        return;
+                      }
+                      if (onStartCheckout) onStartCheckout(item);
+                    }}
                     className="btn-pill-primary btn-pill-sm"
                     style={{ padding: '6px 14px', fontSize: '0.76rem', fontWeight: 800 }}
                   >

@@ -11,7 +11,7 @@ export default function SignInPage({ onSignInSuccess, onBackToLanding }) {
   // Official Privy Authentication Hooks
   const { ready: privyReady, authenticated: privyAuthenticated, user: privyUser, login: privyLogin } = usePrivy();
 
-  const [userName, setUserName] = useState(() => localStorage.getItem('hual_user_name') || '');
+  const [userName, setUserName] = useState('');
   const [location, setLocation] = useState(() => localStorage.getItem('hual_user_location') || 'New York City, NY');
   const [customLoc, setCustomLoc] = useState('');
   const [useCustomLoc, setUseCustomLoc] = useState(false);

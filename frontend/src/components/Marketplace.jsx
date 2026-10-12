@@ -72,9 +72,10 @@ export default function Marketplace({
   followedStores = [],
   onToggleFollowStore,
   onOpenInbox,
-  passports = []
+  passports = [],
+  onNavigateToSignIn
 }) {
-  const { user, usdcBalance, refreshBalance, deductUsdc, faucetUsdc, userLocation, updateUserLocation, userRole, userStore, updateStore } = useAuth();
+  const { user, authenticated, usdcBalance, refreshBalance, deductUsdc, faucetUsdc, userLocation, updateUserLocation, userRole, userStore, updateStore } = useAuth();
   const userKey = user?.id || (user?.email ? user.email.toLowerCase() : 'guest');
   const [verifiedReviewNotice, setVerifiedReviewNotice] = useState(null);
   const [editStoreModalOpen, setEditStoreModalOpen] = useState(false);
@@ -511,6 +512,10 @@ export default function Marketplace({
   };
 
   const handleStartCheckout = (product) => {
+    if (!authenticated || !user) {
+      if (onNavigateToSignIn) onNavigateToSignIn();
+      return;
+    }
     if (isMyProduct(product)) {
       alert("You cannot purchase items listed by your own store.");
       return;
@@ -522,6 +527,10 @@ export default function Marketplace({
   };
 
   const handleOpenChat = (merchant, product = null) => {
+    if (!authenticated || !user) {
+      if (onNavigateToSignIn) onNavigateToSignIn();
+      return;
+    }
     if (isMerchantMyStore(merchant) || (product && isMyProduct(product))) {
       alert("You cannot message your own store.");
       return;
@@ -652,6 +661,7 @@ export default function Marketplace({
           wishlist={wishlist}
           onToggleWishlist={onToggleWishlist}
           buyerLocation={buyerLocation}
+          onNavigateToSignIn={onNavigateToSignIn}
         />
       ) : (
         <>
@@ -1161,7 +1171,13 @@ export default function Marketplace({
 
                 {!isMyStore && (
                   <button
-                    onClick={() => onToggleFollowStore && onToggleFollowStore(selectedMerchant.id)}
+                    onClick={() => {
+                      if (!authenticated || !user) {
+                        if (onNavigateToSignIn) onNavigateToSignIn();
+                        return;
+                      }
+                      if (onToggleFollowStore) onToggleFollowStore(selectedMerchant.id);
+                    }}
                     style={{
                       padding: '8px 22px',
                       borderRadius: '999px',
@@ -1639,6 +1655,10 @@ export default function Marketplace({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (!authenticated || !user) {
+                        if (onNavigateToSignIn) onNavigateToSignIn();
+                        return;
+                      }
                       if (onToggleWishlist) onToggleWishlist(product);
                     }}
                     title={isWishlisted ? "Saved in Wishlist" : "Save to Wishlist"}
@@ -1755,6 +1775,10 @@ export default function Marketplace({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (!authenticated || !user) {
+                        if (onNavigateToSignIn) onNavigateToSignIn();
+                        return;
+                      }
                       if (onAddToCart) onAddToCart(product);
                       const pId = product.productId || product.id;
                       setAddedCardId(pId);

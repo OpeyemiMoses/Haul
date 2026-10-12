@@ -266,6 +266,10 @@ function MainApp() {
   const [cartToast, setCartToast] = useState(null);
 
   const addToCart = (product, selectedSize = 'Standard', quantity = 1) => {
+    if (!authenticated || !user) {
+      setCurrentView('signin');
+      return;
+    }
     if (!product) return;
     const userAddr = user?.address?.toLowerCase();
     const sellerAddr = (product.seller || product.ownerAddress || product.merchantAddress)?.toLowerCase();
@@ -341,6 +345,10 @@ function MainApp() {
   };
 
   const toggleWishlist = (product) => {
+    if (!authenticated || !user) {
+      setCurrentView('signin');
+      return;
+    }
     setWishlist(prev => {
       const exists = prev.some(item => item.productId === product.productId);
       const updated = exists 
@@ -370,6 +378,10 @@ function MainApp() {
   const [verifiedReviewNotice, setVerifiedReviewNotice] = useState(null);
 
   const handleOpenRateSeller = (merchant, product = null, passport = null) => {
+    if (!authenticated || !user) {
+      setCurrentView('signin');
+      return;
+    }
     if (!merchant) return;
 
     const isPassportInHand = (p) => {
@@ -504,6 +516,10 @@ function MainApp() {
   const [inboxChatTarget, setInboxChatTarget] = useState(null);
 
   const handleOpenInbox = (merchant, product = null) => {
+    if (!authenticated || !user) {
+      setCurrentView('signin');
+      return;
+    }
     if (merchant && (userStore || user?.address)) {
       const userAddr = user?.address?.toLowerCase();
       const mOwnerAddr = (merchant.ownerAddress || merchant.owner || merchant.seller)?.toLowerCase();
@@ -522,7 +538,7 @@ function MainApp() {
     setActiveTab('inbox');
   };
 
-  // Auto-redirect to storefront when authenticated (no landing page once signed in)
+  // Auto-redirect to storefront when authenticated; reset guest state on signout
   useEffect(() => {
     setOnboardingOpen(false);
     if (authenticated) {
@@ -532,8 +548,33 @@ function MainApp() {
           setActiveTab('shop');
         }
       }
+    } else {
+      // Guest reset: clear shopping and passport states
+      setCart([]);
+      setMyPassports([]);
+      setSelectedStore(null);
+      if (activeTab === 'inbox' || activeTab === 'passports' || activeTab === 'cart' || activeTab === 'wishlist' || activeTab === 'settings' || activeTab === 'profile') {
+        setActiveTab('shop');
+      }
+      if (currentView === 'merchant') {
+        setCurrentView('storefront');
+      }
     }
   }, [authenticated]);
+
+  // Clean signout event listener
+  useEffect(() => {
+    const handleSignOutReset = () => {
+      setCart([]);
+      setMyPassports([]);
+      setWishlist([]);
+      setSelectedStore(null);
+      setCurrentView('storefront');
+      setActiveTab('shop');
+    };
+    window.addEventListener('hual_auth_signout', handleSignOutReset);
+    return () => window.removeEventListener('hual_auth_signout', handleSignOutReset);
+  }, []);
 
   // Search & Category Filter
   const [searchQuery, setSearchQuery] = useState('');
@@ -825,6 +866,7 @@ function MainApp() {
                     setSelectedCategory={setSelectedCategory}
                     forcedModal={forcedModal}
                     onClearForcedModal={() => setForcedModal(null)}
+                    onNavigateToSignIn={() => setCurrentView('signin')}
                   />
                 )}
 
@@ -843,6 +885,7 @@ function MainApp() {
                     onOpenInbox={handleOpenInbox}
                     followedStores={followedStores}
                     onToggleFollowStore={toggleFollowStore}
+                    onNavigateToSignIn={() => setCurrentView('signin')}
                   />
                 )}
 
@@ -940,6 +983,7 @@ function MainApp() {
                       const merchantObj = VERIFIED_MERCHANTS.find(m => m.id === item.merchantId) || VERIFIED_MERCHANTS[0];
                       handleOpenRateSeller(merchantObj, item);
                     }}
+                    onNavigateToSignIn={() => setCurrentView('signin')}
                   />
                 )}
 

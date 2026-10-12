@@ -36,9 +36,10 @@ export default function ProductDetailPage({
   hasItemInHand = false,
   wishlist = [],
   onToggleWishlist,
-  buyerLocation = 'Victoria Island, Lagos'
+  buyerLocation = 'Victoria Island, Lagos',
+  onNavigateToSignIn
 }) {
-  const { user, userStore } = useAuth();
+  const { user, authenticated, userStore } = useAuth();
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.[2] || product?.sizes?.[0] || 10);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [addedCartFeedback, setAddedCartFeedback] = useState(false);
@@ -215,7 +216,13 @@ export default function ProductDetailPage({
           </button>
 
           <button
-            onClick={() => onToggleWishlist && onToggleWishlist(product)}
+            onClick={() => {
+              if (!authenticated || !user) {
+                if (onNavigateToSignIn) onNavigateToSignIn();
+                return;
+              }
+              if (onToggleWishlist) onToggleWishlist(product);
+            }}
             className="btn-pill-secondary"
             style={{
               width: '38px',
@@ -480,7 +487,13 @@ export default function ProductDetailPage({
               <div style={{ display: 'flex', gap: '8px' }}>
                 {!isMyProduct && (
                   <button
-                    onClick={() => onOpenChat && onOpenChat(product)}
+                    onClick={() => {
+                      if (!authenticated || !user) {
+                        if (onNavigateToSignIn) onNavigateToSignIn();
+                        return;
+                      }
+                      if (onOpenChat) onOpenChat(product);
+                    }}
                     className="btn-pill-secondary btn-pill-sm"
                     style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
@@ -628,6 +641,10 @@ export default function ProductDetailPage({
               <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
                 <button
                   onClick={() => {
+                    if (!authenticated || !user) {
+                      if (onNavigateToSignIn) onNavigateToSignIn();
+                      return;
+                    }
                     if (onAddToCart) onAddToCart(product, selectedSize);
                     setAddedCartFeedback(true);
                     setTimeout(() => setAddedCartFeedback(false), 2200);
@@ -655,7 +672,13 @@ export default function ProductDetailPage({
                 </button>
 
                 <button
-                  onClick={() => onStartCheckout && onStartCheckout(product)}
+                  onClick={() => {
+                    if (!authenticated || !user) {
+                      if (onNavigateToSignIn) onNavigateToSignIn();
+                      return;
+                    }
+                    if (onStartCheckout) onStartCheckout(product);
+                  }}
                   className="btn-pill-primary"
                   style={{
                     flex: 1.2,

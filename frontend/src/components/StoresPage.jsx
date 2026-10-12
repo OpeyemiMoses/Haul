@@ -31,7 +31,8 @@ export default function StoresPage({
   onOpenSellModal,
   onOpenInbox,
   followedStores = [],
-  onToggleFollowStore
+  onToggleFollowStore,
+  onNavigateToSignIn
 }) {
   const { user, authenticated, userStore, userLocation } = useAuth();
   const buyerLocation = userLocation || 'Victoria Island, Lagos';
@@ -691,6 +692,10 @@ export default function StoresPage({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (!authenticated || !user) {
+                            if (onNavigateToSignIn) onNavigateToSignIn();
+                            return;
+                          }
                           if (onOpenInbox) onOpenInbox(store);
                         }}
                         style={{
