@@ -425,29 +425,66 @@ export function AuthProvider({ children }) {
 
   const userKey = user?.id || (user?.email ? user.email.toLowerCase() : (user?.address ? user.address.toLowerCase() : 'guest'));
 
-  // Automatically sync balance whenever active user or userKey changes
+  // Automatically sync balance whenever active user, userKey, or balance update event occurs
   useEffect(() => {
-    try {
-      const keys = [
-        user?.address ? `hual_usdc_balance_${user.address.toLowerCase()}` : null,
-        userKey ? `hual_usdc_balance_${userKey}` : null,
-        'hual_usdc_balance'
-      ].filter(Boolean);
+    const syncBalance = () => {
+      try {
+        const userAddrLower = user?.address ? user.address.toLowerCase() : null;
+        const storeAddrLower = userStore?.ownerAddress ? userStore.ownerAddress.toLowerCase() : null;
+        const keys = [
+          userAddrLower ? `hual_usdc_balance_${userAddrLower}` : null,
+          userKey ? `hual_usdc_balance_${userKey}` : null,
+          storeAddrLower ? `hual_usdc_balance_${storeAddrLower}` : null,
+          'hual_usdc_balance'
+        ].filter(Boolean);
 
-      for (const k of keys) {
-        const val = localStorage.getItem(k);
-        if (val !== null) {
-          const num = parseFloat(val);
-          if (!isNaN(num)) {
-            setUsdcBalance(num);
+        for (const k of keys) {
+          const val = localStorage.getItem(k);
+          if (val !== null) {
+            const num = parseFloat(val);
+            if (!isNaN(num)) {
+              setUsdcBalance(num);
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Sync balance error:', e);
+      }
+    };
+
+    syncBalance();
+
+    const handleBalanceEvent = (e) => {
+      if (e?.detail) {
+        const detailAddr = (e.detail.address || '').toLowerCase();
+        const origAddr = (e.detail.originalAddress || '').toLowerCase();
+        const myAddr = (user?.address || '').toLowerCase();
+        const storeAddr = (userStore?.ownerAddress || '').toLowerCase();
+        const myKey = (userKey || '').toLowerCase();
+
+        const isMatch = !detailAddr || 
+          detailAddr === myAddr || 
+          detailAddr === storeAddr || 
+          detailAddr === myKey ||
+          (origAddr && (origAddr === myAddr || origAddr === storeAddr || origAddr === myKey));
+
+        if (isMatch) {
+          if (e.detail.newBalance !== undefined && !isNaN(parseFloat(e.detail.newBalance))) {
+            setUsdcBalance(parseFloat(e.detail.newBalance));
+            return;
+          } else if (e.detail.amount) {
+            setUsdcBalance(prev => Number((prev + parseFloat(e.detail.amount)).toFixed(2)));
             return;
           }
         }
       }
-    } catch (e) {
-      console.warn('Sync balance error:', e);
-    }
-  }, [userKey, user?.address]);
+      syncBalance();
+    };
+
+    window.addEventListener('hual_balance_updated', handleBalanceEvent);
+    return () => window.removeEventListener('hual_balance_updated', handleBalanceEvent);
+  }, [userKey, user?.address, userStore?.ownerAddress]);
 
   const refreshBalance = async (address) => {
     const targetAddr = address || user?.address;

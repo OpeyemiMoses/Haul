@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
 import { cancelAndRefundOnchain, releaseEscrowPayoutToStoreOwner } from '../lib/web3';
-import { lookupPickupOrder, completePickupAndPayout, isItemCollectedInRegistry, markItemCollectedInRegistry } from '../lib/ordersRegistry';
+import { lookupPickupOrder, completePickupAndPayout, isItemCollectedInRegistry, markItemCollectedInRegistry, getCollectedItemInfo } from '../lib/ordersRegistry';
 import { formatCurrency, formatNumber } from '../lib/formatters';
 import { INITIAL_USER_PROFILE, INITIAL_FEATURED_PASSPORT, BUYER_LOCATIONS, VERIFIED_MERCHANTS } from '../lib/catalogData';
 import { HualIcon } from './HualLogo';
@@ -957,7 +957,26 @@ export default function ProfilePage({
         (itemMerchant.toLowerCase().trim() === currentStoreName.toLowerCase().trim()) ||
         (matched.merchantId && userStore?.id && String(matched.merchantId) === String(userStore.id));
 
-      const payoutAddress = userStore?.ownerAddress || user?.address || itemSellerAddr || '0x7f3411b93ef2d38e81c04910283f';
+      // Resolve valid 42-char EVM payout address
+      const candidatePayoutAddrs = [
+        userStore?.ownerAddress,
+        user?.address,
+        user?.wallet?.address,
+        matched.sellerAddress,
+        matched.seller
+      ];
+      let payoutAddress = candidatePayoutAddrs.find(a => a && typeof a === 'string' && a.startsWith('0x') && a.length === 42);
+      if (!payoutAddress) payoutAddress = '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC';
+
+      // Check if already collected / handed over
+      const isAlreadyHandedOver = isItemCollectedInRegistry(matched) ||
+        matched.currentState === 'COLLECTED' ||
+        matched.isCollected ||
+        matched.isDelivered ||
+        matched.status === 'released';
+
+      const collectedMeta = getCollectedItemInfo(matched);
+      const existingTxHash = matched.payoutTxHash || collectedMeta?.txHash || null;
 
       setCounterLookupResult({
         found: true,
@@ -965,7 +984,9 @@ export default function ProfilePage({
         isMyStore,
         currentStoreName,
         itemMerchant,
-        payoutAddress
+        payoutAddress,
+        isAlreadyHandedOver,
+        payoutTxHash: existingTxHash
       });
     }, 300);
   };
@@ -991,8 +1012,14 @@ export default function ProfilePage({
         plainPIN: item.pickupPIN || counterCodeInput
       });
 
-      setCounterHandoverTxHash(payoutRes?.txHash || null);
+      const finalTxHash = payoutRes?.txHash || null;
+      setCounterHandoverTxHash(finalTxHash);
       setCounterHandoverSuccess(true);
+      setCounterLookupResult(prev => prev ? {
+        ...prev,
+        isAlreadyHandedOver: true,
+        payoutTxHash: finalTxHash
+      } : null);
 
       // Instantly mark collected in local passports state
       setLocalPassports(prev => prev.map(p => {
@@ -1011,7 +1038,7 @@ export default function ProfilePage({
             currentStateIndex: 4,
             isCollected: true,
             isDelivered: true,
-            payoutTxHash: payoutRes?.txHash || p.payoutTxHash || null
+            payoutTxHash: finalTxHash || p.payoutTxHash || null
           };
         }
         return p;
@@ -1019,23 +1046,24 @@ export default function ProfilePage({
 
       if (onRefreshData) onRefreshData();
 
-      // Trigger balance refresh for the store owner
-      if (user?.address) {
-        try {
-          const sellerLower = (userStore?.ownerAddress || user.address).toLowerCase();
-          const curBal = parseFloat(localStorage.getItem(`hual_usdc_balance_${sellerLower}`) || '1000');
-          window.dispatchEvent(new CustomEvent('hual_balance_updated', {
-            detail: { address: sellerLower, newBalance: curBal }
-          }));
-        } catch {}
-      }
+      // Trigger balance refresh for the store owner across all addresses
+      try {
+        const storeOwnerAddr = userStore?.ownerAddress || user?.address || '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC';
+        const sellerLower = storeOwnerAddr.toLowerCase();
+        const curBal = parseFloat(localStorage.getItem(`hual_usdc_balance_${sellerLower}`) || localStorage.getItem('hual_usdc_balance') || '1000');
+        window.dispatchEvent(new CustomEvent('hual_balance_updated', {
+          detail: { 
+            address: sellerLower, 
+            newBalance: curBal, 
+            amount: payoutRes?.payoutAmount || 0,
+            txHash: finalTxHash 
+          }
+        }));
+      } catch {}
 
       setTimeout(() => {
         setCounterHandoverSuccess(false);
-        setCounterLookupResult(null);
-        setCounterCodeInput('');
-        setCounterHandoverTxHash(null);
-      }, 5000);
+      }, 7000);
     } catch (err) {
       console.error('Handover error:', err);
       alert('Handover error: ' + (err.reason || err.message || err));
@@ -3225,16 +3253,34 @@ export default function ProfilePage({
                         </div>
                       </div>
 
-                      {counterHandoverSuccess ? (
+                      {(counterHandoverSuccess || counterLookupResult.isAlreadyHandedOver) ? (
                         <div style={{ padding: '16px', background: 'var(--brand-green-dim)', borderRadius: '14px', border: '1px solid var(--brand-green-border)', color: 'var(--brand-green)', fontSize: '0.88rem', fontWeight: 800, textAlign: 'center' }}>
                           <CheckCircle2 size={24} style={{ margin: '0 auto 6px' }} />
-                          <div style={{ fontSize: '1rem', marginBottom: '4px' }}>Handover Complete! Escrow Payment Released</div>
-                          <div style={{ fontSize: '0.82rem', color: '#D1D5DB', fontWeight: 600 }}>
-                            ${counterLookupResult.item.originalPriceUsd || 250.00} USDC sent directly to your store owner wallet: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-green)' }}>{(counterLookupResult.payoutAddress).slice(0, 10)}...</span>
+                          <div style={{ fontSize: '1.02rem', marginBottom: '4px' }}>
+                            {counterHandoverSuccess ? 'Handover Complete! Escrow Payment Released' : 'Item Handover Already Completed & Escrow Settled'}
                           </div>
-                          {counterHandoverTxHash && (
-                            <div style={{ marginTop: '8px', fontSize: '0.74rem', color: '#9CA3AF', fontFamily: 'var(--font-mono)' }}>
-                              Live Monad TX: {counterHandoverTxHash.slice(0, 20)}...
+                          <div style={{ fontSize: '0.82rem', color: '#D1D5DB', fontWeight: 600 }}>
+                            ${counterLookupResult.item.originalPriceUsd || 250.00} USDC settled directly to your store owner wallet: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-green)' }}>{(counterLookupResult.payoutAddress).slice(0, 10)}...</span>
+                          </div>
+                          {(counterHandoverTxHash || counterLookupResult.payoutTxHash) && (
+                            <div style={{ marginTop: '10px' }}>
+                              <a
+                                href={`https://testnet.monadexplorer.com/tx/${counterHandoverTxHash || counterLookupResult.payoutTxHash}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  fontSize: '0.76rem',
+                                  color: 'var(--brand-green)',
+                                  fontFamily: 'var(--font-mono)',
+                                  textDecoration: 'underline'
+                                }}
+                              >
+                                <span>Monad Explorer Settlement: {((counterHandoverTxHash || counterLookupResult.payoutTxHash) || '').slice(0, 16)}...</span>
+                                <ExternalLink size={12} />
+                              </a>
                             </div>
                           )}
                         </div>
@@ -4575,6 +4621,13 @@ export default function ProfilePage({
         const merchLoc = pickupPassport.merchantLocation || 'Victoria Island, Lagos';
         const pImage = pickupPassport.imageUri || '/assets/air_max_95.jpg';
 
+        const isCollected = isItemCollectedInRegistry(pickupPassport) || 
+          pickupPassport.currentState === 'COLLECTED' || 
+          pickupPassport.isCollected || 
+          pickupPassport.isDelivered;
+        const collectedMeta = getCollectedItemInfo(pickupPassport);
+        const payoutTx = pickupPassport.payoutTxHash || collectedMeta?.txHash;
+
         return (
           <ModalPortal>
             <div className="modal-overlay" onClick={() => setPickupPassport(null)}>
@@ -4587,7 +4640,7 @@ export default function ProfilePage({
                 maxHeight: 'calc(100vh - 48px)',
                 overflowY: 'auto',
                 background: '#0D1616',
-                border: '1px solid rgba(132, 244, 59, 0.3)',
+                border: isCollected ? '1px solid rgba(132, 244, 59, 0.5)' : '1px solid rgba(132, 244, 59, 0.3)',
                 borderRadius: '24px',
                 padding: '28px',
                 textAlign: 'center',
@@ -4605,7 +4658,7 @@ export default function ProfilePage({
                   padding: '3px 10px',
                   borderRadius: '999px'
                 }}>
-                  ESCROW READY FOR IN-STORE PICKUP
+                  {isCollected ? 'HANDOVER COMPLETE • ESCROW RELEASED' : 'ESCROW READY FOR IN-STORE PICKUP'}
                 </span>
                 <button onClick={() => setPickupPassport(null)} style={{ background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>
                   <X size={18} />
@@ -4657,95 +4710,136 @@ export default function ProfilePage({
                 <span>{merchLoc}</span>
               </div>
 
-              {/* QR Code Container */}
-              <div style={{
-                background: '#FFFFFF',
-                padding: '16px',
-                borderRadius: '18px',
-                display: 'inline-block',
-                margin: '0 auto 16px',
-                boxShadow: '0 0 30px rgba(132, 244, 59, 0.2)'
-              }}>
-                <HaulQrCode 
-                  value={`haul://verify-pickup?token=${pickupPassport.tokenId || 4821}&sn=${encodeURIComponent(pickupPassport.serialNumber || '')}&pin=${itemPin}&merchant=${encodeURIComponent(merchName)}`} 
-                  size={175} 
-                />
-              </div>
-
-              {/* 4-Digit In-Store PIN */}
-              <div style={{
-                background: '#080F0F',
-                padding: '12px 18px',
-                borderRadius: '14px',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px'
-              }}>
-                <span style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>In-Store Verification PIN:</span>
-                <strong style={{ fontSize: '1.4rem', fontFamily: 'var(--font-mono)', letterSpacing: '0.2em', color: 'var(--brand-green)' }}>
-                  {itemPin}
-                </strong>
-              </div>
-
-              {/* In-Store Handover Guidance Notice */}
-              <div style={{
-                padding: '14px 16px',
-                background: 'rgba(132, 244, 59, 0.06)',
-                borderRadius: '14px',
-                border: '1px solid var(--brand-green-border)',
-                textAlign: 'left',
-                marginBottom: '12px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--brand-green)', fontWeight: 800, fontSize: '0.84rem', marginBottom: '4px' }}>
-                  <ShieldCheck size={16} />
-                  <span>In-Store Merchant Handover</span>
+              {isCollected ? (
+                /* Collected Success Display */
+                <div style={{
+                  padding: '24px 18px',
+                  background: 'var(--brand-green-dim)',
+                  border: '1px solid var(--brand-green-border)',
+                  borderRadius: '18px',
+                  marginBottom: '18px'
+                }}>
+                  <CheckCircle2 size={40} color="var(--brand-green)" style={{ margin: '0 auto 12px' }} />
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '6px' }}>
+                    Physical Handover Completed
+                  </h3>
+                  <p style={{ fontSize: '0.82rem', color: '#9CA3AF', lineHeight: 1.5, margin: '0 0 14px' }}>
+                    This item was verified and handed over at <strong style={{ color: '#FFFFFF' }}>{merchName}</strong>. Escrow payment was disbursed to the store owner's wallet on Monad Testnet.
+                  </p>
+                  {payoutTx && (
+                    <a
+                      href={`https://testnet.monadexplorer.com/tx/${payoutTx}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '0.78rem',
+                        color: 'var(--brand-green)',
+                        fontFamily: 'var(--font-mono)',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      <span>View Monad Payout TX ({payoutTx.slice(0, 14)}...)</span>
+                      <ExternalLink size={13} />
+                    </a>
+                  )}
                 </div>
-                <p style={{ fontSize: '0.78rem', color: '#9CA3AF', margin: 0, lineHeight: 1.45 }}>
-                  Show this QR code or 4-digit PIN to store staff at <strong style={{ color: '#FFFFFF' }}>{merchName}</strong>. The merchant will scan or verify your code at their Store Counter to complete the physical handover and release escrow.
-                </p>
-              </div>
+              ) : (
+                /* Pending Handover QR & Code */
+                <>
+                  {/* QR Code Container */}
+                  <div style={{
+                    background: '#FFFFFF',
+                    padding: '16px',
+                    borderRadius: '18px',
+                    display: 'inline-block',
+                    margin: '0 auto 16px',
+                    boxShadow: '0 0 30px rgba(132, 244, 59, 0.2)'
+                  }}>
+                    <HaulQrCode 
+                      value={`haul://verify-pickup?token=${pickupPassport.tokenId || 4821}&sn=${encodeURIComponent(pickupPassport.serialNumber || '')}&pin=${itemPin}&merchant=${encodeURIComponent(merchName)}`} 
+                      size={175} 
+                    />
+                  </div>
 
-              <div style={{ fontSize: '0.72rem', color: '#6B7280', marginBottom: '14px' }}>
-                Funds are protected in Monad Smart Escrow until verified in-store by the merchant.
-              </div>
+                  {/* 4-Digit In-Store PIN */}
+                  <div style={{
+                    background: '#080F0F',
+                    padding: '12px 18px',
+                    borderRadius: '14px',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '20px'
+                  }}>
+                    <span style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>In-Store Verification PIN:</span>
+                    <strong style={{ fontSize: '1.4rem', fontFamily: 'var(--font-mono)', letterSpacing: '0.2em', color: 'var(--brand-green)' }}>
+                      {itemPin}
+                    </strong>
+                  </div>
 
-              {/* Cancel Order Action */}
-              <button
-                onClick={() => {
-                  const target = pickupPassport;
-                  setPickupPassport(null);
-                  setCancelOrderPassport(target);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '11px 16px',
-                  borderRadius: '999px',
-                  background: 'rgba(239, 68, 68, 0.08)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#EF4444',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)';
-                  e.currentTarget.style.borderColor = '#EF4444';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
-                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-                }}
-              >
-                <RotateCcw size={14} />
-                <span>Cancel Order & Refund Escrow</span>
-              </button>
+                  {/* In-Store Handover Guidance Notice */}
+                  <div style={{
+                    padding: '14px 16px',
+                    background: 'rgba(132, 244, 59, 0.06)',
+                    borderRadius: '14px',
+                    border: '1px solid var(--brand-green-border)',
+                    textAlign: 'left',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--brand-green)', fontWeight: 800, fontSize: '0.84rem', marginBottom: '4px' }}>
+                      <ShieldCheck size={16} />
+                      <span>In-Store Merchant Handover</span>
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: '#9CA3AF', margin: 0, lineHeight: 1.45 }}>
+                      Show this QR code or 4-digit PIN to store staff at <strong style={{ color: '#FFFFFF' }}>{merchName}</strong>. The merchant will scan or verify your code at their Store Counter to complete the physical handover and release escrow.
+                    </p>
+                  </div>
+
+                  <div style={{ fontSize: '0.72rem', color: '#6B7280', marginBottom: '14px' }}>
+                    Funds are protected in Monad Smart Escrow until verified in-store by the merchant.
+                  </div>
+
+                  {/* Cancel Order Action */}
+                  <button
+                    onClick={() => {
+                      const target = pickupPassport;
+                      setPickupPassport(null);
+                      setCancelOrderPassport(target);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '11px 16px',
+                      borderRadius: '999px',
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      color: '#EF4444',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.16)';
+                      e.currentTarget.style.borderColor = '#EF4444';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                      e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                    }}
+                  >
+                    <RotateCcw size={14} />
+                    <span>Cancel Order & Refund Escrow</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
           </ModalPortal>

@@ -653,14 +653,18 @@ export async function listProductOnchain({
  * Release escrow payment directly to store owner's address on Monad Testnet
  */
 export async function releaseEscrowPayoutToStoreOwner({ sellerAddress, amountUsdc, orderId, orderName }) {
-  if (!sellerAddress) {
-    throw new Error('Store owner payout address is required');
-  }
-
   const relayer = getRelayerSigner();
   const usdc = getUsdcContract(relayer);
   const amountNumber = Math.max(0.01, parseFloat(amountUsdc || 1));
   const amountUnits = BigInt(Math.round(amountNumber * 100)) * 10_000n; // 6 decimals
+
+  // Validate and sanitize destination EVM address
+  let validSellerAddress = sellerAddress;
+  if (!validSellerAddress || !ethers.isAddress(validSellerAddress)) {
+    validSellerAddress = MERCHANT_ADDR || '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC';
+  } else {
+    validSellerAddress = ethers.getAddress(validSellerAddress);
+  }
 
   let txHash = null;
   let receipt = null;
@@ -673,21 +677,36 @@ export async function releaseEscrowPayoutToStoreOwner({ sellerAddress, amountUsd
       await mintTx.wait();
     }
 
-    // Execute real onchain transfer to seller's address
-    const tx = await usdc.transfer(sellerAddress, amountUnits);
+    // Execute real onchain transfer to seller's address on Monad Testnet
+    const tx = await usdc.transfer(validSellerAddress, amountUnits);
     receipt = await tx.wait();
-    txHash = receipt.hash || tx.hash;
+    txHash = receipt?.hash || tx.hash;
   } catch (err) {
-    console.warn('Direct onchain USDC payout warning:', err?.message || err);
-    txHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('')}`;
+    console.error('Onchain USDC payout error:', err);
+    // If contract call failed, try direct transaction or retrieve hash
+    if (err?.transaction?.hash) {
+      txHash = err.transaction.hash;
+    } else {
+      throw new Error(`Onchain payout failed: ${err.message || 'Network error'}`);
+    }
   }
 
-  // Update seller's local balance and store settlement transaction
+  // Update seller's balance across all identifier keys
   try {
-    const sellerLower = sellerAddress.toLowerCase();
-    const currentBal = parseFloat(localStorage.getItem(`hual_usdc_balance_${sellerLower}`) || '1000');
+    const sellerLower = validSellerAddress.toLowerCase();
+    const origLower = sellerAddress ? String(sellerAddress).toLowerCase() : null;
+
+    const currentBal = parseFloat(localStorage.getItem(`hual_usdc_balance_${sellerLower}`) || 
+                                (origLower ? localStorage.getItem(`hual_usdc_balance_${origLower}`) : null) || 
+                                localStorage.getItem('hual_usdc_balance') || '1000');
     const newBal = Number((currentBal + amountNumber).toFixed(2));
+
+    // Save to address keys and general key
     localStorage.setItem(`hual_usdc_balance_${sellerLower}`, String(newBal));
+    if (origLower && origLower !== sellerLower) {
+      localStorage.setItem(`hual_usdc_balance_${origLower}`, String(newBal));
+    }
+    localStorage.setItem('hual_usdc_balance', String(newBal));
 
     // Save payout transaction to seller's activity
     const payoutTxObj = {
@@ -702,22 +721,32 @@ export async function releaseEscrowPayoutToStoreOwner({ sellerAddress, amountUsd
       image: '/assets/monad_logo.png',
       type: 'ESCROW_PAYOUT'
     };
+
     const sellerTxs = JSON.parse(localStorage.getItem(`hual_seller_payout_txs_${sellerLower}`) || '[]');
     localStorage.setItem(`hual_seller_payout_txs_${sellerLower}`, JSON.stringify([payoutTxObj, ...sellerTxs]));
+    if (origLower && origLower !== sellerLower) {
+      localStorage.setItem(`hual_seller_payout_txs_${origLower}`, JSON.stringify([payoutTxObj, ...sellerTxs]));
+    }
 
     // Dispatch global event for live balance and activity updates
     window.dispatchEvent(new CustomEvent('hual_balance_updated', {
-      detail: { address: sellerLower, newBalance: newBal, amount: amountNumber, txHash }
+      detail: { 
+        address: sellerLower, 
+        originalAddress: origLower, 
+        newBalance: newBal, 
+        amount: amountNumber, 
+        txHash 
+      }
     }));
   } catch (storeErr) {
-    console.warn('Failed recording seller payout:', storeErr);
+    console.warn('Failed recording seller payout storage:', storeErr);
   }
 
   return {
     success: true,
     txHash,
     amountUsdc: amountNumber,
-    sellerAddress,
+    sellerAddress: validSellerAddress,
     receipt
   };
 }
