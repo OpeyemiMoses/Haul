@@ -684,6 +684,13 @@ How can I help you today?`;
                     lower.includes('need assistance with a specific order') ||
                     lower.includes('account orders & escrow summary');
                   const targetStoreName = currentActiveOrder?.originalMerchant || currentActiveOrder?.merchant || 'the store';
+                  const isOwnStoreOrder = Boolean(
+                    userStore && targetStoreName && (
+                      (userStore.name && targetStoreName.toLowerCase() === userStore.name.toLowerCase()) ||
+                      (userStore.id && currentActiveOrder?.merchantId && String(userStore.id) === String(currentActiveOrder.merchantId)) ||
+                      (user?.address && currentActiveOrder?.seller && user.address.toLowerCase() === currentActiveOrder.seller.toLowerCase())
+                    )
+                  );
 
                   return (
                     <div
@@ -822,7 +829,7 @@ How can I help you today?`;
                         )}
 
                         {/* Direct Action: Message Store Button */}
-                        {!isUser && mentionsStore && (
+                        {!isUser && mentionsStore && !isOwnStoreOrder && (
                           <div style={{
                             marginTop: '14px',
                             paddingTop: '12px',

@@ -13,6 +13,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { formatCurrency, formatNumber } from '../lib/formatters';
+import { useAuth } from '../lib/auth/AuthContext';
 
 export default function WishlistPage({
   wishlist = [],
@@ -24,6 +25,18 @@ export default function WishlistPage({
   onOpenStore,
   onOpenRateSeller
 }) {
+  const { user, userStore } = useAuth();
+
+  const isMyItem = (item) => {
+    if (!item) return false;
+    const userAddr = user?.address?.toLowerCase();
+    const sellerAddr = (item.seller || item.ownerAddress || item.merchantAddress)?.toLowerCase();
+    if (userAddr && sellerAddr && userAddr === sellerAddr) return true;
+    if (userStore && item.merchantId && String(item.merchantId) === String(userStore.id)) return true;
+    if (userStore && item.merchant && item.merchant.toLowerCase() === userStore.name?.toLowerCase()) return true;
+    return false;
+  };
+
   // Always start Wishlist page strictly from the top of the browser window
   React.useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -287,23 +300,25 @@ export default function WishlistPage({
                 </div>
 
                 <div style={{ display: 'flex', gap: '6px' }}>
-                  <button
-                    onClick={() => onOpenChat && onOpenChat(item)}
-                    title="Chat with merchant about this product"
-                    style={{
-                      background: '#121C1C',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '999px',
-                      padding: '6px 10px',
-                      color: '#FFFFFF',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <MessageSquare size={13} color="var(--brand-green)" />
-                  </button>
+                  {!isMyItem(item) && (
+                    <button
+                      onClick={() => onOpenChat && onOpenChat(item)}
+                      title="Chat with merchant about this product"
+                      style={{
+                        background: '#121C1C',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '999px',
+                        padding: '6px 10px',
+                        color: '#FFFFFF',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <MessageSquare size={13} color="var(--brand-green)" />
+                    </button>
+                  )}
 
                   <button
                     onClick={() => onStartCheckout && onStartCheckout(item)}

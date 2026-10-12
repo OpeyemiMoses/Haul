@@ -58,6 +58,14 @@ export default function ProductDetailPage({
 
   const isWishlisted = Boolean(wishlist.some(w => w.productId === product?.productId || w.id === product?.id));
 
+  const userAddr = user?.address?.toLowerCase();
+  const sellerAddr = (product?.seller || product?.ownerAddress || product?.merchantAddress)?.toLowerCase();
+  const isMyProduct = Boolean(
+    (userAddr && sellerAddr && userAddr === sellerAddr) ||
+    (userStore && product?.merchantId && String(product.merchantId) === String(userStore.id)) ||
+    (userStore && product?.merchant && product.merchant.toLowerCase() === userStore.name?.toLowerCase())
+  );
+
   const allImages = useMemo(() => {
     if (product?.images && product.images.length > 0) return product.images;
     if (product?.imageUri) return [product.imageUri];
@@ -470,14 +478,16 @@ export default function ProductDetailPage({
 
               {/* Action buttons to visit store or chat with seller */}
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={() => onOpenChat && onOpenChat(product)}
-                  className="btn-pill-secondary btn-pill-sm"
-                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <MessageSquare size={12} />
-                  <span>Chat</span>
-                </button>
+                {!isMyProduct && (
+                  <button
+                    onClick={() => onOpenChat && onOpenChat(product)}
+                    className="btn-pill-secondary btn-pill-sm"
+                    style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <MessageSquare size={12} />
+                    <span>Chat</span>
+                  </button>
+                )}
                 <button
                   onClick={() => onOpenStore && onOpenStore(product)}
                   className="btn-pill-primary btn-pill-sm"

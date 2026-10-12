@@ -165,6 +165,14 @@ export function getConversationsForUser(userIdentifier, userStore = null) {
 export function sendCustomerMessage({ store, buyer, text, product = null }) {
   if (!store || !text.trim()) return null;
 
+  // Prevent store owner from messaging their own store
+  const storeOwner = store.ownerAddress || store.owner;
+  const buyerAddr = buyer?.address;
+  if (storeOwner && buyerAddr && storeOwner.toLowerCase() === buyerAddr.toLowerCase()) {
+    console.warn("Store owners cannot message their own store.");
+    return null;
+  }
+
   const all = getAllSharedConversations();
   const storeId = store.id || `store-${store.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
   const buyerId = buyer?.address || buyer?.email || buyer?.id || 'guest';

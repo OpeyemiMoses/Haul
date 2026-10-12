@@ -89,8 +89,21 @@ export default function InboxPage({
   // If targetContext changes (e.g. user clicked "Message Store" on a store or product)
   useEffect(() => {
     if (targetContext?.merchant) {
-      setActiveFolder('buyer');
       const m = targetContext.merchant;
+      const isMyOwnStore = Boolean(
+        userStore && (
+          (m.id && userStore.id && String(m.id) === String(userStore.id)) ||
+          (m.name && userStore.name && m.name.toLowerCase() === userStore.name.toLowerCase()) ||
+          (m.ownerAddress && userStore.ownerAddress && m.ownerAddress.toLowerCase() === userStore.ownerAddress.toLowerCase()) ||
+          (m.owner && user?.address && m.owner.toLowerCase() === user.address.toLowerCase()) ||
+          (m.ownerAddress && user?.address && m.ownerAddress.toLowerCase() === user.address.toLowerCase())
+        )
+      );
+      if (isMyOwnStore) {
+        return;
+      }
+
+      setActiveFolder('buyer');
       const storeId = m.id || `store-${(m.name || 'custom').toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
       const convId = `conv-${storeId}-${userKey.toLowerCase()}`;
 

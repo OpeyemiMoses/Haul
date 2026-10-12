@@ -88,12 +88,23 @@ export default function Marketplace({
   };
 
   const isMyStore = Boolean(
-    selectedMerchant && userStore && (
-      selectedMerchant.id === userStore.id ||
+    selectedMerchant && (
+      (userStore && selectedMerchant.id === userStore.id) ||
+      (userStore && selectedMerchant.name && userStore.name && selectedMerchant.name.toLowerCase() === userStore.name.toLowerCase()) ||
       (selectedMerchant.ownerAddress && user?.address && selectedMerchant.ownerAddress.toLowerCase() === user.address.toLowerCase()) ||
-      selectedMerchant.name === userStore.name
+      (selectedMerchant.owner && user?.address && selectedMerchant.owner.toLowerCase() === user.address.toLowerCase())
     )
   );
+
+  const isMerchantMyStore = (merchant) => {
+    if (!merchant) return false;
+    const userAddr = user?.address?.toLowerCase();
+    const merchantAddr = (merchant.ownerAddress || merchant.owner || merchant.seller)?.toLowerCase();
+    if (userAddr && merchantAddr && userAddr === merchantAddr) return true;
+    if (userStore && merchant.id && userStore.id && String(merchant.id) === String(userStore.id)) return true;
+    if (userStore && merchant.name && userStore.name && merchant.name.toLowerCase() === userStore.name.toLowerCase()) return true;
+    return false;
+  };
 
   // Buyer Location State - initialized from user profile
   const [buyerLocation, setBuyerLocation] = useState(userLocation || BUYER_LOCATIONS[0].name);
@@ -511,6 +522,10 @@ export default function Marketplace({
   };
 
   const handleOpenChat = (merchant, product = null) => {
+    if (isMerchantMyStore(merchant) || (product && isMyProduct(product))) {
+      alert("You cannot message your own store.");
+      return;
+    }
     setSelectedProduct(null);
     if (onOpenInbox) {
       onOpenInbox(merchant, product);
@@ -1122,25 +1137,27 @@ export default function Marketplace({
                   </button>
                 )}
 
-                <button
-                  onClick={() => handleOpenChat(selectedMerchant)}
-                  style={{
-                    padding: '8px 18px',
-                    borderRadius: '999px',
-                    background: 'var(--brand-green-dim)',
-                    color: 'var(--brand-green)',
-                    border: '1px solid var(--brand-green-border)',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <MessageSquare size={14} />
-                  <span>Message Store</span>
-                </button>
+                {!isMyStore && (
+                  <button
+                    onClick={() => handleOpenChat(selectedMerchant)}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '999px',
+                      background: 'var(--brand-green-dim)',
+                      color: 'var(--brand-green)',
+                      border: '1px solid var(--brand-green-border)',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <MessageSquare size={14} />
+                    <span>Message Store</span>
+                  </button>
+                )}
 
                 {!isMyStore && (
                   <button
@@ -1271,14 +1288,16 @@ export default function Marketplace({
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => handleOpenChat(selectedMerchant)}
-                    className="btn-pill-primary"
-                    style={{ padding: '10px 22px', fontSize: '0.84rem', fontWeight: 800 }}
-                  >
-                    <MessageSquare size={14} style={{ marginRight: '6px' }} />
-                    Message Store for Directions
-                  </button>
+                  {!isMyStore && (
+                    <button
+                      onClick={() => handleOpenChat(selectedMerchant)}
+                      className="btn-pill-primary"
+                      style={{ padding: '10px 22px', fontSize: '0.84rem', fontWeight: 800 }}
+                    >
+                      <MessageSquare size={14} style={{ marginRight: '6px' }} />
+                      Message Store for Directions
+                    </button>
+                  )}
                   {isMyStore && (
                     <button
                       onClick={() => setEditStoreModalOpen(true)}
@@ -1333,14 +1352,16 @@ export default function Marketplace({
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleOpenChat(selectedMerchant)}
-                  className="btn-pill-primary"
-                  style={{ padding: '10px 22px', fontSize: '0.84rem', fontWeight: 800 }}
-                >
-                  <MessageSquare size={14} style={{ marginRight: '6px' }} />
-                  Speak to Store Representative
-                </button>
+                {!isMyStore && (
+                  <button
+                    onClick={() => handleOpenChat(selectedMerchant)}
+                    className="btn-pill-primary"
+                    style={{ padding: '10px 22px', fontSize: '0.84rem', fontWeight: 800 }}
+                  >
+                    <MessageSquare size={14} style={{ marginRight: '6px' }} />
+                    Speak to Store Representative
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1761,26 +1782,28 @@ export default function Marketplace({
                     )}
                   </button>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenChat(merchantObj, product);
-                    }}
-                    title="Chat with merchant about this product"
-                    style={{
-                      background: '#121C1C',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '999px',
-                      padding: '5px 8px',
-                      color: '#FFFFFF',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <MessageSquare size={13} color="var(--brand-green)" />
-                  </button>
+                  {!isMyProduct(product) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenChat(merchantObj, product);
+                      }}
+                      title="Chat with merchant about this product"
+                      style={{
+                        background: '#121C1C',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '999px',
+                        padding: '5px 8px',
+                        color: '#FFFFFF',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <MessageSquare size={13} color="var(--brand-green)" />
+                    </button>
+                  )}
 
                   {isMyProduct(product) ? (
                     <button

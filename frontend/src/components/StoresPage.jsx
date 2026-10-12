@@ -687,31 +687,33 @@ export default function StoresPage({
                     borderTop: '1px solid rgba(255, 255, 255, 0.08)',
                     gap: '8px'
                   }}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onOpenInbox) onOpenInbox(store);
-                      }}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '999px',
-                        background: '#121C1C',
-                        border: '1px solid rgba(255, 255, 255, 0.12)',
-                        color: '#FFFFFF',
-                        fontSize: '0.74rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        transition: 'all 0.15s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(132, 244, 59, 0.4)'}
-                      onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)'}
-                    >
-                      <MessageSquare size={12} color="var(--brand-green)" />
-                      <span>Message Store</span>
-                    </button>
+                    {!store.isOwner && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onOpenInbox) onOpenInbox(store);
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '999px',
+                          background: '#121C1C',
+                          border: '1px solid rgba(255, 255, 255, 0.12)',
+                          color: '#FFFFFF',
+                          fontSize: '0.74rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(132, 244, 59, 0.4)'}
+                        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)'}
+                      >
+                        <MessageSquare size={12} color="var(--brand-green)" />
+                        <span>Message Store</span>
+                      </button>
+                    )}
 
                     <button
                       onClick={() => onSelectStore && onSelectStore(store)}

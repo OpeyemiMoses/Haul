@@ -504,6 +504,18 @@ function MainApp() {
   const [inboxChatTarget, setInboxChatTarget] = useState(null);
 
   const handleOpenInbox = (merchant, product = null) => {
+    if (merchant && (userStore || user?.address)) {
+      const userAddr = user?.address?.toLowerCase();
+      const mOwnerAddr = (merchant.ownerAddress || merchant.owner || merchant.seller)?.toLowerCase();
+      const isSameOwnerAddr = Boolean(userAddr && mOwnerAddr && userAddr === mOwnerAddr);
+      const isSameStoreId = Boolean(userStore?.id && merchant.id && String(userStore.id) === String(merchant.id));
+      const isSameStoreName = Boolean(userStore?.name && merchant.name && userStore.name.toLowerCase() === merchant.name.toLowerCase());
+
+      if (isSameOwnerAddr || isSameStoreId || isSameStoreName) {
+        alert("You cannot message your own store.");
+        return;
+      }
+    }
     setInboxChatTarget({ merchant, product, ts: Date.now() });
     setSelectedStore(null);
     setCurrentView('storefront');
