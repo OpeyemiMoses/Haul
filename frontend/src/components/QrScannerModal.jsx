@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Camera, X, Upload, CheckCircle2, QrCode, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 import { ModalPortal } from './ModalPortal';
+import { getRegistry } from '../lib/userRegistry';
 
 /**
  * Interactive QR Code Scanner Modal
@@ -19,33 +20,21 @@ export default function QrScannerModal({ isOpen, onClose, onScan }) {
   const fileInputRef = useRef(null);
   const scanIntervalRef = useRef(null);
 
-  // Quick preset recipient codes for instant one-tap scanning
-  const PRESET_QR_CODES = [
-    {
-      name: 'Dami (@dami)',
-      handle: '@dami',
-      address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-      desc: 'Living Passport VIP Collector'
-    },
-    {
-      name: 'Nike Lagos Flagship',
-      handle: '@nike_lagos',
-      address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-      desc: 'Official Verified Brand Store'
-    },
-    {
-      name: 'Adidas Victoria Island',
-      handle: '@adidas_vi',
-      address: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-      desc: 'Verified Monad Merchant'
-    },
-    {
-      name: 'Puma Lekki Store',
-      handle: '@puma_lekki',
-      address: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
-      desc: 'Verified Streetwear Merchant'
+  // Quick preset recipient codes for instant one-tap scanning from real registered Privy users
+  const PRESET_QR_CODES = useMemo(() => {
+    try {
+      const reg = getRegistry();
+      if (!Array.isArray(reg)) return [];
+      return reg.slice(0, 4).map(u => ({
+        name: u.displayName || u.username,
+        handle: `@${u.username}`,
+        address: u.address,
+        desc: u.storeName || 'Registered Hual User'
+      }));
+    } catch {
+      return [];
     }
-  ];
+  }, [isOpen]);
 
   // Stop camera stream safely
   const stopCamera = () => {

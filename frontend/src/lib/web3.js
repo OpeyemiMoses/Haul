@@ -56,93 +56,72 @@ export async function fetchOnchainProducts() {
   try {
     const commerce = getCommerceContract();
     const rawProducts = await commerce.getAllActiveProducts();
-    const onchain = rawProducts.map((p, idx) => {
-      // Find curated by name match ONLY (never by numeric productId which clashes with onchain counter)
-      const matchingCurated = CURATED_CATALOG.find(
-        (c) => c.name?.toLowerCase() === p.name?.toLowerCase()
-      );
 
-      const pBrand = (p.brand || matchingCurated?.brand || '').toLowerCase();
-      const pCat = (p.category || matchingCurated?.category || '').toLowerCase();
-      const pName = (p.name || '').toLowerCase();
-
-      // Resolve proper merchant according to product brand / category
-      let merchantObj = null;
-      if (matchingCurated?.merchantId) {
-        merchantObj = VERIFIED_MERCHANTS.find(m => m.id === matchingCurated.merchantId);
+    // Check for user-deleted product identifiers
+    let deletedSet = new Set();
+    try {
+      const storedDeleted = JSON.parse(localStorage.getItem('hual_deleted_product_ids') || '[]');
+      if (Array.isArray(storedDeleted)) {
+        deletedSet = new Set(storedDeleted.map(x => String(x).toLowerCase().trim()));
       }
-      
-      if (!merchantObj) {
-        if (pBrand.includes('sony') || pName.includes('sony') || pName.includes('wh-1000')) {
-          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'sony-flagship');
-        } else if (pBrand.includes('fujifilm') || pName.includes('x100') || pName.includes('camera') || pCat.includes('optic')) {
-          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'sony-flagship');
-        } else if (pBrand.includes('apple') || pName.includes('iphone') || pName.includes('macbook')) {
-          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'apple-boutique');
-        } else if (pBrand.includes('teenage') || pCat.includes('synth') || pName.includes('op-1')) {
-          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'teenage-engineering');
-        } else if (pBrand.includes('seiko') || pBrand.includes('rolex') || pCat.includes('watch') || pName.includes('diver')) {
-          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'horology-vault') || VERIFIED_MERCHANTS.find(m => m.id === 'sony-flagship');
-        } else if (pBrand.includes('nike') || pBrand.includes('aether') || pCat.includes('footwear') || pCat.includes('apparel')) {
-          merchantObj = VERIFIED_MERCHANTS.find(m => m.id === 'nike-lagos');
-        }
-      }
+    } catch {}
 
-      if (!merchantObj) {
-        merchantObj = VERIFIED_MERCHANTS[idx % VERIFIED_MERCHANTS.length];
-      }
+    // Check created stores for merchant lookup
+    let createdStores = [];
+    try {
+      const stored = localStorage.getItem('hual_all_created_stores');
+      if (stored) createdStores = JSON.parse(stored);
+    } catch {}
 
-      // Map clean accurate category for filtering
-      let finalCategory = p.category || matchingCurated?.category || 'Curated';
-      if (pName.includes('camera') || pName.includes('fujifilm') || pCat === 'optics') {
-        finalCategory = 'Tech';
-      } else if (pName.includes('headphone') || pName.includes('earbud') || pBrand.includes('sony')) {
-        finalCategory = 'Audio';
-      } else if (pName.includes('watch') || pName.includes('diver') || pBrand.includes('seiko')) {
-        finalCategory = 'Watches';
-      } else if (pName.includes('sneaker') || pName.includes('shoes') || pName.includes('knit')) {
-        finalCategory = 'Footwear';
-      }
+    const onchain = rawProducts
+      .filter(p => {
+        const idKey = String(Number(p.productId));
+        const onchainKey = `onchain-${idKey}`;
+        const nameKey = (p.name || '').toLowerCase().trim();
+        return !deletedSet.has(idKey) && !deletedSet.has(onchainKey) && !deletedSet.has(nameKey);
+      })
+      .map((p) => {
+        const pBrand = p.brand || 'Authentic';
+        const pCat = p.category || 'General';
+        const pName = p.name || '';
+        const merchantAddr = (p.merchant || '').toLowerCase();
 
-      const finalBrand = p.brand || matchingCurated?.brand || 
-        (pBrand.includes('sony') ? 'Sony Electronics' : 
-         pBrand.includes('fujifilm') ? 'Fujifilm' : 
-         pBrand.includes('seiko') ? 'Seiko Horology' : 
-         pBrand.includes('aether') ? 'Aether Studio' : 'Authentic');
+        // Match against user-created stores
+        const matchedStore = createdStores.find(s => 
+          (s.ownerAddress && s.ownerAddress.toLowerCase() === merchantAddr) ||
+          (s.name && s.name.toLowerCase() === pBrand.toLowerCase())
+        );
 
-      return {
-        id: `onchain-${Number(p.productId)}`,
-        onchain: true,
-        productId: Number(p.productId),
-        name: p.name,
-        brand: finalBrand,
-        category: finalCategory,
-        imageUri: p.imageUri || matchingCurated?.imageUri || '/assets/air_max_95.jpg',
-        description: p.description || matchingCurated?.description || '',
-        priceUsd: Number(p.priceUsdCents) / 100,
-        priceUsdCents: Number(p.priceUsdCents),
-        warrantyDurationDays: Math.floor(Number(p.warrantyDurationSeconds) / 86400),
-        stock: Number(p.stock),
-        merchantAddress: p.merchant,
-        merchant: merchantObj?.name || matchingCurated?.merchant || 'Verified Flagship',
-        merchantId: merchantObj?.id || matchingCurated?.merchantId || 'verified-store',
-        merchantLocation: merchantObj?.location || matchingCurated?.merchantLocation || 'Victoria Island, Lagos',
-        allowsPickup: p.allowsPickup,
-        allowsDelivery: p.allowsDelivery,
-        active: p.active,
-      };
-    });
+        return {
+          id: `onchain-${Number(p.productId)}`,
+          onchain: true,
+          productId: Number(p.productId),
+          name: pName,
+          brand: pBrand,
+          category: pCat,
+          imageUri: p.imageUri || '/assets/air_max_95.jpg',
+          description: p.description || '',
+          priceUsd: Number(p.priceUsdCents) / 100,
+          priceUsdCents: Number(p.priceUsdCents),
+          warrantyDurationDays: Math.floor(Number(p.warrantyDurationSeconds) / 86400),
+          stock: Number(p.stock),
+          merchantAddress: p.merchant,
+          merchant: matchedStore?.name || p.brand || 'Verified Merchant',
+          merchantId: matchedStore?.id || `merchant-${p.merchant?.slice(0, 8)}`,
+          merchantLocation: matchedStore?.location || 'Victoria Island, Lagos',
+          merchantAvatar: matchedStore?.avatar || p.imageUri || '/assets/air_max_95.jpg',
+          storeAvatar: matchedStore?.avatar || p.imageUri || '/assets/air_max_95.jpg',
+          storeImage: matchedStore?.banner || '/assets/nike_store_banner.jpg',
+          allowsPickup: p.allowsPickup,
+          allowsDelivery: p.allowsDelivery,
+          active: p.active,
+        };
+      });
 
-    if (onchain.length === 0) {
-      return CURATED_CATALOG;
-    }
-
-    const onchainNames = new Set(onchain.map(p => p.name.toLowerCase()));
-    const remainingCurated = CURATED_CATALOG.filter(c => !onchainNames.has(c.name.toLowerCase()));
-    return [...onchain, ...remainingCurated];
+    return onchain;
   } catch (err) {
-    console.warn('Using curated luxury catalog fallback:', err.message);
-    return CURATED_CATALOG;
+    console.warn('getAllActiveProducts notice:', err?.message || err);
+    return [];
   }
 }
 

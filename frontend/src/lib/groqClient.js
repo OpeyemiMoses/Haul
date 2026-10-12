@@ -46,15 +46,15 @@ export function buildSystemPrompt(context) {
     usdcBalance = 0,
     passports = [],
     activeOrder = null,
-    catalog = CURATED_CATALOG,
-    merchants = VERIFIED_MERCHANTS
+    catalog = [],
+    merchants = []
   } = context;
 
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Valued Member');
   const userAddr = user?.address || '0x...';
 
   // Format entire site catalog
-  const catalogList = (catalog && catalog.length > 0 ? catalog : CURATED_CATALOG);
+  const catalogList = Array.isArray(catalog) ? catalog : [];
   const catalogSummary = catalogList.map((item, idx) => {
     const sizes = Array.isArray(item.sizes) ? item.sizes.join(', ') : (item.sizes || 'Standard');
     return `[Product #${idx + 1}]
@@ -72,7 +72,7 @@ export function buildSystemPrompt(context) {
   }).join('\n\n');
 
   // Format verified merchants directory
-  const merchantsList = (merchants && merchants.length > 0 ? merchants : VERIFIED_MERCHANTS);
+  const merchantsList = Array.isArray(merchants) ? merchants : [];
   const storesSummary = merchantsList.map((m, idx) => {
     return `[Store #${idx + 1}: ${m.name}]
 - Handle: ${m.handle}
@@ -342,7 +342,7 @@ ${itemCards}
 
   // 4. Store Directory & Locations inquiry
   if (query.includes('store') || query.includes('shop') || query.includes('location') || query.includes('address') || query.includes('lagos') || query.includes('hours') || query.includes('opening')) {
-    const merchantsList = context.merchants || VERIFIED_MERCHANTS;
+    const merchantsList = context.merchants || [];
     const matchedStore = merchantsList.find(m => {
       const mName = m.name.toLowerCase();
       return query.includes(mName.slice(0, 4)) || (m.handle && query.includes(m.handle.slice(1, 5)));

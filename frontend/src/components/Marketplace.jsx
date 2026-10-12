@@ -39,8 +39,7 @@ import { formatCurrency, formatNumber } from '../lib/formatters';
 import { 
   CURATED_CATALOG, 
   VERIFIED_MERCHANTS, 
-  BUYER_LOCATIONS,
-  NIKE_LAGOS_STORE 
+  BUYER_LOCATIONS
 } from '../lib/catalogData';
 import { HualIcon } from './HualLogo';
 import HaulQrCode from './HaulQrCode';
@@ -73,7 +72,8 @@ export default function Marketplace({
   onToggleFollowStore,
   onOpenInbox,
   passports = [],
-  onNavigateToSignIn
+  onNavigateToSignIn,
+  onDeleteProduct
 }) {
   const { user, authenticated, usdcBalance, refreshBalance, deductUsdc, faucetUsdc, userLocation, updateUserLocation, userRole, userStore, updateStore } = useAuth();
   const userKey = user?.id || (user?.email ? user.email.toLowerCase() : 'guest');
@@ -283,7 +283,21 @@ export default function Marketplace({
       };
     }
 
-    return list[0] || VERIFIED_MERCHANTS[0];
+    return list[0] || {
+      id: 'store-general',
+      name: prod?.brand || 'Verified Store',
+      handle: '@store.hual',
+      verified: true,
+      category: prod?.category || 'Curated Goods',
+      location: 'Victoria Island, Lagos',
+      rating: 5.0,
+      reviewsCount: 1,
+      followersCount: '1',
+      avatar: prod?.imageUri || '/assets/hual_pwa_icon.png',
+      banner: '',
+      description: 'Official storefront on Hual.',
+      ownerAddress: prod?.seller || prod?.ownerAddress
+    };
   };
 
   // Verify that an item is ACTUALLY in the buyer's physical possession (In Hand)
@@ -409,20 +423,32 @@ export default function Marketplace({
   const [purchasing, setPurchasing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
 
-  // Combine products with Curated Catalog
+  // Catalog list of genuine user and onchain products (filtered of any deleted products)
   const catalogList = useMemo(() => {
-    if (!products || products.length === 0) return CURATED_CATALOG;
-    const names = new Set(products.map(p => p.name.toLowerCase()));
-    const remaining = CURATED_CATALOG.filter(c => !names.has(c.name.toLowerCase()));
-    return [...products, ...remaining];
+    let deletedSet = new Set();
+    try {
+      const storedDeleted = JSON.parse(localStorage.getItem('hual_deleted_product_ids') || '[]');
+      if (Array.isArray(storedDeleted)) {
+        deletedSet = new Set(storedDeleted.map(x => String(x).toLowerCase().trim()));
+      }
+    } catch {}
+
+    const list = products || [];
+    return list.filter(p => {
+      if (!p) return false;
+      const idKey = String(p.id || p.productId || '').toLowerCase().trim();
+      const onchainKey = `onchain-${idKey}`;
+      const nameKey = (p.name || '').toLowerCase().trim();
+      return !deletedSet.has(idKey) && !deletedSet.has(onchainKey) && !deletedSet.has(nameKey);
+    });
   }, [products]);
 
   // Handle external modal trigger
   React.useEffect(() => {
     if (forcedModal === 'product') {
-      setSelectedProduct(catalogList[0] || CURATED_CATALOG[0]);
+      setSelectedProduct(catalogList[0] || null);
     } else if (forcedModal === 'checkout') {
-      setCheckoutProduct(catalogList[0] || CURATED_CATALOG[0]);
+      setCheckoutProduct(catalogList[0] || null);
     }
   }, [forcedModal, catalogList]);
 
@@ -695,6 +721,10 @@ export default function Marketplace({
           onNavigateToSignIn={onNavigateToSignIn}
           onEditProduct={(prod) => {
             if (onOpenSellModal) onOpenSellModal(prod);
+          }}
+          onDeleteProduct={(prod) => {
+            if (onDeleteProduct) onDeleteProduct(prod);
+            setSelectedProduct(null);
           }}
         />
       ) : (
@@ -2308,14 +2338,14 @@ export default function Marketplace({
         }}
         order={orderSuccess}
         product={checkoutProduct}
-        merchant={VERIFIED_MERCHANTS.find(m => m.name === checkoutProduct?.merchant || m.id === checkoutProduct?.merchantId) || VERIFIED_MERCHANTS[0]}
+        merchant={resolveMerchantForProduct(checkoutProduct)}
         onViewPassport={() => {
           setOrderSuccess(null);
           setCheckoutProduct(null);
           if (onPurchaseSuccess) onPurchaseSuccess();
         }}
         onChatStore={() => {
-          const store = VERIFIED_MERCHANTS.find(m => m.name === checkoutProduct?.merchant || m.id === checkoutProduct?.merchantId) || VERIFIED_MERCHANTS[0];
+          const store = resolveMerchantForProduct(checkoutProduct);
           setOrderSuccess(null);
           setCheckoutProduct(null);
           handleOpenChat(store, checkoutProduct);

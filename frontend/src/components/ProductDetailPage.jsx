@@ -20,7 +20,8 @@ import {
   ThumbsUp, 
   ChevronRight,
   Info,
-  Edit3
+  Edit3,
+  Trash2
 } from 'lucide-react';
 import { formatNumber } from '../lib/formatters';
 import useScrollReveal from '../lib/useScrollReveal';
@@ -40,7 +41,8 @@ export default function ProductDetailPage({
   onToggleWishlist,
   buyerLocation = 'Victoria Island, Lagos',
   onNavigateToSignIn,
-  onEditProduct
+  onEditProduct,
+  onDeleteProduct
 }) {
   const { user, authenticated, userStore } = useAuth();
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.[2] || product?.sizes?.[0] || 10);
@@ -696,6 +698,30 @@ export default function ProductDetailPage({
                   >
                     <Edit3 size={16} />
                     <span>Edit Store Listing</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete "${product.name}"? This will permanently remove the item from your store.`)) {
+                        if (onDeleteProduct) onDeleteProduct(product);
+                        if (onBack) onBack();
+                      }
+                    }}
+                    className="btn-pill-secondary"
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      fontWeight: 800,
+                      color: '#EF4444',
+                      borderColor: 'rgba(239, 68, 68, 0.4)',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <Trash2 size={16} />
+                    <span>Delete Listing</span>
                   </button>
                 </div>
               );

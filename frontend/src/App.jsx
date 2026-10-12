@@ -211,8 +211,8 @@ function MainApp() {
         rating: 5.0,
         reviewsCount: 1,
         followersCount: '1.2k',
-        avatar: item.merchantAvatar || item.storeAvatar || item.storeImage || item.imageUri || '/assets/air_max_95.jpg',
-        banner: item.storeBanner || '/assets/nike_store_banner.jpg',
+        avatar: item.merchantAvatar || item.storeAvatar || item.storeImage || item.imageUri || '/assets/hual_pwa_icon.png',
+        banner: item.storeBanner || '',
         pickupTime: 'Ready in 30 mins',
         deliveryTime: 'Same-day courier',
         operatingHours: 'Mon - Sat: 9:00 AM - 7:00 PM',
@@ -222,7 +222,25 @@ function MainApp() {
       };
     }
 
-    return VERIFIED_MERCHANTS[0];
+    return {
+      id: item?.merchantId || 'store-general',
+      name: item?.merchant || item?.brand || 'Verified Store',
+      handle: `@${(item?.merchant || item?.brand || 'store').toLowerCase().replace(/[^a-z0-9]/g, '')}.hual`,
+      verified: true,
+      category: item?.category || 'Curated Goods',
+      location: item?.merchantLocation || 'Victoria Island, Lagos',
+      rating: 5.0,
+      reviewsCount: 1,
+      followersCount: '1',
+      avatar: item?.merchantAvatar || item?.storeAvatar || item?.storeImage || item?.imageUri || '/assets/hual_pwa_icon.png',
+      banner: item?.storeBanner || '',
+      pickupTime: 'Ready in 30 mins',
+      deliveryTime: 'Same-day courier',
+      operatingHours: 'Mon - Sat: 9:00 AM - 7:00 PM',
+      phone: '',
+      description: `Official storefront on Hual. All products backed by verifiable digital Product Passports.`,
+      ownerAddress: item?.seller || item?.ownerAddress
+    };
   };
 
   // All pages, tabs, and views always start strictly from the top
@@ -642,7 +660,7 @@ function MainApp() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const [products, setProducts] = useState(CURATED_CATALOG);
+  const [products, setProducts] = useState([]);
   const [myPassports, setMyPassports] = useState([]);
   const [allPassports, setAllPassports] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -658,12 +676,22 @@ function MainApp() {
       ]);
 
       const customListed = JSON.parse(localStorage.getItem('hual_custom_listed_products') || '[]');
+      const deletedProductIds = new Set(JSON.parse(localStorage.getItem('hual_deleted_product_ids') || '[]'));
       const combinedProds = [...customListed, ...(prods || [])];
       const seenProdIds = new Set();
       const uniqueProds = [];
       for (const p of combinedProds) {
         if (!p) continue;
+        const pIdStr = p.id ? String(p.id) : '';
+        const pProdIdStr = p.productId !== undefined ? String(p.productId) : '';
         const normName = (p.name || '').trim().toLowerCase();
+        if (
+          (pIdStr && deletedProductIds.has(pIdStr)) ||
+          (pProdIdStr && deletedProductIds.has(pProdIdStr)) ||
+          (normName && deletedProductIds.has(normName))
+        ) {
+          continue;
+        }
         const pKey = p.id ? String(p.id) : (p.onchain ? `onchain-${p.productId}` : (normName || `prod-${p.productId}`));
         if (!seenProdIds.has(pKey) && (!normName || !seenProdIds.has(`name-${normName}`))) {
           seenProdIds.add(pKey);
@@ -736,6 +764,50 @@ function MainApp() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteProduct = (productToDelete) => {
+    if (!productToDelete) return;
+    const targetId = productToDelete.id ? String(productToDelete.id) : null;
+    const targetProdId = productToDelete.productId !== undefined ? String(productToDelete.productId) : null;
+    const targetName = (productToDelete.name || '').trim().toLowerCase();
+
+    // 1. Remove from hual_custom_listed_products in localStorage
+    try {
+      const customList = JSON.parse(localStorage.getItem('hual_custom_listed_products') || '[]');
+      const filteredCustom = customList.filter(p => {
+        if (targetId && String(p.id) === targetId) return false;
+        if (targetProdId && String(p.productId) === targetProdId) return false;
+        if (targetName && (p.name || '').trim().toLowerCase() === targetName) return false;
+        return true;
+      });
+      localStorage.setItem('hual_custom_listed_products', JSON.stringify(filteredCustom));
+    } catch (e) {
+      console.warn('Failed to update hual_custom_listed_products on delete:', e);
+    }
+
+    // 2. Add to hual_deleted_product_ids so it never resurfaces from onchain or cache
+    try {
+      const deletedIds = JSON.parse(localStorage.getItem('hual_deleted_product_ids') || '[]');
+      const newDeletedIds = [...deletedIds];
+      if (targetId && !newDeletedIds.includes(targetId)) newDeletedIds.push(targetId);
+      if (targetProdId && !newDeletedIds.includes(targetProdId)) newDeletedIds.push(targetProdId);
+      if (targetName && !newDeletedIds.includes(targetName)) newDeletedIds.push(targetName);
+      localStorage.setItem('hual_deleted_product_ids', JSON.stringify(newDeletedIds));
+    } catch (e) {
+      console.warn('Failed to update hual_deleted_product_ids on delete:', e);
+    }
+
+    // 3. Remove from active state immediately
+    setProducts(prev => prev.filter(p => {
+      if (targetId && String(p.id) === targetId) return false;
+      if (targetProdId && String(p.productId) === targetProdId) return false;
+      if (targetName && (p.name || '').trim().toLowerCase() === targetName) return false;
+      return true;
+    }));
+
+    setEditingProduct(null);
+    setSellModalOpen(false);
   };
 
   useEffect(() => {
@@ -822,6 +894,9 @@ function MainApp() {
                 setActiveTab('shop');
               }}
               onOpenSellModal={() => setSellModalOpen(true)}
+              userStore={userStore}
+              user={user}
+              products={products}
             />
           </main>
         </div>
@@ -937,6 +1012,7 @@ function MainApp() {
                     forcedModal={forcedModal}
                     onClearForcedModal={() => setForcedModal(null)}
                     onNavigateToSignIn={() => setCurrentView('signin')}
+                    onDeleteProduct={handleDeleteProduct}
                   />
                 )}
 
@@ -1051,7 +1127,7 @@ function MainApp() {
                       setActiveTab('shop');
                     }}
                     onOpenRateSeller={(item) => {
-                      const merchantObj = VERIFIED_MERCHANTS.find(m => m.id === item.merchantId) || VERIFIED_MERCHANTS[0];
+                      const merchantObj = resolveStoreForProduct(item);
                       handleOpenRateSeller(merchantObj, item);
                     }}
                     onNavigateToSignIn={() => setCurrentView('signin')}
@@ -1233,6 +1309,7 @@ function MainApp() {
         }}
         onOpenCreateStore={() => setCreateStoreOpen(true)}
         productToEdit={editingProduct}
+        onProductDeleted={handleDeleteProduct}
         onProductUpdated={(updatedProd) => {
           if (updatedProd) {
             setProducts(prev => prev.map(p => 

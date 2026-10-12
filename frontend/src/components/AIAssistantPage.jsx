@@ -45,8 +45,8 @@ export default function AIAssistantPage({
   usdcBalance = 0,
   passports = [],
   activeOrderContext = null,
-  catalog = CURATED_CATALOG,
-  merchants = VERIFIED_MERCHANTS
+  catalog = [],
+  merchants = []
 }) {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');

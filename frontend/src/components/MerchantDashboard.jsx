@@ -13,18 +13,22 @@ import {
   DollarSign,
   ChevronRight
 } from 'lucide-react';
-import { NIKE_LAGOS_STORE } from '../lib/catalogData';
 
-export default function MerchantDashboard({ onBackToStore, onOpenSellModal }) {
+export default function MerchantDashboard({ onBackToStore, onOpenSellModal, userStore, user, products = [] }) {
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  const orders = [
-    { id: '#HCP-4821', product: 'Air Max 95', customer: 'yemi.owt', status: 'PAID', amount: '$250.00', time: '12m ago' },
-    { id: '#HCP-4820', product: 'Apple iPhone 16 Pro', customer: 'alex.wallet', status: 'SHIPPED', amount: '$1,099.00', time: '2h ago' },
-    { id: '#HCP-4819', product: 'Tech Fleece Hoodie', customer: 'tunde.owt', status: 'PICKUP', amount: '$180.00', time: '5h ago' },
-    { id: '#HCP-4818', product: 'Nike Utility Backpack', customer: 'kemi.wallet', status: 'PAID', amount: '$120.00', time: '1d ago' },
-    { id: '#HCP-4817', product: 'Nike Club Cap', customer: 'femi.ont', status: 'COLLECTED', amount: '$45.00', time: '1d ago' }
-  ];
+  const storeName = userStore?.name || (user?.email ? user.email.split('@')[0] : 'My Merchant Portal');
+  const storeLocation = userStore?.location || 'Victoria Island, Lagos';
+  
+  const myStoreProducts = products.filter(p => {
+    if (!p) return false;
+    if (userStore?.id && (String(p.merchantId) === String(userStore.id) || String(p.sellerId) === String(userStore.id))) return true;
+    if (userStore?.name && (p.merchant || '').toLowerCase() === userStore.name.toLowerCase()) return true;
+    if (user?.address && (p.seller || '').toLowerCase() === user.address.toLowerCase()) return true;
+    return false;
+  });
+
+  const orders = [];
 
   return (
     <div className="page-fade-in" style={{ maxWidth: '1440px', margin: '0 auto', width: '100%', padding: '0 0 60px' }}>
@@ -61,7 +65,7 @@ export default function MerchantDashboard({ onBackToStore, onOpenSellModal }) {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <h1 className="font-display" style={{ fontSize: '1.5rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                {NIKE_LAGOS_STORE.name}
+                {storeName}
               </h1>
               <span style={{
                 background: 'var(--brand-green-dim)',
@@ -76,7 +80,7 @@ export default function MerchantDashboard({ onBackToStore, onOpenSellModal }) {
               </span>
             </div>
             <div style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '2px' }}>
-              Merchant Portal • Monad Settlement Layer • Victoria Island, Lagos
+              Merchant Portal • Monad Settlement Layer • {storeLocation}
             </div>
           </div>
         </div>
@@ -201,10 +205,10 @@ export default function MerchantDashboard({ onBackToStore, onOpenSellModal }) {
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <span style={{ fontSize: '0.74rem', color: '#9CA3AF', fontWeight: 600 }}>Active Products</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--brand-green)', fontWeight: 700 }}>+3%</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--brand-green)', fontWeight: 700 }}>Live</span>
               </div>
               <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#FFFFFF', fontFamily: 'var(--font-mono)', marginBottom: '8px' }}>
-                142
+                {myStoreProducts.length}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#9CA3AF' }}>
                 All backed by Monad Passports
@@ -212,7 +216,7 @@ export default function MerchantDashboard({ onBackToStore, onOpenSellModal }) {
             </div>
           </div>
 
-          {/* Recent Orders Table (from Screen 11) */}
+          {/* Recent Orders Table */}
           <div style={{
             background: '#0D1616',
             border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -224,9 +228,6 @@ export default function MerchantDashboard({ onBackToStore, onOpenSellModal }) {
               <h3 className="font-display" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
                 Recent Store Orders
               </h3>
-              <span style={{ fontSize: '0.78rem', color: 'var(--brand-green)', fontWeight: 700, cursor: 'pointer' }}>
-                View All Orders →
-              </span>
             </div>
 
             <div style={{ overflowX: 'auto' }}>
@@ -242,38 +243,46 @@ export default function MerchantDashboard({ onBackToStore, onOpenSellModal }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((ord) => (
-                    <tr key={ord.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#FFFFFF' }}>
-                      <td style={{ padding: '14px 16px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                        {ord.id}
-                      </td>
-                      <td style={{ padding: '14px 16px', fontWeight: 600 }}>
-                        {ord.product}
-                      </td>
-                      <td style={{ padding: '14px 16px', color: '#9CA3AF', fontFamily: 'var(--font-mono)' }}>
-                        {ord.customer}
-                      </td>
-                      <td style={{ padding: '14px 16px' }}>
-                        <span style={{
-                          fontSize: '0.68rem',
-                          fontWeight: 800,
-                          padding: '3px 8px',
-                          borderRadius: '999px',
-                          background: ord.status === 'PAID' ? 'var(--brand-green-dim)' : '#162424',
-                          color: ord.status === 'PAID' ? 'var(--brand-green)' : '#9CA3AF',
-                          border: ord.status === 'PAID' ? '1px solid var(--brand-green-border)' : '1px solid rgba(255, 255, 255, 0.1)'
-                        }}>
-                          {ord.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '14px 16px', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
-                        {ord.amount}
-                      </td>
-                      <td style={{ padding: '14px 16px', color: '#6B7280' }}>
-                        {ord.time}
+                  {orders.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" style={{ padding: '36px 16px', textAlign: 'center', color: '#9CA3AF' }}>
+                        No orders recorded yet. When customers purchase from your store, orders will appear here.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    orders.map((ord) => (
+                      <tr key={ord.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.04)', color: '#FFFFFF' }}>
+                        <td style={{ padding: '14px 16px', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                          {ord.id}
+                        </td>
+                        <td style={{ padding: '14px 16px', fontWeight: 600 }}>
+                          {ord.product}
+                        </td>
+                        <td style={{ padding: '14px 16px', color: '#9CA3AF', fontFamily: 'var(--font-mono)' }}>
+                          {ord.customer}
+                        </td>
+                        <td style={{ padding: '14px 16px' }}>
+                          <span style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 800,
+                            padding: '3px 8px',
+                            borderRadius: '999px',
+                            background: ord.status === 'PAID' ? 'var(--brand-green-dim)' : '#162424',
+                            color: ord.status === 'PAID' ? 'var(--brand-green)' : '#9CA3AF',
+                            border: ord.status === 'PAID' ? '1px solid var(--brand-green-border)' : '1px solid rgba(255, 255, 255, 0.1)'
+                          }}>
+                            {ord.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '14px 16px', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+                          {ord.amount}
+                        </td>
+                        <td style={{ padding: '14px 16px', color: '#6B7280' }}>
+                          {ord.time}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

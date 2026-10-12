@@ -843,11 +843,6 @@ export default function ProfilePage({
         allPassportsPool = [...stored];
       } catch {}
 
-      // Also check INITIAL_FEATURED_PASSPORT
-      if (!allPassportsPool.some(p => p.tokenId === INITIAL_FEATURED_PASSPORT.tokenId)) {
-        allPassportsPool.push(INITIAL_FEATURED_PASSPORT);
-      }
-
       // Find matching item by PIN, Token ID, Serial #, or Order ID
       const matched = allPassportsPool.find(p => {
         const pin = String(p.pickupPIN || '');
@@ -3924,7 +3919,16 @@ export default function ProfilePage({
           </div>
 
           <div className="perspective-container stagger-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-            {VERIFIED_MERCHANTS.filter(m => followedStores.includes(m.id) && (!userStore || m.id !== userStore.id)).map((merchant) => (
+            {(() => {
+              let storesList = [...VERIFIED_MERCHANTS];
+              try {
+                const storedStores = JSON.parse(localStorage.getItem('hual_all_created_stores') || '[]');
+                if (Array.isArray(storedStores)) {
+                  storesList = [...storedStores, ...storesList.filter(m => !storedStores.some(s => s.id === m.id))];
+                }
+              } catch {}
+              return storesList.filter(m => followedStores.includes(m.id) && (!userStore || m.id !== userStore.id));
+            })().map((merchant) => (
               <div
                 key={merchant.id}
                 style={{

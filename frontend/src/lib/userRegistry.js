@@ -3,83 +3,33 @@
  * Resolves @usernames, emails, and Monad addresses for seamless peer-to-peer transfers.
  */
 
-const DEFAULT_USERS = [
-  {
-    username: 'dami',
-    handle: '@dami',
-    name: 'Dami Daniels',
-    email: 'dami@hual.xyz',
-    address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
-    avatar: '/assets/air_max_95.jpg',
-    role: 'verified_buyer'
-  },
-  {
-    username: 'nike_lagos',
-    handle: '@nike_lagos',
-    name: 'Nike Lagos Flagship',
-    email: 'nike.lagos@hual.xyz',
-    address: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-    avatar: '/assets/nike_store_banner.jpg',
-    role: 'merchant'
-  },
-  {
-    username: 'adidas_vi',
-    handle: '@adidas_vi',
-    name: 'Adidas Victoria Island',
-    email: 'adidas.vi@hual.xyz',
-    address: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-    avatar: '/assets/yeezy_350.jpg',
-    role: 'merchant'
-  },
-  {
-    username: 'puma_lekki',
-    handle: '@puma_lekki',
-    name: 'Puma Lekki Store',
-    email: 'puma.lekki@hual.xyz',
-    address: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
-    avatar: '/assets/puma_suede.jpg',
-    role: 'merchant'
-  },
-  {
-    username: 'zara_ikeja',
-    handle: '@zara_ikeja',
-    name: 'Zara Ikeja Mall',
-    email: 'zara.ikeja@hual.xyz',
-    address: '0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc',
-    avatar: '/assets/monad_jacket.jpg',
-    role: 'merchant'
-  },
-  {
-    username: 'consumer',
-    handle: '@consumer',
-    name: 'Monad Explorer',
-    email: 'consumer@hual.xyz',
-    address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-    avatar: null,
-    role: 'consumer'
-  }
-];
+export const DEFAULT_USERS = [];
 
 export function getRegistry() {
-  if (typeof window === 'undefined') return DEFAULT_USERS;
+  if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem('hual_user_registry');
-    if (!raw) {
-      localStorage.setItem('hual_user_registry', JSON.stringify(DEFAULT_USERS));
-      return DEFAULT_USERS;
-    }
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    const existingUsernames = new Set(parsed.map(u => (u.username || '').toLowerCase()));
-    const merged = [...parsed];
-    for (const def of DEFAULT_USERS) {
-      if (!existingUsernames.has(def.username.toLowerCase())) {
-        merged.push(def);
-      }
+    if (!Array.isArray(parsed)) return [];
+
+    // Purge any legacy seed / demo accounts
+    const seedUsernames = new Set(['dami', 'nike_lagos', 'adidas_vi', 'puma_lekki', 'zara_ikeja', 'consumer']);
+    const cleaned = parsed.filter(u => {
+      const uName = (u.username || '').toLowerCase();
+      const uEmail = (u.email || '').toLowerCase();
+      if (seedUsernames.has(uName)) return false;
+      if (uEmail.endsWith('@hual.xyz')) return false;
+      return true;
+    });
+
+    if (cleaned.length !== parsed.length) {
+      localStorage.setItem('hual_user_registry', JSON.stringify(cleaned));
     }
-    return merged;
+    return cleaned;
   } catch (err) {
     console.warn('Failed to read user registry:', err);
-    return DEFAULT_USERS;
+    return [];
   }
 }
 

@@ -278,7 +278,7 @@ export default function EditProfileModal({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. dami or nike_lagos"
+                    placeholder="e.g. alex or lagos_boutique"
                     value={username}
                     onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g, ''))}
                     style={{

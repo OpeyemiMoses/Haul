@@ -128,7 +128,8 @@ export default function SellProductModal({
   onProductListed, 
   onOpenCreateStore,
   productToEdit = null,
-  onProductUpdated = null
+  onProductUpdated = null,
+  onProductDeleted = null
 }) {
   const { user, userRole, userStore } = useAuth();
   
@@ -1422,33 +1423,63 @@ export default function SellProductModal({
               )}
 
               {/* Submit Buttons */}
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: '999px',
-                    background: '#162424',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#9CA3AF',
-                    fontSize: '0.84rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-pill-primary"
-                  style={{ padding: '10px 24px', fontWeight: 800 }}
-                >
-                  {loading 
-                    ? (productToEdit ? 'Saving Changes...' : 'Publishing to Catalog...') 
-                    : (productToEdit ? 'Save Changes' : 'Publish to Catalog')}
-                </button>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                {productToEdit ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(`Are you sure you want to delete "${productToEdit.name}"? This will permanently remove the item from your store.`)) {
+                        if (onProductDeleted) onProductDeleted(productToEdit);
+                        onClose();
+                      }
+                    }}
+                    style={{
+                      padding: '10px 18px',
+                      borderRadius: '999px',
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      color: '#EF4444',
+                      fontSize: '0.84rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    <span>Delete Listing</span>
+                  </button>
+                ) : <div />}
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: '999px',
+                      background: '#162424',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      color: '#9CA3AF',
+                      fontSize: '0.84rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn-pill-primary"
+                    style={{ padding: '10px 24px', fontWeight: 800 }}
+                  >
+                    {loading 
+                      ? (productToEdit ? 'Saving Changes...' : 'Publishing to Catalog...') 
+                      : (productToEdit ? 'Save Changes' : 'Publish to Catalog')}
+                  </button>
+                </div>
               </div>
             </form>
           )}
