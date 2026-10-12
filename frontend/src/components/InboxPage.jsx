@@ -16,7 +16,8 @@ import {
   Clock,
   PhoneCall,
   User,
-  Inbox
+  Inbox,
+  Tag
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
 import { formatCurrency } from '../lib/formatters';
@@ -71,7 +72,7 @@ export default function InboxPage({
     if (targetContext?.merchant?.id) {
       return `conv-${targetContext.merchant.id}-${userKey.toLowerCase()}`;
     }
-    return buyerConvs[0]?.id || 'conv-nike-lagos';
+    return buyerConvs[0]?.id || null;
   });
 
   const [inputText, setInputText] = useState('');
@@ -114,14 +115,32 @@ export default function InboxPage({
       );
 
       if (existing) {
-        setSelectedConvId(existing.id);
-        markConversationRead(existing.id, 'buyer');
+        if (targetContext.product) {
+          // If message was triggered specifically from an item listing, send a listing inquiry
+          const initiated = sendCustomerMessage({
+            store: m,
+            buyer: user,
+            text: `Hi! Inquiring about ${targetContext.product.name} ($${targetContext.product.priceUsd} USDC). Is this available for order or pickup?`,
+            product: targetContext.product
+          });
+          if (initiated) {
+            refreshConversations();
+            setSelectedConvId(initiated.id);
+          } else {
+            setSelectedConvId(existing.id);
+          }
+        } else {
+          setSelectedConvId(existing.id);
+          markConversationRead(existing.id, 'buyer');
+        }
       } else {
         // Automatically initiate conversation with the store
         const initiated = sendCustomerMessage({
           store: m,
           buyer: user,
-          text: targetContext.product ? `Hi! I'm interested in ${targetContext.product.name}. Is this available for immediate order?` : `Hi! I have an inquiry for ${m.name}.`,
+          text: targetContext.product 
+            ? `Hi! Inquiring about ${targetContext.product.name} ($${targetContext.product.priceUsd} USDC). Is this available for order or pickup?` 
+            : `Hi! I have an inquiry for ${m.name}.`,
           product: targetContext.product || null
         });
         if (initiated) {
@@ -140,7 +159,7 @@ export default function InboxPage({
   }, [selectedConvId, activeFolder]);
 
   // Active conversation object
-  const selectedConv = currentList.find(c => c.id === selectedConvId) || currentList[0] || buyerConvs[0] || conversationsPool[0];
+  const selectedConv = currentList.find(c => c.id === selectedConvId) || currentList[0] || null;
 
   // Scroll only internal chat feed, NEVER scroll window down
   useEffect(() => {
@@ -471,13 +490,52 @@ export default function InboxPage({
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                         <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {displayName}
                         </span>
                         <span style={{ fontSize: '0.66rem', color: '#6B7280' }}>
                           {conv.lastMessageTime || 'Recently'}
                         </span>
+                      </div>
+
+                      {/* Inquiry Type indicator */}
+                      <div style={{ marginBottom: '4px' }}>
+                        {conv.pinnedProduct ? (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(132, 244, 59, 0.1)',
+                            border: '1px solid rgba(132, 244, 59, 0.25)',
+                            color: 'var(--brand-green)',
+                            fontSize: '0.62rem',
+                            fontWeight: 700
+                          }}>
+                            <Tag size={9} />
+                            <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              Listing: {conv.pinnedProduct.name}
+                            </span>
+                          </span>
+                        ) : (
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            background: 'rgba(255, 255, 255, 0.04)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            color: '#9CA3AF',
+                            fontSize: '0.62rem',
+                            fontWeight: 600
+                          }}>
+                            <MessageSquare size={9} />
+                            <span>General Inquiry</span>
+                          </span>
+                        )}
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -597,8 +655,8 @@ export default function InboxPage({
               )}
             </div>
 
-            {/* Pinned Product Preview Bar (if inquiring about a specific product) */}
-            {selectedConv.pinnedProduct && (
+            {/* Pinned Product Preview Bar or General Status */}
+            {selectedConv.pinnedProduct ? (
               <div style={{
                 padding: '10px 18px',
                 background: 'rgba(18, 28, 28, 0.95)',
@@ -610,15 +668,29 @@ export default function InboxPage({
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                   <img 
-                    src={selectedConv.pinnedProduct.imageUri || '/assets/air_max_95.jpg'} 
+                    src={selectedConv.pinnedProduct.imageUri || '/assets/hual_pwa_icon.png'} 
                     alt={selectedConv.pinnedProduct.name} 
                     style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'contain', background: '#080F0F' }}
                   />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {selectedConv.pinnedProduct.name}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        background: 'rgba(132, 244, 59, 0.15)',
+                        border: '1px solid rgba(132, 244, 59, 0.3)',
+                        color: 'var(--brand-green)',
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                        textTransform: 'uppercase'
+                      }}>
+                        Item Listing Inquiry
+                      </span>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {selectedConv.pinnedProduct.name}
+                      </span>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--brand-green)', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--brand-green)', fontWeight: 800, fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
                       ${selectedConv.pinnedProduct.priceUsd} USDC
                     </div>
                   </div>
@@ -635,6 +707,20 @@ export default function InboxPage({
                     <ArrowRight size={12} />
                   </button>
                 )}
+              </div>
+            ) : (
+              <div style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                padding: '8px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.72rem',
+                color: '#9CA3AF'
+              }}>
+                <MessageSquare size={13} color="var(--brand-green)" />
+                <span>General Store Direct Inquiry • Standard Support Channel</span>
               </div>
             )}
 
@@ -669,6 +755,37 @@ export default function InboxPage({
                       <span style={{ fontSize: '0.68rem', color: '#6B7280', marginBottom: '3px', fontWeight: 600 }}>
                         {msg.senderName || (msg.sender === 'merchant' ? selectedConv.storeName : selectedConv.buyerName)}
                       </span>
+                    )}
+
+                    {/* Inline product card preview if message was item listing inquiry */}
+                    {msg.isListingInquiry && msg.product && (
+                      <div style={{
+                        background: isFromMe ? 'rgba(0, 0, 0, 0.35)' : 'rgba(255, 255, 255, 0.04)',
+                        border: '1px solid rgba(132, 244, 59, 0.25)',
+                        borderRadius: '12px',
+                        padding: '8px 12px',
+                        marginBottom: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px'
+                      }}>
+                        <img 
+                          src={msg.product.imageUri || '/assets/hual_pwa_icon.png'} 
+                          alt="" 
+                          style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'contain', background: '#0D1616', border: '1px solid rgba(255,255,255,0.06)' }} 
+                        />
+                        <div>
+                          <div style={{ fontSize: '0.62rem', color: 'var(--brand-green)', fontWeight: 800, textTransform: 'uppercase' }}>
+                            Item Listing Inquiry
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 700, maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {msg.product.name}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--brand-green)', fontFamily: 'var(--font-mono)' }}>
+                            ${msg.product.priceUsd} USDC
+                          </div>
+                        </div>
+                      </div>
                     )}
 
                     <div style={{
@@ -737,17 +854,39 @@ export default function InboxPage({
             </form>
           </div>
         ) : (
-          <div style={{
+          <div 
+            className="card-reveal-right"
+            style={{
             background: '#0D1616',
             borderRadius: '20px',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#6B7280',
-            fontSize: '0.85rem'
+            padding: '48px 24px',
+            textAlign: 'center',
+            color: '#6B7280'
           }}>
-            Select a store conversation to view messages
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '20px',
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '16px'
+            }}>
+              <Inbox size={32} color="#6B7280" />
+            </div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 6px' }}>
+              Your Inbox is Clear
+            </h3>
+            <p style={{ color: '#9CA3AF', fontSize: '0.84rem', maxWidth: '380px', margin: '0 0 20px', lineHeight: 1.5 }}>
+              No active conversations found. When you message a merchant or receive customer inquiries at your store, they will appear here in real-time.
+            </p>
           </div>
         )}
 

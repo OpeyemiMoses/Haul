@@ -48,7 +48,7 @@ import { useAuth } from '../lib/auth/AuthContext';
 import { cancelAndRefundOnchain, releaseEscrowPayoutToStoreOwner } from '../lib/web3';
 import { lookupPickupOrder, completePickupAndPayout, isItemCollectedInRegistry, markItemCollectedInRegistry, getCollectedItemInfo } from '../lib/ordersRegistry';
 import { formatCurrency, formatNumber } from '../lib/formatters';
-import { INITIAL_USER_PROFILE, INITIAL_FEATURED_PASSPORT, BUYER_LOCATIONS, VERIFIED_MERCHANTS } from '../lib/catalogData';
+import { BUYER_LOCATIONS } from '../lib/catalogData';
 import { HualIcon } from './HualLogo';
 import HaulQrCode from './HaulQrCode';
 import CreateStoreModal from './CreateStoreModal';
@@ -4113,11 +4113,11 @@ export default function ProfilePage({
 
           <div className="perspective-container stagger-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
             {(() => {
-              let storesList = [...VERIFIED_MERCHANTS];
+              let storesList = [];
               try {
                 const storedStores = JSON.parse(localStorage.getItem('hual_all_created_stores') || '[]');
                 if (Array.isArray(storedStores)) {
-                  storesList = [...storedStores, ...storesList.filter(m => !storedStores.some(s => s.id === m.id))];
+                  storesList = [...storedStores];
                 }
               } catch {}
               return storesList.filter(m => followedStores.includes(m.id) && (!userStore || m.id !== userStore.id));

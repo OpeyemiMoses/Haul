@@ -115,6 +115,15 @@ export function recordNewOrder({
   } catch (e) {
     console.warn('Failed recording escrow order:', e);
   }
+
+  // 3. Decrement stock for all purchased items immediately
+  try {
+    items.forEach(it => {
+      decrementProductStock(it, it.quantity || 1);
+    });
+  } catch (e) {
+    console.warn('Failed auto-decrementing item stock on order:', e);
+  }
 }
 
 /**
@@ -545,4 +554,214 @@ export function markItemCollectedInRegistry(item, liveTxHash = null) {
       detail: { item, txHash: liveTxHash }
     }));
   } catch {}
+}
+
+/**
+ * Decrement stock for a purchased product and persist across storage & overrides
+ */
+export function decrementProductStock(productIdentifier, quantity = 1) {
+  if (!productIdentifier) return null;
+  const qty = Math.max(1, Number(quantity) || 1);
+
+  // 1. Update in hual_custom_listed_products
+  try {
+    const rawCustom = localStorage.getItem('hual_custom_listed_products');
+    if (rawCustom) {
+      const customList = JSON.parse(rawCustom);
+      if (Array.isArray(customList)) {
+        let matched = false;
+        const updatedList = customList.map(item => {
+          if (!item) return item;
+          const match = 
+            (item.id && String(item.id) === String(productIdentifier)) ||
+            (item.productId !== undefined && String(item.productId) === String(productIdentifier)) ||
+            (item.name && typeof productIdentifier === 'string' && item.name.toLowerCase().trim() === productIdentifier.toLowerCase().trim()) ||
+            (typeof productIdentifier === 'object' && productIdentifier !== null && (
+              (item.id && productIdentifier.id && String(item.id) === String(productIdentifier.id)) ||
+              (item.productId !== undefined && productIdentifier.productId !== undefined && String(item.productId) === String(productIdentifier.productId)) ||
+              (item.name && productIdentifier.name && item.name.toLowerCase().trim() === productIdentifier.name.toLowerCase().trim())
+            ));
+
+          if (match) {
+            matched = true;
+            const currentStock = Number(item.stock) || 1;
+            const newStock = Math.max(0, currentStock - qty);
+            return { ...item, stock: newStock };
+          }
+          return item;
+        });
+
+        if (matched) {
+          localStorage.setItem('hual_custom_listed_products', JSON.stringify(updatedList));
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error decrementing custom product stock:', err);
+  }
+
+  // 2. Persist in universal stock overrides (hual_product_stock_overrides)
+  try {
+    const rawOverrides = localStorage.getItem('hual_product_stock_overrides') || '{}';
+    const overrides = JSON.parse(rawOverrides);
+    
+    let targetKey = typeof productIdentifier === 'object' && productIdentifier !== null
+      ? (productIdentifier.id || (productIdentifier.productId !== undefined ? `prod-${productIdentifier.productId}` : productIdentifier.name))
+      : String(productIdentifier);
+
+    const prevOverridden = overrides[targetKey];
+    let initialStock = 5;
+    if (typeof productIdentifier === 'object' && productIdentifier?.stock !== undefined) {
+      initialStock = Number(productIdentifier.stock);
+    }
+    const currentStock = prevOverridden !== undefined ? Number(prevOverridden) : initialStock;
+    const nextStock = Math.max(0, currentStock - qty);
+    overrides[targetKey] = nextStock;
+    
+    if (typeof productIdentifier === 'object' && productIdentifier?.name) {
+      overrides[`name-${productIdentifier.name.toLowerCase().trim()}`] = nextStock;
+    }
+    if (typeof productIdentifier === 'object' && productIdentifier?.productId !== undefined) {
+      overrides[`id-${productIdentifier.productId}`] = nextStock;
+      overrides[`prod-${productIdentifier.productId}`] = nextStock;
+    }
+
+    localStorage.setItem('hual_product_stock_overrides', JSON.stringify(overrides));
+
+    // Dispatch global event so UI updates instantly
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('hual_stock_updated', { 
+        detail: { targetKey, nextStock, product: productIdentifier } 
+      }));
+    }
+
+    return nextStock;
+  } catch (err) {
+    console.warn('Error saving stock override:', err);
+    return null;
+  }
+}
+
+/**
+ * Get any stock override saved for a product
+ */
+export function getProductStockOverride(product) {
+  if (!product) return null;
+  try {
+    const rawOverrides = localStorage.getItem('hual_product_stock_overrides');
+    if (!rawOverrides) return null;
+    const overrides = JSON.parse(rawOverrides);
+    
+    if (product.id && overrides[String(product.id)] !== undefined) return Number(overrides[String(product.id)]);
+    if (product.productId !== undefined && overrides[`id-${product.productId}`] !== undefined) return Number(overrides[`id-${product.productId}`]);
+    if (product.productId !== undefined && overrides[`prod-${product.productId}`] !== undefined) return Number(overrides[`prod-${product.productId}`]);
+    if (product.name && overrides[`name-${product.name.toLowerCase().trim()}`] !== undefined) return Number(overrides[`name-${product.name.toLowerCase().trim()}`]);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Query all items sold by a specific store/merchant
+ */
+export function getSoldItemsForStore(storeOrMerchant) {
+  if (!storeOrMerchant) return [];
+  const sId = storeOrMerchant.id ? String(storeOrMerchant.id).toLowerCase() : '';
+  const sName = (storeOrMerchant.name || storeOrMerchant.merchant || '').toLowerCase().trim();
+  const sOwner = (storeOrMerchant.ownerAddress || storeOrMerchant.owner || '').toLowerCase();
+
+  const soldItems = [];
+  const seenKeys = new Set();
+
+  // 1. Check escrow orders
+  try {
+    const escrowOrders = JSON.parse(localStorage.getItem('hual_escrow_orders') || '[]');
+    for (const ord of escrowOrders) {
+      if (!ord) continue;
+      const oMerchant = (ord.merchant || '').toLowerCase().trim();
+      const oMerchantId = ord.merchantId ? String(ord.merchantId).toLowerCase() : '';
+      const oSeller = (ord.sellerAddress || '').toLowerCase();
+
+      const isStoreOrder = 
+        (sId && oMerchantId && sId === oMerchantId) ||
+        (sName && oMerchant && (oMerchant === sName || oMerchant.includes(sName) || sName.includes(oMerchant))) ||
+        (sOwner && oSeller && sOwner === oSeller);
+
+      if (isStoreOrder && Array.isArray(ord.items)) {
+        for (const item of ord.items) {
+          const itemKey = `${ord.orderId}-${item.orderItemId || item.productId || item.name}`;
+          if (!seenKeys.has(itemKey)) {
+            seenKeys.add(itemKey);
+            soldItems.push({
+              orderId: ord.orderId,
+              orderItemId: item.orderItemId || itemKey,
+              productId: item.productId,
+              name: item.name,
+              brand: item.brand,
+              priceUsd: item.priceUsd,
+              quantity: item.quantity || 1,
+              size: item.size || 'Standard',
+              imageUri: item.imageUri,
+              buyerAddress: ord.buyerAddress,
+              deliveryMethod: ord.deliveryMethod || item.deliveryMethod || 'pickup',
+              status: item.status || ord.status || 'in_escrow',
+              purchasedAt: ord.createdAt || item.purchasedAt || new Date().toISOString(),
+              txHash: ord.txHash || item.txHash,
+              payoutTxHash: ord.payoutTxHash || item.payoutTxHash || null,
+              pickupPIN: ord.pickupPIN || item.pickupPIN
+            });
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Error reading escrow orders for sold items:', e);
+  }
+
+  // 2. Check pickup orders
+  try {
+    const pickupOrders = JSON.parse(localStorage.getItem('hual_all_pickup_orders') || '[]');
+    for (const ord of pickupOrders) {
+      if (!ord) continue;
+      const oMerchant = (ord.merchant || '').toLowerCase().trim();
+      const oMerchantId = ord.merchantId ? String(ord.merchantId).toLowerCase() : '';
+      const oSeller = (ord.sellerAddress || '').toLowerCase();
+
+      const isStoreOrder = 
+        (sId && oMerchantId && sId === oMerchantId) ||
+        (sName && oMerchant && (oMerchant === sName || oMerchant.includes(sName) || sName.includes(oMerchant))) ||
+        (sOwner && oSeller && sOwner === oSeller);
+
+      if (isStoreOrder) {
+        const itemKey = `${ord.orderId}-${ord.tokenId || ord.productName}`;
+        if (!seenKeys.has(itemKey)) {
+          seenKeys.add(itemKey);
+          soldItems.push({
+            orderId: ord.orderId,
+            orderItemId: itemKey,
+            productId: ord.productId,
+            name: ord.productName || 'Verified Asset',
+            brand: ord.productBrand || 'Authentic Brand',
+            priceUsd: ord.priceUsd || ord.totalAmount,
+            quantity: 1,
+            size: ord.size || 'Standard',
+            imageUri: ord.imageUri,
+            buyerAddress: ord.buyerAddress,
+            deliveryMethod: 'pickup',
+            status: ord.status || 'in_escrow',
+            purchasedAt: ord.createdAt || new Date().toISOString(),
+            txHash: ord.txHash,
+            payoutTxHash: ord.payoutTxHash || null,
+            pickupPIN: ord.pickupPIN
+          });
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Error reading pickup orders for sold items:', e);
+  }
+
+  // Sort newest first
+  return soldItems.sort((a, b) => new Date(b.purchasedAt) - new Date(a.purchasedAt));
 }

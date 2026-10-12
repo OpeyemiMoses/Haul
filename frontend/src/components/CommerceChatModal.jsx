@@ -30,7 +30,7 @@ export default function CommerceChatModal({
   const merchantName = merchant?.name || product?.merchant || 'Verified Merchant';
   const merchantLocation = merchant?.location || product?.merchantLocation || 'Victoria Island, Lagos';
   const merchantRep = merchant?.chatRep || 'Tade (Store Associate • Online)';
-  const storeId = merchant?.id || product?.merchantId || 'nike-lagos';
+  const storeId = merchant?.id || product?.merchantId || `store-${(merchantName || 'custom').toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
   const buyerId = user?.address || user?.email || user?.id || 'guest';
   const convId = `conv-${storeId}-${buyerId.toLowerCase()}`;
 

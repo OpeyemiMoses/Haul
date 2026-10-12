@@ -28,7 +28,6 @@ import {
   getGroqApiKey,
   saveGroqApiKey
 } from '../lib/groqClient';
-import { CURATED_CATALOG, VERIFIED_MERCHANTS } from '../lib/catalogData';
 import { formatCurrency } from '../lib/formatters';
 import useScrollReveal from '../lib/useScrollReveal';
 import FormattedMessage from './FormattedMessage';

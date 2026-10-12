@@ -25,8 +25,8 @@ import {
 } from 'lucide-react';
 import { formatNumber } from '../lib/formatters';
 import useScrollReveal from '../lib/useScrollReveal';
-import { useAuth } from '../lib/auth/AuthContext';
 import { VERIFIED_MERCHANTS } from '../lib/catalogData';
+import { getProductStockOverride } from '../lib/ordersRegistry';
 
 export default function ProductDetailPage({
   product,
@@ -51,6 +51,28 @@ export default function ProductDetailPage({
   const [copiedLink, setCopiedLink] = useState(false);
   const [helpfulVotes, setHelpfulVotes] = useState({});
   const [productReviews, setProductReviews] = useState([]);
+
+  // Dynamic live inventory stock
+  const [liveStock, setLiveStock] = useState(() => {
+    const ov = getProductStockOverride(product);
+    return ov !== null ? ov : (product?.stock !== undefined ? Number(product.stock) : 5);
+  });
+
+  useEffect(() => {
+    const ov = getProductStockOverride(product);
+    setLiveStock(ov !== null ? ov : (product?.stock !== undefined ? Number(product.stock) : 5));
+  }, [product?.id, product?.productId, product?.stock]);
+
+  useEffect(() => {
+    const handleStockUpdate = () => {
+      const ov = getProductStockOverride(product);
+      if (ov !== null) setLiveStock(ov);
+    };
+    window.addEventListener('hual_stock_updated', handleStockUpdate);
+    return () => window.removeEventListener('hual_stock_updated', handleStockUpdate);
+  }, [product]);
+
+  const isSoldOut = liveStock <= 0;
 
   // ALWAYS START FROM THE TOP WHEN OPENING A PRODUCT PAGE
   useEffect(() => {
@@ -390,11 +412,13 @@ export default function ProductDetailPage({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', fontSize: '0.74rem' }}>
               <div style={{ padding: '8px 12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                 <span style={{ color: '#9CA3AF', display: 'block', fontSize: '0.66rem', marginBottom: '2px' }}>Token Serial:</span>
-                <strong style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>SN-HUAL-{product.productId || '9921'}</strong>
+                <strong style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+                  {product.serialNumber || (product.productId ? `SN-HUAL-${product.productId}` : `SN-HUAL-LIVE`)}
+                </strong>
               </div>
               <div style={{ padding: '8px 12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                 <span style={{ color: '#9CA3AF', display: 'block', fontSize: '0.66rem', marginBottom: '2px' }}>Smart Contract:</span>
-                <strong style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-mono)' }}>0x34A8...89BC</strong>
+                <strong style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-mono)' }}>0x876C...0dcf</strong>
               </div>
               <div style={{ padding: '8px 12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                 <span style={{ color: '#9CA3AF', display: 'block', fontSize: '0.66rem', marginBottom: '2px' }}>Warranty Period:</span>
@@ -636,21 +660,21 @@ export default function ProductDetailPage({
               </div>
 
               {/* Units Left Live Indicator */}
-              {product.stock != null && (
-                <div style={{
-                  padding: '3px 10px',
-                  borderRadius: '999px',
-                  background: parseInt(product.stock, 10) <= 3 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(132, 244, 59, 0.12)',
-                  border: `1px solid ${parseInt(product.stock, 10) <= 3 ? 'rgba(245, 158, 11, 0.4)' : 'rgba(132, 244, 59, 0.3)'}`,
-                  color: parseInt(product.stock, 10) <= 3 ? '#FBBF24' : 'var(--brand-green)',
-                  fontWeight: 800,
-                  fontSize: '0.72rem'
-                }}>
-                  {parseInt(product.stock, 10) <= 3 
-                    ? `Only ${product.stock} unit${parseInt(product.stock, 10) === 1 ? '' : 's'} left - order soon` 
-                    : `${product.stock} units in stock`}
-                </div>
-              )}
+              <div style={{
+                padding: '3px 10px',
+                borderRadius: '999px',
+                background: isSoldOut ? 'rgba(239, 68, 68, 0.15)' : (liveStock <= 3 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(132, 244, 59, 0.12)'),
+                border: `1px solid ${isSoldOut ? 'rgba(239, 68, 68, 0.4)' : (liveStock <= 3 ? 'rgba(245, 158, 11, 0.4)' : 'rgba(132, 244, 59, 0.3)')}`,
+                color: isSoldOut ? '#EF4444' : (liveStock <= 3 ? '#FBBF24' : 'var(--brand-green)'),
+                fontWeight: 800,
+                fontSize: '0.72rem'
+              }}>
+                {isSoldOut 
+                  ? 'Sold Out • 0 Units Left'
+                  : (liveStock <= 3 
+                      ? `Only ${liveStock} unit${liveStock === 1 ? '' : 's'} left - order soon` 
+                      : `${liveStock} units in stock`)}
+              </div>
             </div>
 
             <div style={{ color: '#9CA3AF' }}>
@@ -727,6 +751,26 @@ export default function ProductDetailPage({
               );
             }
 
+            if (isSoldOut) {
+              return (
+                <div style={{
+                  width: '100%',
+                  padding: '16px',
+                  borderRadius: '999px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                  color: '#EF4444',
+                  textAlign: 'center',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
+                  marginTop: '6px',
+                  letterSpacing: '0.02em'
+                }}>
+                  Sold Out • Currently Unavailable
+                </div>
+              );
+            }
+
             return (
               <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
                 <button
@@ -735,7 +779,7 @@ export default function ProductDetailPage({
                       if (onNavigateToSignIn) onNavigateToSignIn();
                       return;
                     }
-                    if (onAddToCart) onAddToCart(product, selectedSize);
+                    if (onAddToCart) onAddToCart({ ...product, stock: liveStock }, selectedSize);
                     setAddedCartFeedback(true);
                     setTimeout(() => setAddedCartFeedback(false), 2200);
                   }}
@@ -767,7 +811,7 @@ export default function ProductDetailPage({
                       if (onNavigateToSignIn) onNavigateToSignIn();
                       return;
                     }
-                    if (onStartCheckout) onStartCheckout(product);
+                    if (onStartCheckout) onStartCheckout({ ...product, stock: liveStock });
                   }}
                   className="btn-pill-primary"
                   style={{
@@ -842,14 +886,12 @@ export default function ProductDetailPage({
             <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Condition</span>
             <strong style={{ fontSize: '0.84rem', color: '#FFFFFF' }}>{product.condition || 'Brand New / Sealed'}</strong>
           </div>
-          {product.stock != null && (
-            <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
-              <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Units Available</span>
-              <strong style={{ fontSize: '0.84rem', color: parseInt(product.stock, 10) <= 3 ? '#FBBF24' : 'var(--brand-green)' }}>
-                {product.stock} Left in Stock
-              </strong>
-            </div>
-          )}
+          <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
+            <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Units Available</span>
+            <strong style={{ fontSize: '0.84rem', color: isSoldOut ? '#EF4444' : (liveStock <= 3 ? '#FBBF24' : 'var(--brand-green)') }}>
+              {isSoldOut ? 'Sold Out (0 Left)' : `${liveStock} Left in Stock`}
+            </strong>
+          </div>
           {(product.color || product.colors) && (
             <div style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.04)' }}>
               <span style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'block', marginBottom: '2px' }}>Color / Finish</span>

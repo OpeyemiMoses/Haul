@@ -48,6 +48,7 @@ export function getCommerceContract(signerOrProvider) {
 }
 
 import { CURATED_CATALOG, VERIFIED_MERCHANTS } from './catalogData';
+import { getProductStockOverride } from './ordersRegistry';
 
 /**
  * Fetch real products stored directly onchain in the HualCommerce contract
@@ -78,7 +79,11 @@ export async function fetchOnchainProducts() {
       'fujifilm x100vi',
       'seiko prospex',
       'aether 01',
-      'air max 95'
+      'air max 95',
+      'diagnostic test watch',
+      'diagnostic',
+      'test watch',
+      'testbrand'
     ];
 
     const onchain = rawProducts
@@ -89,13 +94,16 @@ export async function fetchOnchainProducts() {
         const brandKey = (p.brand || '').toLowerCase().trim();
         const merchantAddr = (p.merchant || '').toLowerCase();
 
-        // 1. Exclude deployer demo seed items
+        // 1. Exclude deployer demo seed items and diagnostic mock tests
         if (
           SEED_PRODUCT_KEYWORDS.some(k => nameKey.includes(k) || brandKey.includes(k)) ||
           brandKey === 'sony electronics' ||
           brandKey === 'fujifilm' ||
           brandKey === 'seiko horology' ||
           brandKey === 'aether studio' ||
+          brandKey === 'testbrand' ||
+          idKey === '5' ||
+          nameKey.includes('diagnostic') ||
           merchantAddr === '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266'
         ) {
           return false;
@@ -116,6 +124,13 @@ export async function fetchOnchainProducts() {
           (s.name && s.name.toLowerCase() === pBrand.toLowerCase())
         );
 
+        const stockOverride = getProductStockOverride({
+          id: `onchain-${Number(p.productId)}`,
+          productId: Number(p.productId),
+          name: pName
+        });
+        const currentStock = stockOverride !== null ? stockOverride : Number(p.stock);
+
         return {
           id: `onchain-${Number(p.productId)}`,
           onchain: true,
@@ -128,7 +143,7 @@ export async function fetchOnchainProducts() {
           priceUsd: Number(p.priceUsdCents) / 100,
           priceUsdCents: Number(p.priceUsdCents),
           warrantyDurationDays: Math.floor(Number(p.warrantyDurationSeconds) / 86400),
-          stock: Number(p.stock),
+          stock: currentStock,
           merchantAddress: p.merchant,
           merchant: matchedStore?.name || p.brand || 'Verified Merchant',
           merchantId: matchedStore?.id || `merchant-${p.merchant?.slice(0, 8)}`,
@@ -415,8 +430,18 @@ function formatPassports(rawList) {
   return rawList
     .filter(p => {
       const tok = Number(p.tokenId);
+      const prodId = Number(p.productId);
       const sn = String(p.serialNumber || '');
-      return tok !== 4821 && !sn.includes('AM95');
+      const pName = String(p.productName || '').toLowerCase();
+      const pBrand = String(p.productBrand || '').toLowerCase();
+      return tok !== 4821 && 
+             tok !== 5 && 
+             prodId !== 5 && 
+             sn !== 'SN-HUAL-5' && 
+             !sn.includes('AM95') && 
+             !pName.includes('diagnostic') && 
+             !pName.includes('test watch') && 
+             !pBrand.includes('testbrand');
     })
     .map((p) => {
     const expiryTs = Number(p.warrantyExpiresAt);

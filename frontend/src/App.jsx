@@ -37,41 +37,10 @@ import {
 import { ShieldCheck, RefreshCw, AlertCircle, ShoppingBag, Store, PlusCircle, ArrowLeft, MessageSquare, Heart, Layers, CheckCircle2, X } from 'lucide-react';
 import { CURATED_CATALOG, VERIFIED_MERCHANTS } from './lib/catalogData';
 import { getConversationsForUser } from './lib/messageRegistry';
+import { getProductStockOverride } from './lib/ordersRegistry';
 
-const INITIAL_DEMO_PASSPORTS = [
-  {
-    tokenId: 101,
-    productId: 'demo-sony-fx3',
-    productName: 'Sony FX3 Cinema Line Full-Frame Camera',
-    productBrand: 'Sony Pro Imaging',
-    serialNumber: 'SN-FX3-98214',
-    originalMerchant: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-    originalPriceUsd: 3899.00,
-    purchaseTimestamp: '10/02/2026, 11:20:00 AM',
-    warrantyExpiresAt: '10/02/2028',
-    daysRemainingWarranty: 724,
-    currentState: 'COLLECTED',
-    currentStateIndex: 4,
-    paymentTxRef: '0x8f2a11b93ef2d38e81c04910283f',
-    transferCount: 0,
-  },
-  {
-    tokenId: 102,
-    productId: 'demo-teenage-op1',
-    productName: 'Teenage Engineering OP-1 Field Synthesizer',
-    productBrand: 'Teenage Engineering',
-    serialNumber: 'SN-TE-41908',
-    originalMerchant: '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
-    originalPriceUsd: 1999.00,
-    purchaseTimestamp: '10/05/2026, 04:15:30 PM',
-    warrantyExpiresAt: '10/05/2027',
-    daysRemainingWarranty: 362,
-    currentState: 'READY_FOR_PICKUP',
-    currentStateIndex: 2,
-    paymentTxRef: '0x3c99a410d720eb9f140292837',
-    transferCount: 0,
-  }
-];
+const INITIAL_DEMO_PASSPORTS = [];
+
 
 function MainApp() {
   const { 
@@ -331,12 +300,7 @@ function MainApp() {
       setFollowedStores(storedFollow ? JSON.parse(storedFollow) : []);
 
       const storedPassports = localStorage.getItem(`hual_my_passports_${userKey}`);
-      setMyPassports(storedPassports ? JSON.parse(storedPassports).filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821') : []);
-
-      const storedConvs = localStorage.getItem(`hual_inbox_conversations_${userKey}`);
-      if (storedConvs) {
-        setConversations(JSON.parse(storedConvs));
-      }
+      setMyPassports(storedPassports ? JSON.parse(storedPassports).filter(p => p && String(p.tokenId) !== '4821' && String(p.tokenId) !== '5' && p.serialNumber !== 'SN-AM95-4821' && p.serialNumber !== 'SN-HUAL-5') : []);
     } catch (e) {
       console.warn('Account state sync error:', e);
     }
@@ -677,6 +641,13 @@ function MainApp() {
 
       const customListed = JSON.parse(localStorage.getItem('hual_custom_listed_products') || '[]');
       const deletedProductIds = new Set(JSON.parse(localStorage.getItem('hual_deleted_product_ids') || '[]'));
+      deletedProductIds.add('5');
+      deletedProductIds.add('onchain-5');
+      deletedProductIds.add('diagnostic test watch');
+      deletedProductIds.add('diagnostic');
+      deletedProductIds.add('test watch');
+      deletedProductIds.add('testbrand');
+
       const combinedProds = [...customListed, ...(prods || [])];
       const seenProdIds = new Set();
       const uniqueProds = [];
@@ -685,10 +656,14 @@ function MainApp() {
         const pIdStr = p.id ? String(p.id) : '';
         const pProdIdStr = p.productId !== undefined ? String(p.productId) : '';
         const normName = (p.name || '').trim().toLowerCase();
+        const normBrand = (p.brand || '').trim().toLowerCase();
         if (
           (pIdStr && deletedProductIds.has(pIdStr)) ||
           (pProdIdStr && deletedProductIds.has(pProdIdStr)) ||
-          (normName && deletedProductIds.has(normName))
+          (normName && deletedProductIds.has(normName)) ||
+          pIdStr === '5' || pProdIdStr === '5' ||
+          normName.includes('diagnostic') || normName.includes('test watch') ||
+          normBrand.includes('testbrand')
         ) {
           continue;
         }
@@ -696,7 +671,10 @@ function MainApp() {
         if (!seenProdIds.has(pKey) && (!normName || !seenProdIds.has(`name-${normName}`))) {
           seenProdIds.add(pKey);
           if (normName) seenProdIds.add(`name-${normName}`);
-          uniqueProds.push(p);
+          
+          // Apply live stock override
+          const stockOv = getProductStockOverride(p);
+          uniqueProds.push(stockOv !== null ? { ...p, stock: stockOv } : p);
         }
       }
       setProducts(uniqueProds);
@@ -719,15 +697,40 @@ function MainApp() {
       }
       if (!Array.isArray(localStored)) localStored = [];
 
-      // Filter out any mock/demo items (e.g. initial placeholder token 4821)
-      localStored = localStored.filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821');
+      // Filter out any mock/demo items (e.g. initial placeholder token 4821 or diagnostic item 5)
+      localStored = localStored.filter(p => {
+        if (!p) return false;
+        const tId = String(p.tokenId);
+        const pId = String(p.productId || '');
+        const sn = String(p.serialNumber || '');
+        const pName = (p.productName || p.name || '').toLowerCase();
+        const pBrand = (p.productBrand || p.brand || '').toLowerCase();
+        return tId !== '4821' && tId !== '5' && pId !== '5' && 
+               sn !== 'SN-AM95-4821' && sn !== 'SN-HUAL-5' &&
+               !pName.includes('diagnostic') && !pName.includes('test watch') &&
+               !pBrand.includes('testbrand');
+      });
 
       const deletedIds = new Set(JSON.parse(localStorage.getItem('hual_deleted_passports') || '[]'));
+      deletedIds.add('5');
+      deletedIds.add('SN-HUAL-5');
+
       const refundedMap = JSON.parse(localStorage.getItem('hual_refunded_passports') || '{}');
       const collectedMap = JSON.parse(localStorage.getItem('hual_collected_passports') || '{}');
 
       const combined = (localStored.length > 0 || (myPass && myPass.length > 0))
-        ? [...localStored, ...(myPass || [])].filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821')
+        ? [...localStored, ...(myPass || [])].filter(p => {
+            if (!p) return false;
+            const tId = String(p.tokenId);
+            const pId = String(p.productId || '');
+            const sn = String(p.serialNumber || '');
+            const pName = (p.productName || p.name || '').toLowerCase();
+            const pBrand = (p.productBrand || p.brand || '').toLowerCase();
+            return tId !== '4821' && tId !== '5' && pId !== '5' && 
+                   sn !== 'SN-AM95-4821' && sn !== 'SN-HUAL-5' &&
+                   !pName.includes('diagnostic') && !pName.includes('test watch') &&
+                   !pBrand.includes('testbrand');
+          })
         : [];
 
       const seen = new Set();
@@ -836,6 +839,17 @@ function MainApp() {
   useEffect(() => {
     loadData();
   }, [user?.address]);
+
+  useEffect(() => {
+    const handleStockUpdate = () => {
+      setProducts(prev => prev.map(p => {
+        const ov = getProductStockOverride(p);
+        return ov !== null ? { ...p, stock: ov } : p;
+      }));
+    };
+    window.addEventListener('hual_stock_updated', handleStockUpdate);
+    return () => window.removeEventListener('hual_stock_updated', handleStockUpdate);
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'transparent', color: '#FFFFFF', position: 'relative' }}>

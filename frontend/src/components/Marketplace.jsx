@@ -30,7 +30,8 @@ import {
   MapPin,
   Compass,
   ArrowLeft,
-  Edit3
+  Edit3,
+  PackageCheck
 } from 'lucide-react';
 import EditStoreModal from './EditStoreModal';
 import { buyWithUsdcEscrow, CONSUMER_ADDR } from '../lib/web3';
@@ -48,7 +49,7 @@ import ModalPortal from './ModalPortal';
 import useScrollReveal from '../lib/useScrollReveal';
 import ProductDetailPage from './ProductDetailPage';
 import ProductReceiptModal from './ProductReceiptModal';
-import { recordNewOrder } from '../lib/ordersRegistry';
+import { recordNewOrder, getSoldItemsForStore, getProductStockOverride } from '../lib/ordersRegistry';
 
 export default function Marketplace({ 
   products = [], 
@@ -160,7 +161,7 @@ export default function Marketplace({
     }
   };
 
-  // Storefront Tab for individual merchant: 'Products' | 'About' | 'Location' | 'Reviews'
+  // Storefront Tab for individual merchant: 'Products' | 'About' | 'Location' | 'Reviews' | 'Sold Items'
   const [storeTab, setStoreTab] = useState('Products');
   const [activeCategory, setActiveCategory] = useState(selectedCategory || 'All');
   const [isFollowing, setIsFollowing] = useState(false);
@@ -169,6 +170,13 @@ export default function Marketplace({
   const [inStockOnly, setInStockOnly] = useState(false);
   const [pickupOnly, setPickupOnly] = useState(false);
   const [localSearch, setLocalSearch] = useState('');
+  const [stockTick, setStockTick] = useState(0);
+
+  useEffect(() => {
+    const handleStockUpdate = () => setStockTick(t => t + 1);
+    window.addEventListener('hual_stock_updated', handleStockUpdate);
+    return () => window.removeEventListener('hual_stock_updated', handleStockUpdate);
+  }, []);
 
   // Sync internal category when external selectedCategory changes (e.g. from CategoriesExplorer or Navbar)
   useEffect(() => {
@@ -1282,7 +1290,7 @@ export default function Marketplace({
               padding: '0 32px',
               borderTop: '1px solid rgba(255, 255, 255, 0.06)'
             }}>
-              {['Products', 'About', 'Location', 'Reviews'].map((tab) => (
+              {['Products', 'About', 'Location', 'Reviews', 'Sold Items'].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setStoreTab(tab)}
@@ -1553,6 +1561,215 @@ export default function Marketplace({
               </div>
             );
           })()}
+
+          {/* Tab Content: Store Sold Items */}
+          {storeTab === 'Sold Items' && (() => {
+            const soldItems = getSoldItemsForStore(selectedMerchant);
+            const totalRevenue = soldItems.reduce((acc, item) => acc + (Number(item.priceUsd || 0) * (Number(item.quantity) || 1)), 0);
+
+            return (
+              <div style={{
+                background: '#0D1616',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '20px',
+                padding: '32px',
+                marginBottom: '32px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '22px' }}>
+                  <div>
+                    <h2 className="font-display" style={{ fontSize: '1.6rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                      Items Sold by {selectedMerchant.name}
+                    </h2>
+                    <div style={{ fontSize: '0.82rem', color: '#9CA3AF', marginTop: '4px' }}>
+                      Real-time ledger of completed and in-escrow sales backed by the Monad settlement layer.
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{
+                      padding: '8px 16px',
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '12px',
+                      textAlign: 'right'
+                    }}>
+                      <div style={{ fontSize: '0.66rem', color: '#9CA3AF', textTransform: 'uppercase', fontWeight: 700 }}>Total Sold</div>
+                      <div style={{ fontSize: '1.1rem', color: '#FFFFFF', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                        {soldItems.length} {soldItems.length === 1 ? 'Item' : 'Items'}
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: '8px 16px',
+                      background: 'rgba(132, 244, 59, 0.05)',
+                      border: '1px solid rgba(132, 244, 59, 0.2)',
+                      borderRadius: '12px',
+                      textAlign: 'right'
+                    }}>
+                      <div style={{ fontSize: '0.66rem', color: 'var(--brand-green)', textTransform: 'uppercase', fontWeight: 700 }}>Sales Volume</div>
+                      <div style={{ fontSize: '1.1rem', color: 'var(--brand-green)', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                        ${totalRevenue.toLocaleString()} USDC
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {soldItems.length === 0 ? (
+                  <div style={{
+                    padding: '44px 20px',
+                    textAlign: 'center',
+                    background: '#080F0F',
+                    borderRadius: '16px',
+                    border: '1px dashed rgba(255, 255, 255, 0.1)'
+                  }}>
+                    <PackageCheck size={28} color="#6B7280" style={{ margin: '0 auto 10px' }} />
+                    <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.98rem', marginBottom: '6px' }}>
+                      No Sold Items Yet
+                    </div>
+                    <div style={{ color: '#9CA3AF', fontSize: '0.82rem', maxWidth: '420px', margin: '0 auto', lineHeight: 1.5 }}>
+                      When shoppers purchase luxury products or physical merchandise from this storefront, settled transactions and escrow handovers will appear here.
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+                    {soldItems.map((sold, idx) => (
+                      <div 
+                        key={sold.orderItemId || idx}
+                        style={{
+                          background: '#080F0F',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: '16px',
+                          padding: '18px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px',
+                          transition: 'border-color 0.2s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+                          <img 
+                            src={sold.imageUri || '/assets/hual_pwa_icon.png'} 
+                            alt={sold.name}
+                            style={{
+                              width: '56px',
+                              height: '56px',
+                              borderRadius: '12px',
+                              objectFit: 'contain',
+                              background: '#121C1C',
+                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              padding: '4px'
+                            }}
+                          />
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: '0.68rem', color: '#9CA3AF', fontWeight: 600, textTransform: 'uppercase' }}>
+                              {sold.brand || 'Authentic Asset'}
+                            </div>
+                            <h4 style={{
+                              fontSize: '0.92rem',
+                              fontWeight: 800,
+                              color: '#FFFFFF',
+                              margin: '2px 0 4px',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {sold.name}
+                            </h4>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '0.88rem', color: 'var(--brand-green)', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
+                                ${Number(sold.priceUsd).toLocaleString()} USDC
+                              </span>
+                              {sold.quantity > 1 && (
+                                <span style={{ fontSize: '0.72rem', color: '#9CA3AF' }}>
+                                  × {sold.quantity} units
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{
+                          padding: '10px 12px',
+                          borderRadius: '10px',
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px',
+                          fontSize: '0.72rem'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#9CA3AF' }}>Fulfillment:</span>
+                            <span style={{ color: '#FFFFFF', fontWeight: 700, textTransform: 'capitalize' }}>
+                              {sold.deliveryMethod === 'pickup' ? 'In-Store Pickup' : 'Express Courier'}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#9CA3AF' }}>Order ID:</span>
+                            <span style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+                              #{String(sold.orderId).slice(-6)}
+                            </span>
+                          </div>
+                          {sold.buyerAddress && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ color: '#9CA3AF' }}>Buyer:</span>
+                              <span style={{ color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+                                {sold.buyerAddress.slice(0, 6)}...{sold.buyerAddress.slice(-4)}
+                              </span>
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ color: '#9CA3AF' }}>Sold On:</span>
+                            <span style={{ color: '#9CA3AF' }}>
+                              {new Date(sold.purchasedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                          <span style={{
+                            padding: '3px 8px',
+                            borderRadius: '999px',
+                            fontSize: '0.66rem',
+                            fontWeight: 800,
+                            background: sold.status === 'collected' || sold.status === 'completed'
+                              ? 'rgba(132, 244, 59, 0.15)' 
+                              : 'rgba(56, 189, 248, 0.15)',
+                            color: sold.status === 'collected' || sold.status === 'completed'
+                              ? 'var(--brand-green)'
+                              : '#38BDF8',
+                            border: `1px solid ${sold.status === 'collected' || sold.status === 'completed' ? 'rgba(132, 244, 59, 0.3)' : 'rgba(56, 189, 248, 0.3)'}`
+                          }}>
+                            {sold.status === 'collected' || sold.status === 'completed'
+                              ? 'Handover Completed • Escrow Released'
+                              : 'Secured in Escrow'}
+                          </span>
+
+                          {sold.txHash && (
+                            <a
+                              href={`https://testnet.monadexplorer.com/tx/${sold.txHash}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                color: '#9CA3AF',
+                                fontSize: '0.7rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                textDecoration: 'none'
+                              }}
+                            >
+                              <span>TX Proof</span>
+                              <ExternalLink size={10} />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1705,6 +1922,10 @@ export default function Marketplace({
             const merchantLoc = product.merchantLocation || merchantObj?.location || 'Victoria Island, Lagos';
             const prox = calculateProximity(buyerLocation, merchantLoc);
 
+            const stockOverride = getProductStockOverride(product);
+            const currentStock = stockOverride !== null ? stockOverride : (product.stock !== undefined ? Number(product.stock) : 5);
+            const isSoldOut = currentStock <= 0;
+
             const isWishlisted = wishlist.some(w => String(w.productId) === String(product.productId) && w.name === product.name);
             const cardKey = product.id || (product.onchain ? `onchain-${product.productId}` : `curated-${product.productId}-${product.name}`);
 
@@ -1742,6 +1963,26 @@ export default function Marketplace({
                     alt={product.name} 
                     style={{ width: '90%', height: '90%', objectFit: 'contain', transition: 'transform 0.3s' }}
                   />
+
+                  {/* Sold out overlay tag */}
+                  {isSoldOut && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px',
+                      padding: '3px 8px',
+                      borderRadius: '999px',
+                      background: 'rgba(239, 68, 68, 0.95)',
+                      color: '#FFFFFF',
+                      fontSize: '0.66rem',
+                      fontWeight: 900,
+                      letterSpacing: '0.04em',
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.6)',
+                      zIndex: 5
+                    }}>
+                      SOLD OUT
+                    </div>
+                  )}
 
                   {/* Wishlist Heart Toggle Button */}
                   <button
@@ -1906,40 +2147,54 @@ export default function Marketplace({
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!authenticated || !user) {
-                        if (onNavigateToSignIn) onNavigateToSignIn();
-                        return;
-                      }
-                      if (onAddToCart) onAddToCart(product);
-                      const pId = product.productId || product.id;
-                      setAddedCardId(pId);
-                      setTimeout(() => setAddedCardId(null), 1800);
-                    }}
-                    title={addedCardId === (product.productId || product.id) ? "Added to Cart!" : "Add to Cart"}
-                    style={{
-                      background: addedCardId === (product.productId || product.id) ? 'var(--brand-green)' : '#121C1C',
-                      border: addedCardId === (product.productId || product.id) ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {isSoldOut ? (
+                    <span style={{
+                      padding: '4px 10px',
                       borderRadius: '999px',
-                      padding: '5px 8px',
-                      color: addedCardId === (product.productId || product.id) ? '#080F0F' : '#FFFFFF',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.2s ease',
-                      boxShadow: addedCardId === (product.productId || product.id) ? '0 0 12px var(--brand-green-glow)' : 'none'
-                    }}
-                  >
-                    {addedCardId === (product.productId || product.id) ? (
-                      <CheckCircle2 size={13} color="#080F0F" />
-                    ) : (
-                      <ShoppingBag size={13} color="var(--brand-green)" />
-                    )}
-                  </button>
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      color: '#EF4444',
+                      fontSize: '0.72rem',
+                      fontWeight: 800
+                    }}>
+                      Sold Out
+                    </span>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!authenticated || !user) {
+                          if (onNavigateToSignIn) onNavigateToSignIn();
+                          return;
+                        }
+                        if (onAddToCart) onAddToCart({ ...product, stock: currentStock });
+                        const pId = product.productId || product.id;
+                        setAddedCardId(pId);
+                        setTimeout(() => setAddedCardId(null), 1800);
+                      }}
+                      title={addedCardId === (product.productId || product.id) ? "Added to Cart!" : "Add to Cart"}
+                      style={{
+                        background: addedCardId === (product.productId || product.id) ? 'var(--brand-green)' : '#121C1C',
+                        border: addedCardId === (product.productId || product.id) ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '999px',
+                        padding: '5px 8px',
+                        color: addedCardId === (product.productId || product.id) ? '#080F0F' : '#FFFFFF',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s ease',
+                        boxShadow: addedCardId === (product.productId || product.id) ? '0 0 12px var(--brand-green-glow)' : 'none'
+                      }}
+                    >
+                      {addedCardId === (product.productId || product.id) ? (
+                        <CheckCircle2 size={13} color="#080F0F" />
+                      ) : (
+                        <ShoppingBag size={13} color="var(--brand-green)" />
+                      )}
+                    </button>
+                  )}
 
                   {!isMyProduct(product) && (
                     <button

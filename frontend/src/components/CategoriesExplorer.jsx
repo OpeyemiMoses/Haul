@@ -9,7 +9,6 @@ import {
   ShoppingBag,
   ExternalLink
 } from 'lucide-react';
-import { CURATED_CATALOG } from '../lib/catalogData';
 import { formatCurrency } from '../lib/formatters';
 
 const CATEGORIES_DATA = [

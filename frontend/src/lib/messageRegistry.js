@@ -16,15 +16,35 @@ export function getAllSharedConversations() {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     
-    // Purge any legacy mock store conversations
-    const MOCK_STORE_IDS = new Set(['nike-lagos', 'sony-flagship', 'apple-boutique', 'teenage-engineering']);
+    // Purge any legacy mock store conversations and demo placeholders
+    const MOCK_STORE_IDS = new Set([
+      'nike-lagos', 
+      'sony-flagship', 
+      'apple-boutique', 
+      'teenage-engineering',
+      'puma-lekki',
+      'adidas-vi',
+      'store-nike-lagos',
+      'store-sony-flagship',
+      'store-apple-boutique'
+    ]);
+
     const filtered = parsed.filter(c => {
       if (!c) return false;
       if (MOCK_STORE_IDS.has(c.storeId)) return false;
       const sName = (c.storeName || '').toLowerCase();
-      if (sName.includes('nike') || sName.includes('sony') || sName.includes('apple') || sName.includes('teenage engineering')) return false;
+      if (
+        sName.includes('nike') || 
+        sName.includes('sony') || 
+        sName.includes('apple') || 
+        sName.includes('teenage engineering') || 
+        sName.includes('adidas') ||
+        sName.includes('puma')
+      ) return false;
+      if (c.buyerIdentifier === 'default' || c.buyerIdentifier === 'consumer') return false;
       return true;
     });
+
     if (filtered.length !== parsed.length) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
     }
@@ -51,7 +71,7 @@ export function saveSharedConversations(conversations) {
  */
 export function getConversationsForUser(userIdentifier, userStore = null) {
   const all = getAllSharedConversations();
-  if (!userIdentifier || userIdentifier === 'default' || userIdentifier === 'guest') {
+  if (!userIdentifier || userIdentifier === 'default' || userIdentifier === 'guest' || userIdentifier === 'consumer') {
     return { buyerConvs: [], storeConvs: [], all: [] };
   }
   const buyerId = userIdentifier.toLowerCase();
@@ -70,7 +90,7 @@ export function getConversationsForUser(userIdentifier, userStore = null) {
 }
 
 /**
- * Customer sends a message to a store.
+ * Customer sends a message to a store with explicit item listing metadata if inquiry is from a product.
  */
 export function sendCustomerMessage({ store, buyer, text, product = null }) {
   if (!store || !text.trim()) return null;
@@ -84,10 +104,21 @@ export function sendCustomerMessage({ store, buyer, text, product = null }) {
   }
 
   const all = getAllSharedConversations();
-  const storeId = store.id || `store-${store.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+  const storeId = store.id || `store-${(store.name || 'custom').toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
   const buyerId = buyer?.address || buyer?.email || buyer?.id || 'guest';
   const buyerName = buyer?.name || (buyer?.email ? buyer.email.split('@')[0] : 'Customer');
   const convId = `conv-${storeId}-${buyerId.toLowerCase()}`;
+
+  const isItemListing = Boolean(product);
+  const formattedProduct = isItemListing ? {
+    id: product.id,
+    productId: product.productId,
+    name: product.name,
+    brand: product.brand || 'Authentic Brand',
+    imageUri: product.imageUri || product.image || '/assets/hual_pwa_icon.png',
+    priceUsd: product.priceUsd,
+    stock: product.stock
+  } : null;
 
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const newMsg = {
@@ -96,7 +127,10 @@ export function sendCustomerMessage({ store, buyer, text, product = null }) {
     senderName: buyerName,
     text: text.trim(),
     timestamp,
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    isListingInquiry: isItemListing,
+    inquiryType: isItemListing ? 'listing' : 'general',
+    product: formattedProduct
   };
 
   let existingIndex = all.findIndex(c => 
@@ -110,12 +144,13 @@ export function sendCustomerMessage({ store, buyer, text, product = null }) {
     const target = all[existingIndex];
     updatedConv = {
       ...target,
-      id: convId, // anchor to explicit buyer id
+      id: convId,
       buyerIdentifier: buyerId,
       buyerName,
       unreadForStore: (target.unreadForStore || 0) + 1,
       lastMessageTime: 'Just now',
-      pinnedProduct: product || target.pinnedProduct,
+      inquiryType: isItemListing ? 'listing' : (target.inquiryType || 'general'),
+      pinnedProduct: formattedProduct || target.pinnedProduct || null,
       messages: [...target.messages, newMsg]
     };
     all[existingIndex] = updatedConv;
@@ -125,7 +160,7 @@ export function sendCustomerMessage({ store, buyer, text, product = null }) {
       storeId,
       storeName: store.name || 'Merchant Store',
       storeHandle: store.handle || `@${storeId}`,
-      storeAvatar: store.avatar || '/assets/air_max_95.jpg',
+      storeAvatar: store.avatar || '/assets/hual_pwa_icon.png',
       storeLocation: store.location || store.fullAddress || 'Victoria Island, Lagos',
       verified: Boolean(store.verified),
       chatRep: store.chatRep || `${store.name ? store.name.split(' ')[0] : 'Lead'} (Store Representative)`,
@@ -134,10 +169,9 @@ export function sendCustomerMessage({ store, buyer, text, product = null }) {
       unreadForBuyer: 0,
       unreadForStore: 1,
       lastMessageTime: 'Just now',
-      pinnedProduct: product,
-      messages: [
-        newMsg
-      ]
+      inquiryType: isItemListing ? 'listing' : 'general',
+      pinnedProduct: formattedProduct,
+      messages: [newMsg]
     };
     all.unshift(updatedConv);
   }
