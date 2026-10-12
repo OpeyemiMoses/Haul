@@ -489,7 +489,21 @@ export default function Marketplace({
     setSelectedImageIndex(0);
   };
 
+  const isMyProduct = (prod) => {
+    if (!prod) return false;
+    const userAddr = user?.address?.toLowerCase();
+    const sellerAddr = (prod.seller || prod.ownerAddress || prod.merchantAddress)?.toLowerCase();
+    if (userAddr && sellerAddr && userAddr === sellerAddr) return true;
+    if (userStore && prod.merchantId && String(prod.merchantId) === String(userStore.id)) return true;
+    if (userStore && prod.merchant && prod.merchant.toLowerCase() === userStore.name?.toLowerCase()) return true;
+    return false;
+  };
+
   const handleStartCheckout = (product) => {
+    if (isMyProduct(product)) {
+      alert("You cannot purchase items listed by your own store.");
+      return;
+    }
     setSelectedProduct(null);
     setCheckoutProduct(product);
     setDeliveryMethod(product.allowsPickup ? 'pickup' : 'delivery');
@@ -1128,22 +1142,24 @@ export default function Marketplace({
                   <span>Message Store</span>
                 </button>
 
-                <button
-                  onClick={() => setIsFollowing(!isFollowing)}
-                  style={{
-                    padding: '8px 22px',
-                    borderRadius: '999px',
-                    background: isFollowing ? 'var(--brand-green)' : '#162424',
-                    color: isFollowing ? '#080F0F' : '#FFFFFF',
-                    border: isFollowing ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.15)',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {isFollowing ? 'Following' : 'Follow Store'}
-                </button>
+                {!isMyStore && (
+                  <button
+                    onClick={() => onToggleFollowStore && onToggleFollowStore(selectedMerchant.id)}
+                    style={{
+                      padding: '8px 22px',
+                      borderRadius: '999px',
+                      background: followedStores.includes(selectedMerchant?.id) ? 'var(--brand-green)' : '#162424',
+                      color: followedStores.includes(selectedMerchant?.id) ? '#080F0F' : '#FFFFFF',
+                      border: followedStores.includes(selectedMerchant?.id) ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.15)',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {followedStores.includes(selectedMerchant?.id) ? 'Following' : 'Follow Store'}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1479,19 +1495,70 @@ export default function Marketplace({
               border: '1px solid rgba(255, 255, 255, 0.08)',
               margin: '20px 0 40px'
             }}>
-              <ShoppingBag size={44} color="var(--brand-green)" style={{ margin: '0 auto 16px' }} />
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px' }}>
-                No items match this filter
-              </h3>
-              <p style={{ color: '#9CA3AF', fontSize: '0.85rem', marginBottom: '20px' }}>
-                Try selecting "All" or clear your search query to see all verified merchandise.
-              </p>
-              <button
-                onClick={handleResetAllFilters}
-                className="btn-pill-primary"
-              >
-                Reset Filters
-              </button>
+              {selectedMerchant && isMyStore ? (
+                <>
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '20px',
+                    background: 'var(--brand-green-dim)',
+                    border: '1.5px solid var(--brand-green)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 18px',
+                    boxShadow: '0 0 25px rgba(132, 244, 59, 0.25)'
+                  }}>
+                    <PlusCircle size={32} color="var(--brand-green)" />
+                  </div>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px' }}>
+                    Your Store Catalog Is Empty
+                  </h3>
+                  <p style={{ color: '#9CA3AF', fontSize: '0.86rem', maxWidth: '460px', margin: '0 auto 24px', lineHeight: 1.5 }}>
+                    You haven't listed any items in your store yet. List your first product backed by a living Monad Product Passport to activate your storefront and start selling!
+                  </p>
+                  <button
+                    onClick={() => onOpenSellModal && onOpenSellModal()}
+                    className="btn-pill-primary"
+                    style={{ padding: '10px 26px', fontSize: '0.86rem', fontWeight: 800 }}
+                  >
+                    <PlusCircle size={15} style={{ marginRight: '6px' }} />
+                    <span>List Your First Item</span>
+                  </button>
+                </>
+              ) : selectedMerchant ? (
+                <>
+                  <Store size={44} color="#6B7280" style={{ margin: '0 auto 16px' }} />
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px' }}>
+                    No Products In This Store Yet
+                  </h3>
+                  <p style={{ color: '#9CA3AF', fontSize: '0.85rem', marginBottom: '20px' }}>
+                    {selectedMerchant.name} currently has no active items listed. Check back soon for new authenticated drops!
+                  </p>
+                  <button
+                    onClick={() => setSelectedMerchant(null)}
+                    className="btn-pill-primary"
+                  >
+                    Browse All Marketplace Stores
+                  </button>
+                </>
+              ) : (
+                <>
+                  <ShoppingBag size={44} color="var(--brand-green)" style={{ margin: '0 auto 16px' }} />
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 8px' }}>
+                    No items match this filter
+                  </h3>
+                  <p style={{ color: '#9CA3AF', fontSize: '0.85rem', marginBottom: '20px' }}>
+                    Try selecting "All" or clear your search query to see all verified merchandise.
+                  </p>
+                  <button
+                    onClick={handleResetAllFilters}
+                    className="btn-pill-primary"
+                  >
+                    Reset Filters
+                  </button>
+                </>
+              )}
             </div>
           ) : (
           <div 
@@ -1715,16 +1782,35 @@ export default function Marketplace({
                     <MessageSquare size={13} color="var(--brand-green)" />
                   </button>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleStartCheckout(product);
-                    }}
-                    className="btn-pill-primary btn-pill-sm"
-                    style={{ padding: '6px 12px', fontSize: '0.74rem', fontWeight: 800 }}
-                  >
-                    Buy Now
-                  </button>
+                  {isMyProduct(product) ? (
+                    <button
+                      disabled
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        background: 'rgba(255, 255, 255, 0.06)',
+                        border: '1px solid rgba(255, 255, 255, 0.12)',
+                        color: '#9CA3AF',
+                        borderRadius: '999px',
+                        cursor: 'not-allowed'
+                      }}
+                      title="You own this store listing"
+                    >
+                      Your Listing
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartCheckout(product);
+                      }}
+                      className="btn-pill-primary btn-pill-sm"
+                      style={{ padding: '6px 12px', fontSize: '0.74rem', fontWeight: 800 }}
+                    >
+                      Buy Now
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

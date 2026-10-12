@@ -17,7 +17,8 @@ import {
   Camera,
   Tag,
   Check,
-  Plus
+  Plus,
+  Zap
 } from 'lucide-react';
 import { listProductOnchain } from '../lib/web3';
 import { useAuth } from '../lib/auth/AuthContext';
@@ -299,6 +300,11 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
         merchant: userStore?.name || user?.name || 'Verified Merchant',
         merchantId: userStore?.id || 'user-store',
         merchantLocation: userStore?.location || 'Victoria Island, Lagos',
+        seller: user?.address || null,
+        ownerAddress: user?.address || null,
+        onchain: true,
+        txHash: txHash,
+        monadTxHash: txHash,
         allowsPickup,
         allowsDelivery,
         active: true,
@@ -462,9 +468,37 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
               <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#FFFFFF', marginBottom: '8px' }}>
                 Product Listed Successfully!
               </h3>
-              <p style={{ fontSize: '0.88rem', color: '#9CA3AF', marginBottom: '24px', maxWidth: '460px', margin: '0 auto 24px' }}>
-                Your item has been published to your storefront and the marketplace. Shoppers can view sizes, condition, and full specifications.
+              <p style={{ fontSize: '0.88rem', color: '#9CA3AF', marginBottom: '16px', maxWidth: '460px', margin: '0 auto 16px' }}>
+                Your item has been published onchain to Monad and synced to your storefront and the marketplace.
               </p>
+
+              {successTx && (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '7px 16px',
+                  background: 'rgba(132, 244, 59, 0.08)',
+                  border: '1px solid var(--brand-green-border)',
+                  borderRadius: '999px',
+                  fontSize: '0.74rem',
+                  color: 'var(--brand-green)',
+                  fontFamily: 'var(--font-mono, monospace)',
+                  marginBottom: '24px'
+                }}>
+                  <Zap size={13} />
+                  <span>Monad Tx: {String(successTx).slice(0, 10)}...{String(successTx).slice(-8)}</span>
+                  <a
+                    href={`https://testnet.monadexplorer.com/tx/${successTx}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--brand-green)', display: 'flex', alignItems: 'center' }}
+                    title="View on Monad Explorer"
+                  >
+                    <ExternalLink size={12} />
+                  </a>
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                 <button
@@ -496,37 +530,6 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              {/* Presets Bar */}
-              <div>
-                <div style={{ fontSize: '0.74rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>
-                  Auto-Fill Presets (Click to autofill)
-                </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {PRESET_ITEMS.map((preset) => (
-                    <button
-                      key={preset.title}
-                      type="button"
-                      onClick={() => handleApplyPreset(preset)}
-                      style={{
-                        padding: '5px 12px',
-                        borderRadius: '999px',
-                        background: '#162424',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        fontSize: '0.74rem',
-                        fontWeight: 600,
-                        color: '#D1D5DB',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--brand-green)'}
-                      onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'}
-                    >
-                      {preset.title}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* STEP 1: ITEM CATEGORY PICKER */}
               <div style={{

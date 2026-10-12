@@ -266,6 +266,19 @@ function MainApp() {
   const [cartToast, setCartToast] = useState(null);
 
   const addToCart = (product, selectedSize = 'Standard', quantity = 1) => {
+    if (!product) return;
+    const userAddr = user?.address?.toLowerCase();
+    const sellerAddr = (product.seller || product.ownerAddress || product.merchantAddress)?.toLowerCase();
+    const isOwner = Boolean(
+      (userAddr && sellerAddr && userAddr === sellerAddr) ||
+      (userStore && product.merchantId && String(product.merchantId) === String(userStore.id)) ||
+      (userStore && product.merchant && product.merchant.toLowerCase() === userStore.name?.toLowerCase())
+    );
+    if (isOwner) {
+      alert("You cannot add items listed by your own store to your cart.");
+      return;
+    }
+
     let finalCount = 0;
     setCart(prev => {
       const existingIndex = prev.findIndex(item => item.productId === product.productId && item.selectedSize === selectedSize);
@@ -315,6 +328,10 @@ function MainApp() {
   };
 
   const toggleFollowStore = (merchantId) => {
+    if (!merchantId) return;
+    if (userStore && (userStore.id === merchantId || userStore.name === merchantId)) {
+      return; // Store owners cannot follow their own store
+    }
     setFollowedStores(prev => {
       const exists = prev.includes(merchantId);
       const updated = exists ? prev.filter(id => id !== merchantId) : [...prev, merchantId];

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { formatNumber } from '../lib/formatters';
 import useScrollReveal from '../lib/useScrollReveal';
+import { useAuth } from '../lib/auth/AuthContext';
 
 export default function ProductDetailPage({
   product,
@@ -37,6 +38,7 @@ export default function ProductDetailPage({
   onToggleWishlist,
   buyerLocation = 'Victoria Island, Lagos'
 }) {
+  const { user, userStore } = useAuth();
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.[2] || product?.sizes?.[0] || 10);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [addedCartFeedback, setAddedCartFeedback] = useState(false);
@@ -585,49 +587,79 @@ export default function ProductDetailPage({
           </div>
 
           {/* Primary Action Buttons */}
-          <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
-            <button
-              onClick={() => {
-                if (onAddToCart) onAddToCart(product, selectedSize);
-                setAddedCartFeedback(true);
-                setTimeout(() => setAddedCartFeedback(false), 2200);
-              }}
-              style={{
-                flex: 1,
-                padding: '14px',
-                borderRadius: '999px',
-                background: addedCartFeedback ? 'var(--brand-green)' : '#162424',
-                border: '1.5px solid var(--brand-green)',
-                color: addedCartFeedback ? '#080F0F' : 'var(--brand-green)',
-                fontSize: '0.9rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                transition: 'all 0.2s ease',
-                boxShadow: addedCartFeedback ? '0 0 20px var(--brand-green-glow)' : 'none'
-              }}
-            >
-              {addedCartFeedback ? <CheckCircle2 size={18} color="#080F0F" /> : <ShoppingBag size={18} />}
-              <span>{addedCartFeedback ? 'Added to Cart!' : 'Add to Cart'}</span>
-            </button>
+          {(() => {
+            const userAddr = user?.address?.toLowerCase();
+            const sellerAddr = (product.seller || product.ownerAddress || product.merchantAddress)?.toLowerCase();
+            const isMyProduct = Boolean(
+              (userAddr && sellerAddr && userAddr === sellerAddr) ||
+              (userStore && product.merchantId && String(product.merchantId) === String(userStore.id)) ||
+              (userStore && product.merchant && product.merchant.toLowerCase() === userStore.name?.toLowerCase())
+            );
 
-            <button
-              onClick={() => onStartCheckout && onStartCheckout(product)}
-              className="btn-pill-primary"
-              style={{
-                flex: 1.2,
-                padding: '14px',
-                fontSize: '0.9rem',
-                fontWeight: 800,
-                boxShadow: '0 0 24px var(--brand-green-glow)'
-              }}
-            >
-              Buy Now
-            </button>
-          </div>
+            if (isMyProduct) {
+              return (
+                <div style={{
+                  padding: '14px 20px',
+                  borderRadius: '16px',
+                  background: '#121C1C',
+                  border: '1.5px solid rgba(255, 255, 255, 0.12)',
+                  color: '#9CA3AF',
+                  textAlign: 'center',
+                  fontSize: '0.86rem',
+                  fontWeight: 700,
+                  marginTop: '6px'
+                }}>
+                  You own this store listing (Store owners cannot buy their own items)
+                </div>
+              );
+            }
+
+            return (
+              <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
+                <button
+                  onClick={() => {
+                    if (onAddToCart) onAddToCart(product, selectedSize);
+                    setAddedCartFeedback(true);
+                    setTimeout(() => setAddedCartFeedback(false), 2200);
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '14px',
+                    borderRadius: '999px',
+                    background: addedCartFeedback ? 'var(--brand-green)' : '#162424',
+                    border: '1.5px solid var(--brand-green)',
+                    color: addedCartFeedback ? '#080F0F' : 'var(--brand-green)',
+                    fontSize: '0.9rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s ease',
+                    boxShadow: addedCartFeedback ? '0 0 20px var(--brand-green-glow)' : 'none'
+                  }}
+                >
+                  {addedCartFeedback ? <CheckCircle2 size={18} color="#080F0F" /> : <ShoppingBag size={18} />}
+                  <span>{addedCartFeedback ? 'Added to Cart!' : 'Add to Cart'}</span>
+                </button>
+
+                <button
+                  onClick={() => onStartCheckout && onStartCheckout(product)}
+                  className="btn-pill-primary"
+                  style={{
+                    flex: 1.2,
+                    padding: '14px',
+                    fontSize: '0.9rem',
+                    fontWeight: 800,
+                    boxShadow: '0 0 24px var(--brand-green-glow)'
+                  }}
+                >
+                  Buy Now
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Trust Guarantees */}
           <div style={{

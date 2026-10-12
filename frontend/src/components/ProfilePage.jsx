@@ -1350,9 +1350,16 @@ export default function ProfilePage({
                 <PlusCircle size={13} /> List Item (Sell)
               </button>
               <button
-                onClick={() => onNavigateTab && onNavigateTab('shop')}
+                onClick={() => {
+                  if (onOpenStore && userStore) {
+                    onOpenStore(userStore);
+                  } else if (onNavigateTab) {
+                    onNavigateTab('shop');
+                  }
+                }}
                 className="btn-pill-secondary btn-pill-sm"
                 style={{ flex: 1, padding: '8px', fontSize: '0.78rem' }}
+                title="View your merchant storefront"
               >
                 <Store size={13} /> My Storefront
               </button>
@@ -3875,7 +3882,7 @@ export default function ProfilePage({
           </div>
 
           <div className="perspective-container stagger-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-            {VERIFIED_MERCHANTS.filter(m => followedStores.includes(m.id)).map((merchant) => (
+            {VERIFIED_MERCHANTS.filter(m => followedStores.includes(m.id) && (!userStore || m.id !== userStore.id)).map((merchant) => (
               <div
                 key={merchant.id}
                 style={{

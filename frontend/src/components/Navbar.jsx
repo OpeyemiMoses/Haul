@@ -163,33 +163,6 @@ export default function Navbar({
               <span>Stores</span>
             </button>
 
-            {(userStore || userRole === 'merchant') && (
-              <button
-                onClick={() => {
-                  if (onOpenMyStore) onOpenMyStore(userStore);
-                  else if (setActiveTab) setActiveTab('shop');
-                }}
-                style={{
-                  padding: '6px 13px',
-                  borderRadius: '999px',
-                  background: 'rgba(132, 244, 59, 0.12)',
-                  border: '1px solid var(--brand-green-border)',
-                  color: 'var(--brand-green)',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  transition: 'all 0.15s ease'
-                }}
-                title="View and edit your storefront"
-              >
-                <Store size={13} color="var(--brand-green)" />
-                <span>My Store</span>
-              </button>
-            )}
-
             <button
               onClick={() => setActiveTab && setActiveTab('categories')}
               style={{

@@ -89,6 +89,7 @@ export default function StoresPage({
     return allStores.map((store) => {
       const sName = (store.name || '').toLowerCase().trim();
       const sId = store.id;
+      const isFlagship = VERIFIED_MERCHANTS.some(vm => vm.id === store.id);
 
       const storeProducts = products.filter((p) => {
         if (!p) return false;
@@ -96,26 +97,39 @@ export default function StoresPage({
         const pBrand = (p.brand || '').toLowerCase().trim();
         const pMerchantId = p.merchantId;
 
+        if (isFlagship) {
+          return (
+            (pMerchant && (pMerchant === sName || pMerchant.includes(sName) || sName.includes(pMerchant))) ||
+            (pMerchantId && pMerchantId === sId) ||
+            (pBrand && sName.includes(pBrand))
+          );
+        }
+
+        // For user-created stores: STRICT MATCHING ONLY (never match random curated brand substrings)
         return (
-          (pMerchant && (pMerchant === sName || pMerchant.includes(sName) || sName.includes(pMerchant))) ||
-          (pMerchantId && pMerchantId === sId) ||
-          (pBrand && sName.includes(pBrand))
+          (pMerchantId && String(pMerchantId) === String(sId)) ||
+          (pMerchant && pMerchant === sName) ||
+          (store.ownerAddress && p.seller && store.ownerAddress.toLowerCase() === p.seller.toLowerCase())
         );
       });
 
       const itemsCount = storeProducts.length;
-      // Verification Pass: Must have at least 1 item listed
-      const isVerified = itemsCount >= 1;
+      // Verification Pass: Flagships or created stores with at least 1 item listed
+      const isVerified = isFlagship || itemsCount >= 1;
+      const isOwner = Boolean(
+        (userStore && (userStore.id === store.id || (userStore.name && userStore.name.toLowerCase() === sName))) ||
+        (store.ownerAddress && user?.address && store.ownerAddress.toLowerCase() === user.address.toLowerCase())
+      );
 
       return {
         ...store,
         products: storeProducts,
         itemsCount,
         isVerified,
-        isOwner: Boolean(userStore && userStore.id === store.id)
+        isOwner
       };
     });
-  }, [allStores, products, userStore]);
+  }, [allStores, products, userStore, user]);
 
   // Separate verified stores (public) vs pending stores (0 items)
   const verifiedStores = useMemo(() => {
