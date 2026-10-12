@@ -237,20 +237,6 @@ export default function ProfilePage({
     ];
   });
 
-  const handleInitiateResale = (passport) => {
-    const target = passport || effectivePassports[0];
-    if (!target) {
-      alert('You have no verified products in your vault to list for resale.');
-      return;
-    }
-    if (!userStore && userRole !== 'merchant') {
-      // Must first create a merchant store before listing for resale
-      setPendingResalePassport(target);
-      setStoreRequiredModalOpen(true);
-    } else {
-      setResalePassport(target);
-    }
-  };
 
   // Warranty Claim
   const [warrantyPassport, setWarrantyPassport] = useState(null);
@@ -427,20 +413,6 @@ export default function ProfilePage({
     }
   };
 
-  // Handle external modal trigger
-  React.useEffect(() => {
-    const defaultPassport = effectivePassports[0] || null;
-    if (!defaultPassport) return;
-    if (forcedModal === 'transfer') {
-      setTransferPassport(defaultPassport);
-    } else if (forcedModal === 'resale') {
-      handleInitiateResale(defaultPassport);
-    } else if (forcedModal === 'warranty') {
-      setWarrantyPassport(defaultPassport);
-    } else if (forcedModal === 'pickup') {
-      setPickupPassport(defaultPassport);
-    }
-  }, [forcedModal, userStore, userRole, effectivePassports]);
 
   const isGuest = !user;
   const activeUser = user || {
@@ -558,6 +530,36 @@ export default function ProfilePage({
     }
     return unique;
   }, [localPassports]);
+
+  const handleInitiateResale = (passport) => {
+    const target = passport || effectivePassports[0];
+    if (!target) {
+      alert('You have no verified products in your vault to list for resale.');
+      return;
+    }
+    if (!userStore && userRole !== 'merchant') {
+      // Must first create a merchant store before listing for resale
+      setPendingResalePassport(target);
+      setStoreRequiredModalOpen(true);
+    } else {
+      setResalePassport(target);
+    }
+  };
+
+  // Handle external modal trigger
+  React.useEffect(() => {
+    const defaultPassport = effectivePassports[0] || null;
+    if (!defaultPassport) return;
+    if (forcedModal === 'transfer') {
+      setTransferPassport(defaultPassport);
+    } else if (forcedModal === 'resale') {
+      handleInitiateResale(defaultPassport);
+    } else if (forcedModal === 'warranty') {
+      setWarrantyPassport(defaultPassport);
+    } else if (forcedModal === 'pickup') {
+      setPickupPassport(defaultPassport);
+    }
+  }, [forcedModal, userStore, userRole, effectivePassports]);
 
   const productsOwnedCount = effectivePassports.length;
   const transfersCount = React.useMemo(() => {
