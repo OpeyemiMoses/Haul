@@ -341,14 +341,97 @@ export async function completePickupAndPayout({
     localStorage.setItem(ESCROW_ORDERS_KEY, JSON.stringify(updatedEscrow));
   } catch {}
 
-  // 4. Update passports across all keys
+  // 4. Update passports across all keys and persistent collected map
+  markItemCollectedInRegistry(item, liveTxHash);
+
+  return {
+    success: true,
+    txHash: liveTxHash,
+    payoutAmount: orderAmount,
+    sellerAddress: storeOwnerAddress
+  };
+}
+
+/**
+ * Check if a passport or order item has already been collected/picked up
+ */
+export function isItemCollectedInRegistry(item) {
+  if (!item) return false;
+  if (
+    item.currentState === 'COLLECTED' || 
+    item.currentState === 'ACTIVE_OWNERSHIP' || 
+    item.currentState === 'DELIVERED' || 
+    item.currentState === 'COMPLETED' || 
+    item.currentState === 'OWNED' || 
+    Boolean(item.isCollected) || 
+    Boolean(item.isDelivered) ||
+    Boolean(item.payoutTxHash)
+  ) {
+    return true;
+  }
+  try {
+    const colMap = JSON.parse(localStorage.getItem('hual_collected_passports') || '{}');
+    const keysToCheck = [
+      item.orderId,
+      item.pickupPIN,
+      item.tokenId,
+      item.serialNumber,
+      item.id,
+      item.orderItemId,
+      item.productName ? item.productName.trim().toLowerCase() : null,
+      item.name ? item.name.trim().toLowerCase() : null
+    ];
+    for (const k of keysToCheck) {
+      if (k && colMap[String(k).trim()]) return true;
+    }
+  } catch {}
+  return false;
+}
+
+/**
+ * Mark item collected across all storage buckets and trigger sync events
+ */
+export function markItemCollectedInRegistry(item, liveTxHash = null) {
+  if (!item) return;
+
+  // 1. Save to persistent collected passports map
+  try {
+    const COLLECTED_MAP_KEY = 'hual_collected_passports';
+    const colMap = JSON.parse(localStorage.getItem(COLLECTED_MAP_KEY) || '{}');
+    const markKey = (val) => {
+      if (val !== undefined && val !== null && String(val).trim()) {
+        colMap[String(val).trim()] = {
+          collected: true,
+          collectedAt: new Date().toISOString(),
+          txHash: liveTxHash || null
+        };
+      }
+    };
+
+    markKey(item.orderId);
+    markKey(item.pickupPIN);
+    markKey(item.tokenId);
+    markKey(item.serialNumber);
+    markKey(item.id);
+    markKey(item.orderItemId);
+    if (item.productName) markKey(item.productName.trim().toLowerCase());
+    if (item.name) markKey(item.name.trim().toLowerCase());
+
+    localStorage.setItem(COLLECTED_MAP_KEY, JSON.stringify(colMap));
+  } catch {}
+
+  // 2. Update all passports across all keys
   try {
     const updatePassport = (p) => {
+      if (!p) return p;
       const match = 
-        (p.orderId && String(p.orderId) === String(item.orderId)) ||
-        (p.pickupPIN && String(p.pickupPIN) === String(item.pickupPIN)) ||
+        (p.orderId && item.orderId && String(p.orderId) === String(item.orderId)) ||
+        (p.pickupPIN && item.pickupPIN && String(p.pickupPIN) === String(item.pickupPIN)) ||
         (p.tokenId && item.tokenId && String(p.tokenId) === String(item.tokenId)) ||
-        (p.serialNumber && item.serialNumber && p.serialNumber === item.serialNumber);
+        (p.serialNumber && item.serialNumber && p.serialNumber === item.serialNumber) ||
+        (p.id && item.id && String(p.id) === String(item.id)) ||
+        (p.productName && item.productName && p.productName.trim().toLowerCase() === item.productName.trim().toLowerCase()) ||
+        (p.name && item.name && p.name.trim().toLowerCase() === item.name.trim().toLowerCase());
 
       if (match) {
         return {
@@ -356,13 +439,14 @@ export async function completePickupAndPayout({
           currentState: 'COLLECTED',
           currentStateIndex: 4,
           isCollected: true,
-          payoutTxHash: liveTxHash,
+          isDelivered: true,
+          payoutTxHash: liveTxHash || p.payoutTxHash || null,
           lifecycleSteps: [
             { name: 'Listed', completed: true, date: p.purchaseTimestamp || 'Oct 5, 2026' },
             { name: 'Ordered', completed: true, date: p.purchaseTimestamp || 'Oct 7, 2026' },
             { name: 'Paid (Escrow)', completed: true, date: p.purchaseTimestamp || 'Oct 7, 2026' },
-            { name: 'Handover', completed: true, date: 'Just now (In-Store Verified)' },
-            { name: 'In Possession', completed: true, date: 'Just now' },
+            { name: 'Handover', completed: true, date: 'In-Store Verified & Handed Over' },
+            { name: 'In Possession', completed: true, date: 'Verified In Hand' },
             { name: 'Warranty Active', completed: true, date: 'Active' }
           ]
         };
@@ -388,10 +472,10 @@ export async function completePickupAndPayout({
     }
   } catch {}
 
-  return {
-    success: true,
-    txHash: liveTxHash,
-    payoutAmount: orderAmount,
-    sellerAddress: storeOwnerAddress
-  };
+  // 3. Dispatch event so active components update live without reload
+  try {
+    window.dispatchEvent(new CustomEvent('hual_order_collected', {
+      detail: { item, txHash: liveTxHash }
+    }));
+  } catch {}
 }

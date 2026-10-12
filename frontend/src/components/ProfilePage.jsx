@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
 import { cancelAndRefundOnchain, releaseEscrowPayoutToStoreOwner } from '../lib/web3';
-import { lookupPickupOrder, completePickupAndPayout } from '../lib/ordersRegistry';
+import { lookupPickupOrder, completePickupAndPayout, isItemCollectedInRegistry, markItemCollectedInRegistry } from '../lib/ordersRegistry';
 import { formatCurrency, formatNumber } from '../lib/formatters';
 import { INITIAL_USER_PROFILE, INITIAL_FEATURED_PASSPORT, BUYER_LOCATIONS, VERIFIED_MERCHANTS } from '../lib/catalogData';
 import { HualIcon } from './HualLogo';
@@ -502,6 +502,7 @@ export default function ProfilePage({
     if (passports) {
       const deletedIds = new Set(JSON.parse(localStorage.getItem('hual_deleted_passports') || '[]'));
       const refundedMap = JSON.parse(localStorage.getItem('hual_refunded_passports') || '{}');
+      const collectedMap = JSON.parse(localStorage.getItem('hual_collected_passports') || '{}');
       
       const filtered = passports
         .filter(p => {
@@ -522,7 +523,31 @@ export default function ProfilePage({
           const sStr = String(rawP.serialNumber || '');
           const iStr = String(rawP.id || '');
           const oStr = String(rawP.orderId || '');
+          const pNameStr = (rawP.productName || rawP.name || '').trim().toLowerCase();
+          const pPinStr = String(rawP.pickupPIN || '').trim();
+
           let p = { ...rawP };
+
+          // Persistent collected / delivered check
+          const isCol = 
+            collectedMap[tStr] || 
+            collectedMap[sStr] || 
+            collectedMap[iStr] || 
+            collectedMap[oStr] ||
+            (pPinStr && collectedMap[pPinStr]) ||
+            (pNameStr && collectedMap[pNameStr]) ||
+            isItemCollectedInRegistry(rawP);
+
+          if (isCol || rawP.currentState === 'COLLECTED' || rawP.isCollected) {
+            p.currentState = 'COLLECTED';
+            p.currentStateIndex = 4;
+            p.isCollected = true;
+            p.isDelivered = true;
+            if (isCol && isCol.txHash) {
+              p.payoutTxHash = p.payoutTxHash || isCol.txHash;
+            }
+          }
+
           if (refundedMap[tStr] || refundedMap[sStr] || refundedMap[iStr] || refundedMap[oStr]) {
             p.currentState = 'REFUNDED';
             p.currentStateIndex = 8;
@@ -535,6 +560,39 @@ export default function ProfilePage({
       setLocalPassports([]);
     }
   }, [passports]);
+
+  // Live listener for real-time order handover without page reload
+  useEffect(() => {
+    const handleOrderCollected = (e) => {
+      const item = e.detail?.item;
+      if (!item) return;
+      setLocalPassports(prev => {
+        return prev.map(p => {
+          const match = 
+            (p.orderId && item.orderId && String(p.orderId) === String(item.orderId)) ||
+            (p.pickupPIN && item.pickupPIN && String(p.pickupPIN) === String(item.pickupPIN)) ||
+            (p.tokenId && item.tokenId && String(p.tokenId) === String(item.tokenId)) ||
+            (p.serialNumber && item.serialNumber && p.serialNumber === item.serialNumber) ||
+            (p.id && item.id && String(p.id) === String(item.id)) ||
+            (p.productName && item.productName && p.productName.trim().toLowerCase() === item.productName.trim().toLowerCase()) ||
+            (p.name && item.name && p.name.trim().toLowerCase() === item.name.trim().toLowerCase());
+          if (match) {
+            return {
+              ...p,
+              currentState: 'COLLECTED',
+              currentStateIndex: 4,
+              isCollected: true,
+              isDelivered: true,
+              payoutTxHash: e.detail?.txHash || p.payoutTxHash || null
+            };
+          }
+          return p;
+        });
+      });
+    };
+    window.addEventListener('hual_order_collected', handleOrderCollected);
+    return () => window.removeEventListener('hual_order_collected', handleOrderCollected);
+  }, []);
 
   // Real user passports array with deduplication safety
   const effectivePassports = React.useMemo(() => {
@@ -833,6 +891,7 @@ export default function ProfilePage({
     };
 
     try {
+      markItemCollectedInRegistry(passport, null);
       const stored = JSON.parse(localStorage.getItem('hual_my_passports') || '[]');
       localStorage.setItem('hual_my_passports', JSON.stringify(updatePassportList(stored)));
 
@@ -845,14 +904,19 @@ export default function ProfilePage({
         localStorage.setItem(`hual_my_passports_${user.address.toLowerCase()}`, JSON.stringify(updatePassportList(addrStored)));
       }
 
+      setLocalPassports(prev => updatePassportList(prev));
+
       // Release escrow payment onchain to the seller
       if (storePayout) {
-        await releaseEscrowPayoutToStoreOwner({
+        const payoutRes = await releaseEscrowPayoutToStoreOwner({
           sellerAddress: storePayout,
           amountUsdc: releaseAmount,
           orderId: passport.orderId || passport.tokenId,
           orderName: passport.productName || passport.name
         });
+        if (payoutRes?.txHash) {
+          markItemCollectedInRegistry(passport, payoutRes.txHash);
+        }
       }
     } catch (err) {
       console.warn('Delivery receipt confirmation notice:', err);
@@ -929,6 +993,30 @@ export default function ProfilePage({
 
       setCounterHandoverTxHash(payoutRes?.txHash || null);
       setCounterHandoverSuccess(true);
+
+      // Instantly mark collected in local passports state
+      setLocalPassports(prev => prev.map(p => {
+        const match = 
+          (p.orderId && item.orderId && String(p.orderId) === String(item.orderId)) ||
+          (p.pickupPIN && item.pickupPIN && String(p.pickupPIN) === String(item.pickupPIN)) ||
+          (p.tokenId && item.tokenId && String(p.tokenId) === String(item.tokenId)) ||
+          (p.serialNumber && item.serialNumber && p.serialNumber === item.serialNumber) ||
+          (p.id && item.id && String(p.id) === String(item.id)) ||
+          (p.productName && item.productName && p.productName.trim().toLowerCase() === item.productName.trim().toLowerCase()) ||
+          (p.name && item.name && p.name.trim().toLowerCase() === item.name.trim().toLowerCase());
+        if (match) {
+          return {
+            ...p,
+            currentState: 'COLLECTED',
+            currentStateIndex: 4,
+            isCollected: true,
+            isDelivered: true,
+            payoutTxHash: payoutRes?.txHash || p.payoutTxHash || null
+          };
+        }
+        return p;
+      }));
+
       if (onRefreshData) onRefreshData();
 
       // Trigger balance refresh for the store owner
@@ -1739,7 +1827,8 @@ export default function ProfilePage({
                   hubPassport?.currentState === 'COMPLETED' || 
                   hubPassport?.currentState === 'OWNED' || 
                   Boolean(hubPassport?.isCollected) || 
-                  Boolean(hubPassport?.isDelivered);
+                  Boolean(hubPassport?.isDelivered) ||
+                  isItemCollectedInRegistry(hubPassport);
                 const hubIsCancelled = hubPassport?.isCancelled || hubPassport?.currentState === 'CANCELLED' || hubPassport?.currentState === 'REFUNDED';
 
                 return (
@@ -1777,7 +1866,7 @@ export default function ProfilePage({
                       style={{ padding: '10px 12px', justifyContent: 'flex-start', gap: '8px', fontSize: '0.78rem' }}
                     >
                       <QrCode size={14} color="var(--brand-green)" />
-                      <span>Pickup QR Pass</span>
+                      <span>{hubIsDeliveredOrCollected ? 'Ownership Pass' : 'Pickup QR Pass'}</span>
                     </button>
 
                     {/* Escrow Cancel & Refund Shortcut or Verified Active Status */}
@@ -1951,7 +2040,8 @@ export default function ProfilePage({
                 activeFeatured.currentState === 'COMPLETED' ||
                 activeFeatured.currentState === 'OWNED' ||
                 Boolean(activeFeatured.isCollected) ||
-                Boolean(activeFeatured.isDelivered);
+                Boolean(activeFeatured.isDelivered) ||
+                isItemCollectedInRegistry(activeFeatured);
               const fName = activeFeatured.productName || activeFeatured.name || 'Verified Luxury Asset';
               const fBrand = activeFeatured.productBrand || activeFeatured.brand || 'Authentic Brand';
               const fSerial = activeFeatured.serialNumber || `SN-HUAL-${activeFeatured.tokenId || '4821'}`;

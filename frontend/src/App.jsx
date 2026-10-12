@@ -724,6 +724,7 @@ function MainApp() {
 
       const deletedIds = new Set(JSON.parse(localStorage.getItem('hual_deleted_passports') || '[]'));
       const refundedMap = JSON.parse(localStorage.getItem('hual_refunded_passports') || '{}');
+      const collectedMap = JSON.parse(localStorage.getItem('hual_collected_passports') || '{}');
 
       const combined = (localStored.length > 0 || (myPass && myPass.length > 0))
         ? [...localStored, ...(myPass || [])].filter(p => p && String(p.tokenId) !== '4821' && p.serialNumber !== 'SN-AM95-4821')
@@ -736,6 +737,8 @@ function MainApp() {
         const serialStr = String(rawP.serialNumber || '');
         const idStr = String(rawP.id || '');
         const orderIdStr = String(rawP.orderId || '');
+        const pNameStr = (rawP.productName || rawP.name || '').trim().toLowerCase();
+        const pPinStr = String(rawP.pickupPIN || '').trim();
 
         // If this item was deleted by user, NEVER add it back
         if (deletedIds.has(tokenIdStr) || deletedIds.has(serialStr) || deletedIds.has(idStr) || deletedIds.has(orderIdStr)) {
@@ -746,8 +749,28 @@ function MainApp() {
         if (!seen.has(key)) {
           seen.add(key);
 
-          // Apply persistent refund status if cancelled
           let p = { ...rawP };
+
+          // Check persistent collected status
+          const isCollectedInMap = 
+            collectedMap[tokenIdStr] || 
+            collectedMap[serialStr] || 
+            collectedMap[idStr] || 
+            collectedMap[orderIdStr] ||
+            (pPinStr && collectedMap[pPinStr]) ||
+            (pNameStr && collectedMap[pNameStr]);
+
+          if (isCollectedInMap || rawP.currentState === 'COLLECTED' || rawP.isCollected) {
+            p.currentState = 'COLLECTED';
+            p.currentStateIndex = 4;
+            p.isCollected = true;
+            p.isDelivered = true;
+            if (isCollectedInMap && isCollectedInMap.txHash) {
+              p.payoutTxHash = p.payoutTxHash || isCollectedInMap.txHash;
+            }
+          }
+
+          // Apply persistent refund status if cancelled
           if (refundedMap[tokenIdStr] || refundedMap[serialStr] || refundedMap[idStr] || refundedMap[orderIdStr]) {
             p.currentState = 'REFUNDED';
             p.currentStateIndex = 8;
@@ -988,9 +1011,17 @@ function MainApp() {
                     onOpenRateSeller={handleOpenRateSeller}
                     onPassportMinted={(newPassport) => {
                       setMyPassports(prev => {
-                        const newKey = String(newPassport.tokenId || newPassport.serialNumber || newPassport.id);
-                        if (prev.some(p => String(p.tokenId || p.serialNumber || p.id) === newKey)) {
-                          return prev;
+                        const newKey = String(newPassport.tokenId || newPassport.serialNumber || newPassport.id || '');
+                        const newName = (newPassport.productName || newPassport.name || '').trim().toLowerCase();
+                        const idx = prev.findIndex(p => {
+                          const pKey = String(p.tokenId || p.serialNumber || p.id || '');
+                          const pName = (p.productName || p.name || '').trim().toLowerCase();
+                          return (newKey && pKey === newKey) || (newName && pName === newName);
+                        });
+                        if (idx >= 0) {
+                          const updated = [...prev];
+                          updated[idx] = { ...updated[idx], ...newPassport };
+                          return updated;
                         }
                         return [newPassport, ...prev];
                       });
@@ -1057,29 +1088,67 @@ function MainApp() {
                       setSelectedStore(null);
                     }}
                     onPassportMinted={(passportData) => {
-                      const newPass = {
-                        tokenId: Date.now(),
-                        productId: passportData.productId,
-                        productName: passportData.name,
-                        productBrand: passportData.brand,
-                        serialNumber: `SN-HUAL-${Date.now().toString().slice(-5)}`,
-                        originalMerchant: passportData.merchant,
-                        originalPriceUsd: passportData.priceUsd,
-                        purchaseTimestamp: new Date().toLocaleString(),
-                        warrantyExpiresAt: passportData.warrantyExpiry || '10/09/2027',
-                        daysRemainingWarranty: 365,
-                        deliveryMethod: passportData.deliveryMethod || 'delivery',
-                        currentState: 'COLLECTED',
-                        currentStateIndex: 4,
-                        imageUri: passportData.imageUri,
-                        paymentTxRef: `0x${Math.random().toString(16).substring(2, 28)}`,
-                        transferCount: 0
-                      };
-                      setMyPassports(prev => [newPass, ...prev]);
+                      const passName = (passportData.name || passportData.productName || '').trim().toLowerCase();
+                      setMyPassports(prev => {
+                        const idx = prev.findIndex(p => {
+                          const pName = (p.productName || p.name || '').trim().toLowerCase();
+                          const pId = String(p.productId || p.id || '');
+                          return (passName && pName === passName) || (passportData.productId && pId === String(passportData.productId));
+                        });
+
+                        if (idx >= 0) {
+                          const updated = [...prev];
+                          updated[idx] = {
+                            ...updated[idx],
+                            ...passportData,
+                            currentState: 'COLLECTED',
+                            currentStateIndex: 4,
+                            isCollected: true,
+                            isDelivered: true,
+                            payoutTxHash: passportData.payoutTxHash || updated[idx].payoutTxHash || null
+                          };
+                          return updated;
+                        }
+
+                        const newPass = {
+                          tokenId: Date.now(),
+                          productId: passportData.productId,
+                          productName: passportData.name,
+                          productBrand: passportData.brand,
+                          serialNumber: `SN-HUAL-${Date.now().toString().slice(-5)}`,
+                          originalMerchant: passportData.merchant,
+                          originalPriceUsd: passportData.priceUsd,
+                          purchaseTimestamp: new Date().toLocaleString(),
+                          warrantyExpiresAt: passportData.warrantyExpiry || '10/09/2027',
+                          daysRemainingWarranty: 365,
+                          deliveryMethod: passportData.deliveryMethod || 'delivery',
+                          currentState: 'COLLECTED',
+                          currentStateIndex: 4,
+                          isCollected: true,
+                          isDelivered: true,
+                          imageUri: passportData.imageUri,
+                          paymentTxRef: passportData.payoutTxHash || `0x${Math.random().toString(16).substring(2, 28)}`,
+                          transferCount: 0
+                        };
+                        return [newPass, ...prev];
+                      });
+
+                      // Also mark persistently in hual_collected_passports
+                      try {
+                        const colMap = JSON.parse(localStorage.getItem('hual_collected_passports') || '{}');
+                        if (passName) colMap[passName] = { collected: true, collectedAt: new Date().toISOString() };
+                        if (passportData.productId) colMap[String(passportData.productId)] = { collected: true, collectedAt: new Date().toISOString() };
+                        localStorage.setItem('hual_collected_passports', JSON.stringify(colMap));
+                      } catch {}
+
                       if (userKey) {
                         try {
                           const existing = JSON.parse(localStorage.getItem(`hual_my_passports_${userKey}`) || '[]');
-                          localStorage.setItem(`hual_my_passports_${userKey}`, JSON.stringify([newPass, ...existing]));
+                          const uIdx = existing.findIndex(p => (p.productName || p.name || '').trim().toLowerCase() === passName);
+                          if (uIdx >= 0) {
+                            existing[uIdx] = { ...existing[uIdx], currentState: 'COLLECTED', isCollected: true, isDelivered: true };
+                            localStorage.setItem(`hual_my_passports_${userKey}`, JSON.stringify(existing));
+                          }
                         } catch {}
                       }
                     }}
