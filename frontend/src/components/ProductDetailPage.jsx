@@ -19,11 +19,13 @@ import {
   Package, 
   ThumbsUp, 
   ChevronRight,
-  Info
+  Info,
+  Edit3
 } from 'lucide-react';
 import { formatNumber } from '../lib/formatters';
 import useScrollReveal from '../lib/useScrollReveal';
 import { useAuth } from '../lib/auth/AuthContext';
+import { VERIFIED_MERCHANTS } from '../lib/catalogData';
 
 export default function ProductDetailPage({
   product,
@@ -37,7 +39,8 @@ export default function ProductDetailPage({
   wishlist = [],
   onToggleWishlist,
   buyerLocation = 'Victoria Island, Lagos',
-  onNavigateToSignIn
+  onNavigateToSignIn,
+  onEditProduct
 }) {
   const { user, authenticated, userStore } = useAuth();
   const [selectedSize, setSelectedSize] = useState(product?.sizes?.[2] || product?.sizes?.[0] || 10);
@@ -72,6 +75,34 @@ export default function ProductDetailPage({
     if (product?.imageUri) return [product.imageUri];
     return ['/assets/air_max_95.jpg'];
   }, [product]);
+
+  // Robust merchant resolution for store navigation and store avatar
+  const merchantObj = useMemo(() => {
+    let list = [...VERIFIED_MERCHANTS];
+    try {
+      const stored = localStorage.getItem('hual_all_created_stores');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        list = [...parsed, ...list];
+      }
+    } catch {}
+    if (userStore) {
+      list = [userStore, ...list.filter(m => m.id !== userStore.id)];
+    }
+    const pId = product?.merchantId || product?.sellerId;
+    const pName = (product?.merchant || product?.store || '').toLowerCase().trim();
+    if (pId) {
+      const found = list.find(m => String(m.id) === String(pId));
+      if (found) return found;
+    }
+    if (pName) {
+      const found = list.find(m => (m.name || '').toLowerCase().trim() === pName);
+      if (found) return found;
+    }
+    return null;
+  }, [product, userStore]);
+
+  const storeAvatar = product?.merchantAvatar || product?.storeAvatar || product?.storeImage || merchantObj?.avatar || merchantObj?.logo || null;
 
   // Load reviews specific to this product
   // Things paid for but then cancelled must NEVER have a review!
@@ -460,17 +491,33 @@ export default function ProductDetailPage({
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '10px',
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
                   background: '#080F0F',
-                  border: '1px solid var(--brand-green)',
+                  border: '1px solid rgba(132, 244, 59, 0.4)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  flexShrink: 0
                 }}>
-                  <Store size={18} color="var(--brand-green)" />
+                  {storeAvatar ? (
+                    <img 
+                      src={storeAvatar} 
+                      alt={product.merchant || 'Store Avatar'} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.nextSibling) {
+                          e.currentTarget.nextSibling.style.display = 'flex';
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <div style={{ display: storeAvatar ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
+                    <Store size={20} color="var(--brand-green)" />
+                  </div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -621,18 +668,35 @@ export default function ProductDetailPage({
 
             if (isMyProduct) {
               return (
-                <div style={{
-                  padding: '14px 20px',
-                  borderRadius: '16px',
-                  background: '#121C1C',
-                  border: '1.5px solid rgba(255, 255, 255, 0.12)',
-                  color: '#9CA3AF',
-                  textAlign: 'center',
-                  fontSize: '0.86rem',
-                  fontWeight: 700,
-                  marginTop: '6px'
-                }}>
-                  You own this store listing (Store owners cannot buy their own items)
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                  <div style={{
+                    padding: '10px 16px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    color: '#9CA3AF',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    textAlign: 'center'
+                  }}>
+                    You own this store listing (Store owners cannot buy their own items)
+                  </div>
+                  <button
+                    onClick={() => onEditProduct && onEditProduct(product)}
+                    className="btn-pill-primary"
+                    style={{
+                      width: '100%',
+                      padding: '14px',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <Edit3 size={16} />
+                    <span>Edit Store Listing</span>
+                  </button>
                 </div>
               );
             }

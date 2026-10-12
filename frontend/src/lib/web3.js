@@ -589,12 +589,12 @@ export async function listProductOnchain({
   allowsPickup = true,
   allowsDelivery = true,
 }) {
-  try {
-    const relayer = getRelayerSigner();
-    const commerce = getCommerceContract(relayer);
-    const priceUsdCents = Math.round(priceUsd * 100);
-    const warrantyDurationSeconds = (warrantyMonths || 12) * 30 * 24 * 3600;
+  const relayer = getRelayerSigner();
+  const commerce = getCommerceContract(relayer);
+  const priceUsdCents = Math.round(priceUsd * 100);
+  const warrantyDurationSeconds = (warrantyMonths || 12) * 30 * 24 * 3600;
 
+  try {
     const tx = await commerce.listProduct(
       name,
       brand,
@@ -605,12 +605,33 @@ export async function listProductOnchain({
       warrantyDurationSeconds,
       stock,
       allowsPickup,
-      allowsDelivery
+      allowsDelivery,
+      { gasLimit: 500000 }
     );
-    const receipt = await tx.wait();
-    return receipt.hash;
+    const receipt = await tx.wait(1);
+    return receipt.hash || tx.hash;
   } catch (err) {
-    console.warn('listProduct onchain notice:', err?.message || err);
-    return `0x${Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('')}`;
+    console.error('listProduct onchain transaction error:', err);
+    // If gas estimation issue, retry once with explicit higher gasLimit
+    try {
+      const tx = await commerce.listProduct(
+        name,
+        brand,
+        category,
+        imageUri,
+        description,
+        priceUsdCents,
+        warrantyDurationSeconds,
+        stock,
+        allowsPickup,
+        allowsDelivery,
+        { gasLimit: 750000 }
+      );
+      const receipt = await tx.wait(1);
+      return receipt.hash || tx.hash;
+    } catch (retryErr) {
+      console.error('listProduct onchain retry failed:', retryErr);
+      throw retryErr;
+    }
   }
 }

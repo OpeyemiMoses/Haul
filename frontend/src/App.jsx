@@ -159,9 +159,71 @@ function MainApp() {
     return false;
   });
   const [createStoreOpen, setCreateStoreOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [forcedModal, setForcedModal] = useState(null);
   const [aiSupportOpen, setAiSupportOpen] = useState(false);
   const [aiSupportOrderContext, setAiSupportOrderContext] = useState(null);
+
+  // Helper to resolve the correct store object for any product or merchant reference
+  const resolveStoreForProduct = (item) => {
+    if (!item) return null;
+    if (item.handle && item.name && (item.avatar || item.banner)) {
+      return item;
+    }
+
+    // 1. Check userStore
+    if (userStore && (
+      (item.merchantId && String(item.merchantId) === String(userStore.id)) ||
+      (item.merchant && userStore.name && item.merchant.toLowerCase() === userStore.name.toLowerCase()) ||
+      (item.seller && userStore.ownerAddress && item.seller.toLowerCase() === userStore.ownerAddress.toLowerCase())
+    )) {
+      return userStore;
+    }
+
+    // 2. Check all locally created stores
+    try {
+      const created = JSON.parse(localStorage.getItem('hual_all_created_stores') || '[]');
+      const match = created.find(s => 
+        (item.merchantId && String(s.id) === String(item.merchantId)) ||
+        (item.merchant && s.name && item.merchant.toLowerCase() === s.name.toLowerCase()) ||
+        (item.seller && s.ownerAddress && item.seller.toLowerCase() === s.ownerAddress.toLowerCase())
+      );
+      if (match) return match;
+    } catch {}
+
+    // 3. Check verified flagships
+    const verified = VERIFIED_MERCHANTS.find(m => 
+      (item.merchantId && m.id === item.merchantId) ||
+      (item.merchant && m.name && item.merchant.toLowerCase() === m.name.toLowerCase()) ||
+      (item.brand && m.name && m.name.toLowerCase().includes(item.brand.toLowerCase()))
+    );
+    if (verified) return verified;
+
+    // 4. Construct dynamic store object so it never routes to the wrong store
+    if (item.merchant) {
+      return {
+        id: item.merchantId || `store-${item.merchant.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+        name: item.merchant,
+        handle: `@${item.merchant.toLowerCase().replace(/[^a-z0-9]/g, '')}.hual`,
+        verified: true,
+        category: item.category || 'Curated Goods',
+        location: item.merchantLocation || 'Victoria Island, Lagos',
+        rating: 5.0,
+        reviewsCount: 1,
+        followersCount: '1.2k',
+        avatar: item.merchantAvatar || item.storeAvatar || item.storeImage || item.imageUri || '/assets/air_max_95.jpg',
+        banner: item.storeBanner || '/assets/nike_store_banner.jpg',
+        pickupTime: 'Ready in 30 mins',
+        deliveryTime: 'Same-day courier',
+        operatingHours: 'Mon - Sat: 9:00 AM - 7:00 PM',
+        phone: '+234 1 800 4825',
+        description: `Official storefront for ${item.merchant} on Hual. All products backed by verifiable digital Product Passports.`,
+        ownerAddress: item.seller || item.ownerAddress
+      };
+    }
+
+    return VERIFIED_MERCHANTS[0];
+  };
 
   // All pages, tabs, and views always start strictly from the top
   useEffect(() => {
@@ -862,7 +924,10 @@ function MainApp() {
                       loadData();
                       setActiveTab('passports');
                     }}
-                    onOpenSellModal={() => setSellModalOpen(true)}
+                    onOpenSellModal={(prod) => {
+                      setEditingProduct(prod || null);
+                      setSellModalOpen(true);
+                    }}
                     onOpenCreateStore={() => setCreateStoreOpen(true)}
                     onOpenInbox={handleOpenInbox}
                     searchQuery={searchQuery}
@@ -952,7 +1017,8 @@ function MainApp() {
                     onToggleFollowStore={toggleFollowStore}
                     targetContext={inboxChatTarget}
                     onOpenStore={(merchantObj) => {
-                      setSelectedStore(merchantObj);
+                      const store = resolveStoreForProduct(merchantObj);
+                      setSelectedStore(store);
                       setActiveTab('shop');
                     }}
                     onStartCheckout={(product) => {
@@ -980,8 +1046,8 @@ function MainApp() {
                       setActiveTab('inbox');
                     }}
                     onOpenStore={(item) => {
-                      const merchantObj = VERIFIED_MERCHANTS.find(m => m.id === item.merchantId) || VERIFIED_MERCHANTS[0];
-                      setSelectedStore(merchantObj);
+                      const store = resolveStoreForProduct(item);
+                      setSelectedStore(store);
                       setActiveTab('shop');
                     }}
                     onOpenRateSeller={(item) => {
@@ -1003,7 +1069,8 @@ function MainApp() {
                       setActiveTab(tab);
                     }}
                     onOpenStore={(merchantObj) => {
-                      setSelectedStore(merchantObj);
+                      const store = resolveStoreForProduct(merchantObj);
+                      setSelectedStore(store);
                       setActiveTab('shop');
                     }}
                     onStartCheckout={(product) => {
@@ -1029,7 +1096,10 @@ function MainApp() {
                     onToggleWishlist={toggleWishlist}
                     onRemoveFromWishlist={removeFromWishlist}
                     onNavigateTab={(tab) => setActiveTab(tab)}
-                    onOpenSellModal={() => setSellModalOpen(true)}
+                    onOpenSellModal={(prod) => {
+                      setEditingProduct(prod || null);
+                      setSellModalOpen(true);
+                    }}
                     onRefreshData={loadData}
                     forcedModal={forcedModal}
                     onClearForcedModal={() => setForcedModal(null)}
@@ -1038,7 +1108,8 @@ function MainApp() {
                     onToggleFollowStore={toggleFollowStore}
                     onOpenRateSeller={handleOpenRateSeller}
                     onOpenStore={(merchantObj) => {
-                      setSelectedStore(merchantObj);
+                      const store = resolveStoreForProduct(merchantObj);
+                      setSelectedStore(store);
                       setActiveTab('shop');
                     }}
                     onAddToCart={addToCart}
@@ -1156,8 +1227,22 @@ function MainApp() {
       {/* Universal Sell / List Product Modal */}
       <SellProductModal
         isOpen={sellModalOpen}
-        onClose={() => setSellModalOpen(false)}
+        onClose={() => {
+          setSellModalOpen(false);
+          setEditingProduct(null);
+        }}
         onOpenCreateStore={() => setCreateStoreOpen(true)}
+        productToEdit={editingProduct}
+        onProductUpdated={(updatedProd) => {
+          if (updatedProd) {
+            setProducts(prev => prev.map(p => 
+              (String(p.id) === String(updatedProd.id) || String(p.productId) === String(updatedProd.productId)) ? updatedProd : p
+            ));
+          }
+          loadData();
+          setSellModalOpen(false);
+          setEditingProduct(null);
+        }}
         onProductListed={(newProd) => {
           if (newProd) {
             setProducts(prev => [newProd, ...prev.filter(p => String(p.id || p.productId) !== String(newProd.id || newProd.productId))]);

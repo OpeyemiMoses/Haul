@@ -197,12 +197,20 @@ export default function Marketplace({
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const [chatContext, setChatContext] = useState({ merchant: null, product: null });
 
-  // Merge user-created store if available into verified merchants list
+  // Merge user-created store and all created stores from storage into verified merchants list
   const allMerchants = useMemo(() => {
+    let list = [...VERIFIED_MERCHANTS];
+    try {
+      const stored = localStorage.getItem('hual_all_created_stores');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        list = [...parsed, ...list.filter(m => !parsed.some(p => p.id === m.id))];
+      }
+    } catch {}
     if (userStore) {
-      return [userStore, ...VERIFIED_MERCHANTS.filter(m => m.id !== userStore.id)];
+      list = [userStore, ...list.filter(m => m.id !== userStore.id)];
     }
-    return VERIFIED_MERCHANTS;
+    return list;
   }, [userStore]);
 
   // Helper to resolve merchant object for any product
@@ -250,6 +258,29 @@ export default function Marketplace({
     if (pBrand.includes('nike') || pBrand.includes('aether') || pCat.includes('footwear') || pCat.includes('apparel')) {
       const nike = list.find(m => m.id === 'nike-lagos');
       if (nike) return nike;
+    }
+
+    // 4. Construct dynamic store object for custom listings so it never routes to the wrong store
+    if (prod.merchant) {
+      return {
+        id: prod.merchantId || `store-${prod.merchant.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
+        name: prod.merchant,
+        handle: `@${prod.merchant.toLowerCase().replace(/[^a-z0-9]/g, '')}.hual`,
+        verified: true,
+        category: prod.category || 'Curated Goods',
+        location: prod.merchantLocation || 'Victoria Island, Lagos',
+        rating: 5.0,
+        reviewsCount: 1,
+        followersCount: '1.2k',
+        avatar: prod.merchantAvatar || prod.storeAvatar || prod.storeImage || prod.imageUri || '/assets/air_max_95.jpg',
+        banner: prod.storeBanner || '/assets/nike_store_banner.jpg',
+        pickupTime: 'Ready in 30 mins',
+        deliveryTime: 'Same-day courier',
+        operatingHours: 'Mon - Sat: 9:00 AM - 7:00 PM',
+        phone: '+234 1 800 4825',
+        description: `Official storefront for ${prod.merchant} on Hual. All products backed by verifiable digital Product Passports.`,
+        ownerAddress: prod.seller || prod.ownerAddress
+      };
     }
 
     return list[0] || VERIFIED_MERCHANTS[0];
@@ -662,6 +693,9 @@ export default function Marketplace({
           onToggleWishlist={onToggleWishlist}
           buyerLocation={buyerLocation}
           onNavigateToSignIn={onNavigateToSignIn}
+          onEditProduct={(prod) => {
+            if (onOpenSellModal) onOpenSellModal(prod);
+          }}
         />
       ) : (
         <>
@@ -1710,10 +1744,53 @@ export default function Marketplace({
                     }}
                     title="Click to visit merchant storefront"
                   >
-                    <Store size={12} />
+                    <div style={{
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      background: '#080F0F',
+                      border: '1px solid rgba(132, 244, 59, 0.4)',
+                      overflow: 'hidden',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      {(product.merchantAvatar || product.storeAvatar || merchantObj?.avatar) ? (
+                        <img 
+                          src={product.merchantAvatar || product.storeAvatar || merchantObj?.avatar} 
+                          alt="" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                      ) : (
+                        <Store size={10} color="var(--brand-green)" />
+                      )}
+                    </div>
                     <span>Sold by {product.merchant || merchantObj.name}</span>
                     <CheckCircle2 size={10} />
-                    <span style={{ fontSize: '0.66rem', color: '#9CA3AF', marginLeft: 'auto', textDecoration: 'underline' }}>Storefront →</span>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {(isMerchantMyStore(merchantObj) || (user?.address && product.seller && user.address.toLowerCase() === product.seller.toLowerCase())) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onOpenSellModal) onOpenSellModal(product);
+                          }}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.08)',
+                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                            borderRadius: '999px',
+                            color: '#FFFFFF',
+                            fontSize: '0.62rem',
+                            fontWeight: 700,
+                            padding: '2px 7px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Edit
+                        </button>
+                      )}
+                      <span style={{ fontSize: '0.66rem', color: '#9CA3AF', textDecoration: 'underline' }}>Storefront →</span>
+                    </div>
                   </div>
 
                   <div style={{ fontSize: '0.7rem', color: '#9CA3AF', display: 'flex', alignItems: 'center', gap: '4px' }}>

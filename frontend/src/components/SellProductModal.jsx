@@ -122,7 +122,14 @@ const PHONE_STORAGES = ['64GB', '128GB', '256GB', '512GB', '1TB'];
 const COMPUTER_CONFIGS = ['16GB / 512GB', '18GB / 512GB', '36GB / 1TB', '64GB / 2TB', '128GB / 4TB'];
 const WATCH_SIZES = ['36mm', '39mm', '40mm', '41mm', '42mm', '44mm'];
 
-export default function SellProductModal({ isOpen, onClose, onProductListed, onOpenCreateStore }) {
+export default function SellProductModal({ 
+  isOpen, 
+  onClose, 
+  onProductListed, 
+  onOpenCreateStore,
+  productToEdit = null,
+  onProductUpdated = null
+}) {
   const { user, userRole, userStore } = useAuth();
   
   // Basic Info
@@ -163,6 +170,47 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
   const [loading, setLoading] = useState(false);
   const [successTx, setSuccessTx] = useState(null);
   const [error, setError] = useState(null);
+
+  // Prepopulate if editing
+  React.useEffect(() => {
+    if (productToEdit) {
+      setName(productToEdit.name || '');
+      setBrand(productToEdit.brand || '');
+      setCategory(productToEdit.category || 'Shoes & Footwear');
+      setPriceUsd(productToEdit.priceUsd ? String(productToEdit.priceUsd) : '185');
+      setStock(productToEdit.stock !== undefined ? String(productToEdit.stock) : '1');
+      setWarrantyMonths(productToEdit.warrantyMonths ? String(productToEdit.warrantyMonths) : '12');
+      setDescription(productToEdit.description || '');
+      setImageUri(productToEdit.imageUri || productToEdit.images?.[0] || '');
+      setImageFileName(productToEdit.name ? `${productToEdit.name}.jpg` : '');
+      if (productToEdit.sizes && Array.isArray(productToEdit.sizes)) {
+        setSelectedSizes(productToEdit.sizes);
+      }
+      if (productToEdit.color) setColor(productToEdit.color);
+      if (productToEdit.condition) setCondition(productToEdit.condition);
+      if (productToEdit.storage) setStorage(productToEdit.storage);
+      if (productToEdit.specs?.material) setMaterial(productToEdit.specs.material);
+      if (productToEdit.specs?.fit) setFit(productToEdit.specs.fit);
+      if (productToEdit.specs?.processor) setProcessor(productToEdit.specs.processor);
+      if (productToEdit.allowsPickup !== undefined) setAllowsPickup(productToEdit.allowsPickup);
+      if (productToEdit.allowsDelivery !== undefined) setAllowsDelivery(productToEdit.allowsDelivery);
+    } else {
+      setName('');
+      setBrand('');
+      setCategory('Shoes & Footwear');
+      setPriceUsd('185');
+      setStock('5');
+      setWarrantyMonths('12');
+      setDescription('');
+      setImageUri('');
+      setImageFileName('');
+      setSelectedSizes(['EU 41', 'EU 42', 'EU 43', 'EU 44']);
+      setColor('');
+      setCondition('Brand New In Box');
+      setAllowsPickup(true);
+      setAllowsDelivery(true);
+    }
+  }, [productToEdit, isOpen]);
 
   if (!isOpen) return null;
 
@@ -248,28 +296,78 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
     setSuccessTx(null);
 
     try {
-      let txHash = `0x${Math.random().toString(16).slice(2, 10)}${Date.now().toString(16)}`;
-      try {
-        txHash = await listProductOnchain({
-          name: name.trim(),
-          brand: brand.trim(),
-          category: finalCategory,
-          imageUri: imageUri.trim() || '/assets/air_max_95.jpg',
-          description: description.trim() || `Authentic ${brand} ${name} backed by living onchain Product Passport.`,
-          priceUsd: parseFloat(priceUsd),
-          warrantyMonths: parseInt(warrantyMonths, 10) || 12,
-          stock: parseInt(stock, 10) || 1,
-          allowsPickup,
-          allowsDelivery
-        });
-      } catch (onchainErr) {
-        console.warn('Listing local fallback used:', onchainErr);
-      }
-
       // Format applicable sizes and options based on category
       const isFootwear = finalCategory === 'Shoes & Footwear';
       const isApparel = finalCategory === 'Clothing & Apparel';
       const hasSizes = (isFootwear || isApparel) && selectedSizes.length > 0;
+
+      if (productToEdit) {
+        const updatedProduct = {
+          ...productToEdit,
+          name: name.trim(),
+          brand: brand.trim(),
+          category: finalCategory,
+          sizes: hasSizes ? selectedSizes : null,
+          color: color.trim() || null,
+          condition: condition.trim() || 'Brand New',
+          storage: finalCategory.includes('Phone') || finalCategory.includes('Computing') ? storage : null,
+          specs: {
+            ...(productToEdit.specs || {}),
+            material: material.trim() || null,
+            fit: fit.trim() || null,
+            caseDiameter: finalCategory.includes('Watch') ? caseDiameter : null,
+            movement: finalCategory.includes('Watch') ? movement : null,
+            boxAndPapers: finalCategory.includes('Watch') ? boxAndPapers : null,
+            processor: processor.trim() || null
+          },
+          imageUri: imageUri.trim() || productToEdit.imageUri || '/assets/air_max_95.jpg',
+          images: [imageUri.trim() || productToEdit.imageUri || '/assets/air_max_95.jpg'],
+          description: description.trim() || productToEdit.description,
+          priceUsd: parseFloat(priceUsd),
+          priceUsdCents: Math.round(parseFloat(priceUsd) * 100),
+          warrantyDurationSeconds: (parseInt(warrantyMonths, 10) || 12) * 30 * 24 * 3600,
+          warrantyMonths: parseInt(warrantyMonths, 10) || 12,
+          stock: parseInt(stock, 10) || 1,
+          merchant: userStore?.name || productToEdit.merchant || user?.name || 'Verified Merchant',
+          merchantId: userStore?.id || productToEdit.merchantId || 'user-store',
+          merchantLocation: userStore?.location || productToEdit.merchantLocation || 'Victoria Island, Lagos',
+          merchantAvatar: userStore?.avatar || userStore?.logo || productToEdit.merchantAvatar || '/assets/air_max_95.jpg',
+          storeAvatar: userStore?.avatar || userStore?.logo || productToEdit.storeAvatar || '/assets/air_max_95.jpg',
+          storeImage: userStore?.avatar || userStore?.banner || productToEdit.storeImage || '/assets/nike_store_banner.jpg',
+          seller: user?.address || productToEdit.seller || null,
+          ownerAddress: user?.address || productToEdit.ownerAddress || null,
+          allowsPickup,
+          allowsDelivery
+        };
+
+        try {
+          const existing = JSON.parse(localStorage.getItem('hual_custom_listed_products') || '[]');
+          const updatedList = existing.map(p => 
+            (String(p.id) === String(productToEdit.id) || String(p.productId) === String(productToEdit.productId)) ? updatedProduct : p
+          );
+          localStorage.setItem('hual_custom_listed_products', JSON.stringify(updatedList));
+        } catch {}
+
+        setSuccessTx(productToEdit.txHash || productToEdit.monadTxHash || 'updated');
+        if (onProductUpdated) {
+          onProductUpdated(updatedProduct);
+        }
+        return;
+      }
+
+      // New product onchain listing with verified transaction execution
+      const txHash = await listProductOnchain({
+        name: name.trim(),
+        brand: brand.trim(),
+        category: finalCategory,
+        imageUri: imageUri.trim() || '/assets/air_max_95.jpg',
+        description: description.trim() || `Authentic ${brand} ${name} backed by living onchain Product Passport.`,
+        priceUsd: parseFloat(priceUsd),
+        warrantyMonths: parseInt(warrantyMonths, 10) || 12,
+        stock: parseInt(stock, 10) || 1,
+        allowsPickup,
+        allowsDelivery
+      });
 
       const newProduct = {
         id: Date.now(),
@@ -300,6 +398,9 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
         merchant: userStore?.name || user?.name || 'Verified Merchant',
         merchantId: userStore?.id || 'user-store',
         merchantLocation: userStore?.location || 'Victoria Island, Lagos',
+        merchantAvatar: userStore?.avatar || userStore?.logo || '/assets/air_max_95.jpg',
+        storeAvatar: userStore?.avatar || userStore?.logo || '/assets/air_max_95.jpg',
+        storeImage: userStore?.avatar || userStore?.banner || '/assets/nike_store_banner.jpg',
         seller: user?.address || null,
         ownerAddress: user?.address || null,
         onchain: true,
@@ -397,13 +498,17 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>List Any Item for Sale</h2>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                  {productToEdit ? 'Edit Store Listing' : 'List Any Item for Sale'}
+                </h2>
                 <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: 'var(--brand-green-dim)', color: 'var(--brand-green)', border: '1px solid var(--brand-green-border)' }}>
-                  Onchain Catalog
+                  {productToEdit ? 'Edit Mode' : 'Onchain Catalog'}
                 </span>
               </div>
               <p style={{ fontSize: '0.82rem', color: '#9CA3AF', marginTop: '3px' }}>
-                Pick a category to customize options (sizes, color, stock left, condition) for this item.
+                {productToEdit 
+                  ? 'Update product pricing, stock availability, specifications, and fulfillment options.'
+                  : 'Pick a category to customize options (sizes, color, stock left, condition) for this item.'}
               </p>
             </div>
           </div>
@@ -1340,7 +1445,9 @@ export default function SellProductModal({ isOpen, onClose, onProductListed, onO
                   className="btn-pill-primary"
                   style={{ padding: '10px 24px', fontWeight: 800 }}
                 >
-                  {loading ? 'Publishing to Catalog...' : 'Publish to Catalog'}
+                  {loading 
+                    ? (productToEdit ? 'Saving Changes...' : 'Publishing to Catalog...') 
+                    : (productToEdit ? 'Save Changes' : 'Publish to Catalog')}
                 </button>
               </div>
             </form>

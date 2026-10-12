@@ -333,6 +333,11 @@ export function AuthProvider({ children }) {
       if (activeUserKey) {
         localStorage.setItem(`hual_user_store_${activeUserKey}`, JSON.stringify(updated));
       }
+      try {
+        const existing = JSON.parse(localStorage.getItem('hual_all_created_stores') || '[]');
+        const updatedList = [updated, ...existing.filter(s => s.id !== updated.id)];
+        localStorage.setItem('hual_all_created_stores', JSON.stringify(updatedList));
+      } catch {}
       return updated;
     });
   };
