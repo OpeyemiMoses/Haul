@@ -1,0 +1,397 @@
+import { ethers } from 'ethers';
+import { releaseEscrowPayoutToStoreOwner } from './web3';
+
+const ESCROW_ORDERS_KEY = 'hual_escrow_orders';
+const PICKUP_ORDERS_KEY = 'hual_all_pickup_orders';
+
+/**
+ * Record a new order in all storage locations with pickup PIN and seller address
+ */
+export function recordNewOrder({
+  orderId,
+  buyerAddress,
+  buyerId,
+  sellerAddress,
+  merchant,
+  merchantId,
+  merchantLocation,
+  merchantAvatar,
+  deliveryMethod,
+  pickupPIN,
+  items = [],
+  txHash,
+  totalAmount,
+  tokenId,
+  serialNumber
+}) {
+  const now = new Date().toISOString();
+  const safePin = pickupPIN ? String(pickupPIN).trim() : null;
+
+  // 1. Save to dedicated Pickup Orders registry if pickup order
+  if (deliveryMethod === 'pickup' && safePin) {
+    try {
+      const existingPickups = JSON.parse(localStorage.getItem(PICKUP_ORDERS_KEY) || '[]');
+      const pickupRecord = {
+        orderId: String(orderId),
+        pickupPIN: safePin,
+        buyerAddress: buyerAddress ? buyerAddress.toLowerCase() : null,
+        buyerId: buyerId || null,
+        sellerAddress: sellerAddress ? sellerAddress.toLowerCase() : null,
+        merchant: merchant || 'Verified Merchant Store',
+        merchantId: merchantId || null,
+        merchantLocation: merchantLocation || 'Victoria Island, Lagos',
+        merchantAvatar: merchantAvatar || null,
+        deliveryMethod: 'pickup',
+        status: 'in_escrow',
+        priceUsd: totalAmount || (items[0]?.priceUsd) || 0,
+        totalAmount: totalAmount || (items[0]?.priceUsd) || 0,
+        productName: items[0]?.name || 'Luxury Asset',
+        productBrand: items[0]?.brand || 'Authentic Brand',
+        imageUri: items[0]?.imageUri || null,
+        tokenId: tokenId || items[0]?.tokenId || null,
+        serialNumber: serialNumber || items[0]?.serialNumber || null,
+        txHash: txHash || null,
+        createdAt: now,
+        items: items.map(it => ({
+          ...it,
+          pickupPIN: safePin,
+          sellerAddress: sellerAddress || it.sellerAddress || null
+        }))
+      };
+
+      const updatedPickups = [pickupRecord, ...existingPickups.filter(p => p.orderId !== String(orderId) && p.pickupPIN !== safePin)];
+      localStorage.setItem(PICKUP_ORDERS_KEY, JSON.stringify(updatedPickups));
+    } catch (e) {
+      console.warn('Failed recording pickup order to registry:', e);
+    }
+  }
+
+  // 2. Save / update in hual_escrow_orders
+  try {
+    const existingEscrow = JSON.parse(localStorage.getItem(ESCROW_ORDERS_KEY) || '[]');
+    const escrowOrder = {
+      orderId: String(orderId),
+      totalAmount: totalAmount || (items.reduce((acc, it) => acc + (it.priceUsd * (it.quantity || 1)), 0)),
+      itemCount: items.length,
+      createdAt: now,
+      buyerAddress: buyerAddress ? buyerAddress.toLowerCase() : null,
+      buyerId: buyerId || null,
+      sellerAddress: sellerAddress ? sellerAddress.toLowerCase() : null,
+      merchant: merchant || 'Verified Merchant Store',
+      merchantId: merchantId || null,
+      merchantLocation: merchantLocation || 'Victoria Island, Lagos',
+      merchantAvatar: merchantAvatar || null,
+      deliveryMethod: deliveryMethod || 'pickup',
+      pickupPIN: safePin,
+      status: 'in_escrow',
+      txHash: txHash || null,
+      items: items.map((it, idx) => ({
+        orderItemId: it.orderItemId || `item-${Date.now()}-${idx}`,
+        productId: it.productId,
+        name: it.name,
+        priceUsd: it.priceUsd,
+        quantity: it.quantity || 1,
+        size: it.size || it.selectedSize || 'Standard',
+        merchant: merchant || it.merchant || 'Verified Merchant Store',
+        merchantId: merchantId || it.merchantId || null,
+        sellerAddress: sellerAddress || it.sellerAddress || null,
+        merchantLocation: merchantLocation || it.merchantLocation || 'Victoria Island, Lagos',
+        merchantAvatar: merchantAvatar || it.merchantAvatar || null,
+        imageUri: it.imageUri,
+        brand: it.brand || 'Luxury Goods',
+        status: 'in_escrow',
+        escrowAmount: it.priceUsd * (it.quantity || 1),
+        purchasedAt: now,
+        deliveryMethod: deliveryMethod || 'pickup',
+        pickupPIN: safePin,
+        tokenId: tokenId || it.tokenId || null,
+        serialNumber: serialNumber || it.serialNumber || null,
+        txHash: txHash || null
+      }))
+    };
+
+    const updatedEscrow = [escrowOrder, ...existingEscrow.filter(o => o.orderId !== String(orderId))];
+    localStorage.setItem(ESCROW_ORDERS_KEY, JSON.stringify(updatedEscrow));
+  } catch (e) {
+    console.warn('Failed recording escrow order:', e);
+  }
+}
+
+/**
+ * Robust pickup code lookup that scans dedicated pickups registry, escrow orders, and all passports
+ */
+export function lookupPickupOrder(rawCode) {
+  if (!rawCode) return null;
+
+  let query = String(rawCode).trim().toUpperCase();
+
+  // Try parsing JSON QR code payload
+  if (query.startsWith('{') && query.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(rawCode);
+      if (parsed.pin) query = String(parsed.pin).trim().toUpperCase();
+      else if (parsed.pickupPIN) query = String(parsed.pickupPIN).trim().toUpperCase();
+      else if (parsed.orderId) query = String(parsed.orderId).trim().toUpperCase();
+      else if (parsed.tokenId) query = String(parsed.tokenId).trim().toUpperCase();
+    } catch {}
+  }
+
+  // Try extracting pin parameter from URL (e.g. haul://verify-pickup?...&pin=6939)
+  if (rawCode.includes('pin=')) {
+    const pinMatch = rawCode.match(/[?&]pin=([0-9a-zA-Z]+)/i);
+    if (pinMatch && pinMatch[1]) {
+      query = pinMatch[1].trim().toUpperCase();
+    }
+  }
+
+  // Also strip prefixes like "PIN:", "CODE:", "HUAL-" if entered
+  const cleanedPin = query.replace(/^(PIN:|CODE:|HUAL-PIN-|#)/i, '').trim();
+
+  // 1. Search in dedicated hual_all_pickup_orders registry
+  try {
+    const pickups = JSON.parse(localStorage.getItem(PICKUP_ORDERS_KEY) || '[]');
+    const match = pickups.find(p => {
+      if (!p) return false;
+      const pin = String(p.pickupPIN || '').trim().toUpperCase();
+      const ordId = String(p.orderId || '').trim().toUpperCase();
+      const tok = String(p.tokenId || '').trim().toUpperCase();
+      const sn = String(p.serialNumber || '').trim().toUpperCase();
+      return pin === query || pin === cleanedPin || ordId === query || tok === query || (sn && sn.includes(query));
+    });
+
+    if (match) {
+      return {
+        ...match,
+        source: 'pickup_registry',
+        originalPriceUsd: match.priceUsd || match.totalAmount
+      };
+    }
+  } catch {}
+
+  // 2. Search in hual_escrow_orders
+  try {
+    const escrowOrders = JSON.parse(localStorage.getItem(ESCROW_ORDERS_KEY) || '[]');
+    for (const ord of escrowOrders) {
+      if (!ord) continue;
+      const ordPin = String(ord.pickupPIN || '').trim().toUpperCase();
+      const ordId = String(ord.orderId || '').trim().toUpperCase();
+
+      if (ordPin === query || ordPin === cleanedPin || ordId === query) {
+        const primaryItem = ord.items?.[0] || {};
+        return {
+          orderId: ord.orderId,
+          pickupPIN: ord.pickupPIN,
+          buyerAddress: ord.buyerAddress,
+          sellerAddress: ord.sellerAddress || primaryItem.sellerAddress,
+          merchant: ord.merchant || primaryItem.merchant,
+          merchantId: ord.merchantId || primaryItem.merchantId,
+          merchantLocation: ord.merchantLocation || primaryItem.merchantLocation,
+          productName: primaryItem.name || 'Luxury Goods',
+          productBrand: primaryItem.brand || 'Authentic Asset',
+          imageUri: primaryItem.imageUri,
+          originalPriceUsd: ord.totalAmount || primaryItem.priceUsd,
+          priceUsd: ord.totalAmount || primaryItem.priceUsd,
+          status: ord.status || primaryItem.status,
+          source: 'escrow_order',
+          items: ord.items
+        };
+      }
+
+      // Check items inside order
+      for (const item of (ord.items || [])) {
+        const itPin = String(item.pickupPIN || '').trim().toUpperCase();
+        const itTok = String(item.tokenId || '').trim().toUpperCase();
+        const itSn = String(item.serialNumber || '').trim().toUpperCase();
+        const itId = String(item.orderItemId || '').trim().toUpperCase();
+
+        if (itPin === query || itPin === cleanedPin || itTok === query || itId === query || (itSn && itSn.includes(query))) {
+          return {
+            orderId: ord.orderId,
+            orderItemId: item.orderItemId,
+            pickupPIN: item.pickupPIN || ord.pickupPIN,
+            buyerAddress: ord.buyerAddress,
+            sellerAddress: item.sellerAddress || ord.sellerAddress,
+            merchant: item.merchant || ord.merchant,
+            merchantId: item.merchantId || ord.merchantId,
+            merchantLocation: item.merchantLocation || ord.merchantLocation,
+            productName: item.name,
+            productBrand: item.brand,
+            imageUri: item.imageUri,
+            originalPriceUsd: item.priceUsd,
+            priceUsd: item.priceUsd,
+            status: item.status || ord.status,
+            source: 'escrow_item',
+            items: [item]
+          };
+        }
+      }
+    }
+  } catch {}
+
+  // 3. Search in all passports across localStorage keys
+  try {
+    const passportKeys = ['hual_my_passports'];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('hual_my_passports_')) {
+        passportKeys.push(k);
+      }
+    }
+
+    for (const key of passportKeys) {
+      try {
+        const list = JSON.parse(localStorage.getItem(key) || '[]');
+        if (Array.isArray(list)) {
+          const found = list.find(p => {
+            if (!p) return false;
+            const pPin = String(p.pickupPIN || '').trim().toUpperCase();
+            const pTok = String(p.tokenId || '').trim().toUpperCase();
+            const pSn = String(p.serialNumber || '').trim().toUpperCase();
+            const pOrd = String(p.orderId || '').trim().toUpperCase();
+            return pPin === query || pPin === cleanedPin || pTok === query || pOrd === query || (pSn && pSn.includes(query));
+          });
+          if (found) {
+            return {
+              ...found,
+              orderId: found.orderId || `ORD-${found.tokenId}`,
+              source: 'passport_storage',
+              originalPriceUsd: found.originalPriceUsd || found.priceUsd
+            };
+          }
+        }
+      } catch {}
+    }
+  } catch {}
+
+  return null;
+}
+
+/**
+ * Confirm in-store pickup, execute onchain USDC release to store owner, and mark order collected
+ */
+export async function completePickupAndPayout({
+  item,
+  currentStore,
+  currentUser,
+  plainPIN
+}) {
+  if (!item) throw new Error('Order item not found');
+
+  const storeOwnerAddress = 
+    item.sellerAddress || 
+    currentStore?.ownerAddress || 
+    currentUser?.address;
+
+  if (!storeOwnerAddress) {
+    throw new Error('Store owner payout address could not be resolved');
+  }
+
+  const orderAmount = parseFloat(item.originalPriceUsd || item.priceUsd || item.totalAmount || 1);
+  const orderId = item.orderId || item.tokenId || Date.now();
+  const orderName = item.productName || item.name || 'In-Store Pickup Handover';
+
+  // 1. Release real USDC payout onchain to store owner
+  const payoutResult = await releaseEscrowPayoutToStoreOwner({
+    sellerAddress: storeOwnerAddress,
+    amountUsdc: orderAmount,
+    orderId,
+    orderName
+  });
+
+  const liveTxHash = payoutResult.txHash;
+
+  // 2. Mark item as collected in dedicated pickup orders
+  try {
+    const pickups = JSON.parse(localStorage.getItem(PICKUP_ORDERS_KEY) || '[]');
+    const updatedPickups = pickups.map(p => {
+      if (String(p.orderId) === String(item.orderId) || (p.pickupPIN && p.pickupPIN === item.pickupPIN)) {
+        return {
+          ...p,
+          status: 'released',
+          isCollected: true,
+          collectedAt: new Date().toISOString(),
+          payoutTxHash: liveTxHash
+        };
+      }
+      return p;
+    });
+    localStorage.setItem(PICKUP_ORDERS_KEY, JSON.stringify(updatedPickups));
+  } catch {}
+
+  // 3. Mark in escrow orders
+  try {
+    const escrowOrders = JSON.parse(localStorage.getItem(ESCROW_ORDERS_KEY) || '[]');
+    const updatedEscrow = escrowOrders.map(ord => {
+      if (String(ord.orderId) === String(item.orderId) || (ord.pickupPIN && ord.pickupPIN === item.pickupPIN)) {
+        return {
+          ...ord,
+          status: 'released',
+          settledAt: new Date().toISOString(),
+          payoutTxHash: liveTxHash,
+          items: (ord.items || []).map(it => ({
+            ...it,
+            status: 'released',
+            releasedAt: new Date().toISOString(),
+            payoutTxHash: liveTxHash
+          }))
+        };
+      }
+      return ord;
+    });
+    localStorage.setItem(ESCROW_ORDERS_KEY, JSON.stringify(updatedEscrow));
+  } catch {}
+
+  // 4. Update passports across all keys
+  try {
+    const updatePassport = (p) => {
+      const match = 
+        (p.orderId && String(p.orderId) === String(item.orderId)) ||
+        (p.pickupPIN && String(p.pickupPIN) === String(item.pickupPIN)) ||
+        (p.tokenId && item.tokenId && String(p.tokenId) === String(item.tokenId)) ||
+        (p.serialNumber && item.serialNumber && p.serialNumber === item.serialNumber);
+
+      if (match) {
+        return {
+          ...p,
+          currentState: 'COLLECTED',
+          currentStateIndex: 4,
+          isCollected: true,
+          payoutTxHash: liveTxHash,
+          lifecycleSteps: [
+            { name: 'Listed', completed: true, date: p.purchaseTimestamp || 'Oct 5, 2026' },
+            { name: 'Ordered', completed: true, date: p.purchaseTimestamp || 'Oct 7, 2026' },
+            { name: 'Paid (Escrow)', completed: true, date: p.purchaseTimestamp || 'Oct 7, 2026' },
+            { name: 'Handover', completed: true, date: 'Just now (In-Store Verified)' },
+            { name: 'In Possession', completed: true, date: 'Just now' },
+            { name: 'Warranty Active', completed: true, date: 'Active' }
+          ]
+        };
+      }
+      return p;
+    };
+
+    const passportKeys = ['hual_my_passports'];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('hual_my_passports_')) {
+        passportKeys.push(k);
+      }
+    }
+
+    for (const key of passportKeys) {
+      try {
+        const list = JSON.parse(localStorage.getItem(key) || '[]');
+        if (Array.isArray(list)) {
+          localStorage.setItem(key, JSON.stringify(list.map(updatePassport)));
+        }
+      } catch {}
+    }
+  } catch {}
+
+  return {
+    success: true,
+    txHash: liveTxHash,
+    payoutAmount: orderAmount,
+    sellerAddress: storeOwnerAddress
+  };
+}

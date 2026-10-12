@@ -48,6 +48,7 @@ import ModalPortal from './ModalPortal';
 import useScrollReveal from '../lib/useScrollReveal';
 import ProductDetailPage from './ProductDetailPage';
 import ProductReceiptModal from './ProductReceiptModal';
+import { recordNewOrder } from '../lib/ordersRegistry';
 
 export default function Marketplace({ 
   products = [], 
@@ -238,29 +239,7 @@ export default function Marketplace({
       if (byName) return byName;
     }
 
-    // 3. Match by Brand or Category
-    if (pBrand.includes('sony') || pName.includes('wh-1000') || pCat.includes('audio') || pBrand.includes('fujifilm') || pName.includes('x100')) {
-      const sony = list.find(m => m.id === 'sony-flagship');
-      if (sony) return sony;
-    }
-    if (pBrand.includes('apple') || pName.includes('iphone') || pName.includes('macbook')) {
-      const apple = list.find(m => m.id === 'apple-boutique');
-      if (apple) return apple;
-    }
-    if (pBrand.includes('teenage') || pCat.includes('synth') || pName.includes('op-1')) {
-      const te = list.find(m => m.id === 'teenage-engineering');
-      if (te) return te;
-    }
-    if (pBrand.includes('seiko') || pBrand.includes('rolex') || pCat.includes('watch') || pName.includes('diver')) {
-      const horology = list.find(m => m.id === 'horology-vault');
-      if (horology) return horology;
-    }
-    if (pBrand.includes('nike') || pBrand.includes('aether') || pCat.includes('footwear') || pCat.includes('apparel')) {
-      const nike = list.find(m => m.id === 'nike-lagos');
-      if (nike) return nike;
-    }
-
-    // 4. Construct dynamic store object for custom listings so it never routes to the wrong store
+    // 3. Construct dynamic store object for custom listings so it preserves real store details and avatar
     if (prod.merchant) {
       return {
         id: prod.merchantId || `store-${prod.merchant.toLowerCase().replace(/[^a-z0-9]/g, '')}`,
@@ -270,10 +249,10 @@ export default function Marketplace({
         category: prod.category || 'Curated Goods',
         location: prod.merchantLocation || 'Victoria Island, Lagos',
         rating: 5.0,
-        reviewsCount: 1,
+        reviewsCount: 0,
         followersCount: '1.2k',
-        avatar: prod.merchantAvatar || prod.storeAvatar || prod.storeImage || prod.imageUri || '/assets/air_max_95.jpg',
-        banner: prod.storeBanner || '/assets/nike_store_banner.jpg',
+        avatar: prod.merchantAvatar || prod.storeAvatar || prod.storeImage || prod.imageUri || null,
+        banner: prod.storeBanner || null,
         pickupTime: 'Ready in 30 mins',
         deliveryTime: 'Same-day courier',
         operatingHours: 'Mon - Sat: 9:00 AM - 7:00 PM',
@@ -671,6 +650,42 @@ export default function Marketplace({
         const addrScoped = JSON.parse(localStorage.getItem(`hual_my_passports_${user.address.toLowerCase()}`) || '[]');
         localStorage.setItem(`hual_my_passports_${user.address.toLowerCase()}`, JSON.stringify([newPassport, ...addrScoped]));
       }
+
+      // Record order into unified registries (escrow orders & dedicated pickup registry)
+      const sellerAddr = checkoutProduct.seller || checkoutProduct.ownerAddress || selectedMerchant?.ownerAddress || null;
+      recordNewOrder({
+        orderId: String(orderId),
+        buyerAddress: buyerAddr,
+        buyerId: userKey,
+        sellerAddress: sellerAddr,
+        merchant: checkoutProduct.merchant || selectedMerchant?.name || 'Verified Merchant Store',
+        merchantId: checkoutProduct.merchantId || selectedMerchant?.id,
+        merchantLocation: checkoutProduct.merchantLocation || selectedMerchant?.location,
+        merchantAvatar: checkoutProduct.merchantAvatar || checkoutProduct.storeAvatar || selectedMerchant?.avatar,
+        deliveryMethod,
+        pickupPIN: uniquePin,
+        items: [{
+          productId: checkoutProduct.productId || checkoutProduct.id,
+          name: checkoutProduct.name,
+          priceUsd: checkoutProduct.priceUsd,
+          quantity: 1,
+          size: checkoutProduct.selectedSize || 'Standard',
+          merchant: checkoutProduct.merchant || selectedMerchant?.name,
+          merchantId: checkoutProduct.merchantId || selectedMerchant?.id,
+          sellerAddress: sellerAddr,
+          merchantLocation: checkoutProduct.merchantLocation || selectedMerchant?.location,
+          merchantAvatar: checkoutProduct.merchantAvatar || selectedMerchant?.avatar,
+          imageUri: checkoutProduct.imageUri,
+          brand: checkoutProduct.brand,
+          pickupPIN: uniquePin,
+          tokenId,
+          serialNumber: newPassport.serialNumber
+        }],
+        txHash,
+        totalAmount: checkoutProduct.priceUsd,
+        tokenId,
+        serialNumber: newPassport.serialNumber
+      });
 
       if (onPassportMinted) {
         onPassportMinted(newPassport);
@@ -1454,12 +1469,7 @@ export default function Marketplace({
               if (saved) customReviews = JSON.parse(saved);
             } catch (e) {}
 
-            const allMerchantReviews = [
-              ...customReviews,
-              { name: 'Emeka O.', date: 'Yesterday', rating: 5, comment: 'Picked up my Air Max 95 at the Victoria Island pop-up within 20 mins. The onchain passport was on my phone before I even walked out the door!' },
-              { name: 'Amina K.', date: '3 days ago', rating: 5, comment: 'Staff at the counter verified my pickup pass via QR scan instantly. Authentic merchandise and zero gas fees.' },
-              { name: 'David B.', date: '1 week ago', rating: 5, comment: 'Super smooth experience. I messaged the store via the chat button beforehand to check shoe sizing and they had it reserved.' }
-            ];
+            const allMerchantReviews = customReviews;
 
             return (
               <div style={{
@@ -1493,35 +1503,53 @@ export default function Marketplace({
                   )}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {allMerchantReviews.map((rev, i) => (
-                    <div key={rev.id || i} style={{ background: '#080F0F', padding: '18px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <strong style={{ color: '#FFFFFF', fontSize: '0.88rem' }}>{rev.reviewerName || rev.name}</strong>
-                          <span style={{ fontSize: '0.68rem', color: 'var(--brand-green)', background: 'var(--brand-green-dim)', padding: '2px 6px', borderRadius: '999px' }}>Verified Buyer</span>
-                          {rev.productName && (
-                            <span style={{ fontSize: '0.72rem', color: '#9CA3AF' }}>• {rev.productName}</span>
-                          )}
-                        </div>
-                        <span style={{ fontSize: '0.74rem', color: '#6B7280' }}>{rev.date}</span>
-                      </div>
-                      <div style={{ color: '#FBBF24', fontSize: '0.82rem', marginBottom: '6px' }}>
-                        {'★'.repeat(rev.rating || 5)}{'☆'.repeat(5 - (rev.rating || 5))}
-                      </div>
-                      {rev.tags && rev.tags.length > 0 && (
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                          {rev.tags.map((t, ti) => (
-                            <span key={ti} style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '999px', background: 'rgba(255, 255, 255, 0.06)', color: 'var(--brand-green)' }}>
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <p style={{ margin: 0, fontSize: '0.84rem', color: '#D1D5DB', lineHeight: 1.5 }}>{rev.comment}</p>
+                {allMerchantReviews.length === 0 ? (
+                  <div style={{
+                    padding: '40px 20px',
+                    textAlign: 'center',
+                    background: '#080F0F',
+                    borderRadius: '16px',
+                    border: '1px dashed rgba(255, 255, 255, 0.1)'
+                  }}>
+                    <Star size={24} color="#6B7280" style={{ margin: '0 auto 8px' }} />
+                    <div style={{ color: '#FFFFFF', fontWeight: 700, fontSize: '0.95rem', marginBottom: '4px' }}>
+                      No Customer Reviews Yet
                     </div>
-                  ))}
-                </div>
+                    <div style={{ color: '#9CA3AF', fontSize: '0.8rem', maxWidth: '380px', margin: '0 auto', lineHeight: 1.5 }}>
+                      Verified reviews are written exclusively by customers who complete an in-store pickup handover or courier delivery.
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    {allMerchantReviews.map((rev, i) => (
+                      <div key={rev.id || i} style={{ background: '#080F0F', padding: '18px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <strong style={{ color: '#FFFFFF', fontSize: '0.88rem' }}>{rev.reviewerName || rev.name}</strong>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--brand-green)', background: 'var(--brand-green-dim)', padding: '2px 6px', borderRadius: '999px' }}>Verified Buyer</span>
+                            {rev.productName && (
+                              <span style={{ fontSize: '0.72rem', color: '#9CA3AF' }}>• {rev.productName}</span>
+                            )}
+                          </div>
+                          <span style={{ fontSize: '0.74rem', color: '#6B7280' }}>{rev.date}</span>
+                        </div>
+                        <div style={{ color: '#FBBF24', fontSize: '0.82rem', marginBottom: '6px' }}>
+                          {'★'.repeat(rev.rating || 5)}{'☆'.repeat(5 - (rev.rating || 5))}
+                        </div>
+                        {rev.tags && rev.tags.length > 0 && (
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                            {rev.tags.map((t, ti) => (
+                              <span key={ti} style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '999px', background: 'rgba(255, 255, 255, 0.06)', color: 'var(--brand-green)' }}>
+                                {t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <p style={{ margin: 0, fontSize: '0.84rem', color: '#D1D5DB', lineHeight: 1.5 }}>{rev.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })()}

@@ -10,13 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@privy-io/react-auth": "^3.48.0",
     "clsx": "^2.1.1",
     "ethers": "^6.17.0",
+    "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.52.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "@privy-io/react-auth": "^3.48.0"
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

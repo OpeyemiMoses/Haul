@@ -54,6 +54,7 @@ export default function ProductReceiptModal({
   const merchStoreAddress = merchant?.fullAddress || `${merchName} • ${merchLocation}`;
   const merchInitial = (merchName[0] || 'V').toUpperCase() + (merchName.split(' ')[1]?.[0] || 'M').toUpperCase();
   const merchWebsite = `${merchName.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
+  const merchImage = merchant?.avatar || merchant?.image || merchant?.logo || merchant?.storeImage || product?.merchantAvatar || product?.storeAvatar || product?.storeImage || null;
 
   const copyToClipboard = (text, type) => {
     navigator.clipboard.writeText(text);
@@ -264,8 +265,8 @@ export default function ProductReceiptModal({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
-              width: '42px',
-              height: '42px',
+              width: '44px',
+              height: '44px',
               borderRadius: '50%',
               background: '#1A2929',
               border: '1px solid rgba(255, 255, 255, 0.15)',
@@ -274,9 +275,18 @@ export default function ProductReceiptModal({
               justifyContent: 'center',
               fontWeight: 800,
               fontSize: '0.9rem',
-              color: '#FFFFFF'
+              color: '#FFFFFF',
+              overflow: 'hidden',
+              flexShrink: 0
             }}>
-              {merchInitial}
+              {merchImage ? (
+                <img 
+                  src={merchImage} 
+                  alt={merchName} 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : merchInitial}
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

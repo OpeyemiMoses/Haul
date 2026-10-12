@@ -45,7 +45,8 @@ import {
   Package
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
-import { cancelAndRefundOnchain } from '../lib/web3';
+import { cancelAndRefundOnchain, releaseEscrowPayoutToStoreOwner } from '../lib/web3';
+import { lookupPickupOrder, completePickupAndPayout } from '../lib/ordersRegistry';
 import { formatCurrency, formatNumber } from '../lib/formatters';
 import { INITIAL_USER_PROFILE, INITIAL_FEATURED_PASSPORT, BUYER_LOCATIONS, VERIFIED_MERCHANTS } from '../lib/catalogData';
 import { HualIcon } from './HualLogo';
@@ -364,6 +365,8 @@ export default function ProfilePage({
   const [counterLookupResult, setCounterLookupResult] = useState(null);
   const [counterChecking, setCounterChecking] = useState(false);
   const [counterHandoverSuccess, setCounterHandoverSuccess] = useState(false);
+  const [counterHandoverTxHash, setCounterHandoverTxHash] = useState(null);
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
 
   // Execute Transfer Out / Send Funds
   const handleExecuteSendFunds = async (e) => {
@@ -797,7 +800,7 @@ export default function ProfilePage({
   // 1. Customer confirms courier / dispatch delivery physical receipt
   const handleConfirmDispatchedReceipt = async (passport) => {
     if (!passport) return;
-    const storePayout = passport.merchantPayoutAddress || passport.originalMerchantOwnerAddress || passport.originalMerchant || 'Merchant Store Owner Wallet';
+    const storePayout = passport.sellerAddress || passport.merchantPayoutAddress || passport.originalMerchantOwnerAddress || passport.seller || null;
     const releaseAmount = passport.originalPriceUsd || passport.priceUsd || 250;
 
     // Update passport object to COLLECTED status
@@ -841,18 +844,27 @@ export default function ProfilePage({
         const addrStored = JSON.parse(localStorage.getItem(`hual_my_passports_${user.address.toLowerCase()}`) || '[]');
         localStorage.setItem(`hual_my_passports_${user.address.toLowerCase()}`, JSON.stringify(updatePassportList(addrStored)));
       }
+
+      // Release escrow payment onchain to the seller
+      if (storePayout) {
+        await releaseEscrowPayoutToStoreOwner({
+          sellerAddress: storePayout,
+          amountUsdc: releaseAmount,
+          orderId: passport.orderId || passport.tokenId,
+          orderName: passport.productName || passport.name
+        });
+      }
     } catch (err) {
-      console.warn('Failed saving delivery confirmation to localStorage:', err);
+      console.warn('Delivery receipt confirmation notice:', err);
     }
 
     if (onRefreshData) onRefreshData();
     return true;
   };
 
-  // 2. Merchant Store Counter: Lookup and Verify customer pickup code / PIN / Token #
-  const handleLookupCounterCode = (e) => {
-    if (e) e.preventDefault();
-    const query = counterCodeInput.trim().toUpperCase();
+  // 2. Merchant Store Counter: Direct Lookup and Verify customer pickup code / PIN / QR payload
+  const handleLookupCodeDirect = (rawVal) => {
+    const query = String(rawVal || '').trim();
     if (!query) return;
 
     setCounterChecking(true);
@@ -860,20 +872,7 @@ export default function ProfilePage({
 
     setTimeout(() => {
       setCounterChecking(false);
-      // Load all stored passports across app
-      let allPassportsPool = [];
-      try {
-        const stored = JSON.parse(localStorage.getItem('hual_my_passports') || '[]');
-        allPassportsPool = [...stored];
-      } catch {}
-
-      // Find matching item by PIN, Token ID, Serial #, or Order ID
-      const matched = allPassportsPool.find(p => {
-        const pin = String(p.pickupPIN || '');
-        const tok = String(p.tokenId || '');
-        const sn = String(p.serialNumber || '').toUpperCase();
-        return pin === query || tok === query || sn.includes(query);
-      });
+      const matched = lookupPickupOrder(query);
 
       if (!matched) {
         setCounterLookupResult({
@@ -886,8 +885,15 @@ export default function ProfilePage({
       // Check Store Authorization: ensure item belongs to current merchant store
       const currentStoreName = userStore?.name || 'Your Store';
       const itemMerchant = matched.originalMerchant || matched.merchant || 'Your Store';
+      const currentOwnerAddr = (userStore?.ownerAddress || user?.address || '').toLowerCase();
+      const itemSellerAddr = (matched.sellerAddress || matched.seller || '').toLowerCase();
       
-      const isMyStore = itemMerchant.toLowerCase().trim() === currentStoreName.toLowerCase().trim();
+      const isMyStore = 
+        (currentOwnerAddr && itemSellerAddr && currentOwnerAddr === itemSellerAddr) ||
+        (itemMerchant.toLowerCase().trim() === currentStoreName.toLowerCase().trim()) ||
+        (matched.merchantId && userStore?.id && String(matched.merchantId) === String(userStore.id));
+
+      const payoutAddress = userStore?.ownerAddress || user?.address || itemSellerAddr || '0x7f3411b93ef2d38e81c04910283f';
 
       setCounterLookupResult({
         found: true,
@@ -895,9 +901,14 @@ export default function ProfilePage({
         isMyStore,
         currentStoreName,
         itemMerchant,
-        payoutAddress: userStore?.ownerAddress || user?.address || '0x7f3411b93ef2d38e81c04910283f'
+        payoutAddress
       });
-    }, 400);
+    }, 300);
+  };
+
+  const handleLookupCounterCode = (e) => {
+    if (e) e.preventDefault();
+    handleLookupCodeDirect(counterCodeInput);
   };
 
   // 3. Merchant Store Counter: Confirm In-Store Handover & Release Escrow to Store Owner's Wallet
@@ -908,55 +919,38 @@ export default function ProfilePage({
     setCounterChecking(true);
 
     try {
-      // Execute handover update
-      const updatedPassport = {
-        ...item,
-        currentState: 'COLLECTED',
-        currentStateIndex: 4,
-        custody: `Customer (${item.currentOwner || 'Buyer'})`,
-        currentOwner: item.currentOwner || `Customer (${displayName})`,
-        daysRemainingWarranty: item.daysRemainingWarranty || 365,
-        lifecycleSteps: [
-          { name: 'Listed', completed: true, date: item.purchaseTimestamp || 'Oct 5, 2026' },
-          { name: 'Ordered', completed: true, date: item.purchaseTimestamp || 'Oct 7, 2026' },
-          { name: 'Paid (Escrow)', completed: true, date: item.purchaseTimestamp || 'Oct 7, 2026' },
-          { name: 'Handover', completed: true, date: 'Just now (In-Store Verified)' },
-          { name: 'In Possession', completed: true, date: 'Just now' },
-          { name: 'Warranty Active', completed: true, date: 'Active' }
-        ]
-      };
+      // Execute handover update and real onchain payout to store owner
+      const payoutRes = await completePickupAndPayout({
+        item,
+        currentStore: userStore,
+        currentUser: user,
+        plainPIN: item.pickupPIN || counterCodeInput
+      });
 
-      const updateList = (list) => {
-        return list.map(p => {
-          if ((p.tokenId && p.tokenId === item.tokenId) || (p.serialNumber && p.serialNumber === item.serialNumber)) {
-            return updatedPassport;
-          }
-          return p;
-        });
-      };
-
-      const stored = JSON.parse(localStorage.getItem('hual_my_passports') || '[]');
-      localStorage.setItem('hual_my_passports', JSON.stringify(updateList(stored)));
-
-      if (userKey) {
-        const userStored = JSON.parse(localStorage.getItem(`hual_my_passports_${userKey}`) || '[]');
-        localStorage.setItem(`hual_my_passports_${userKey}`, JSON.stringify(updateList(userStored)));
-      }
-      if (user?.address) {
-        const addrStored = JSON.parse(localStorage.getItem(`hual_my_passports_${user.address.toLowerCase()}`) || '[]');
-        localStorage.setItem(`hual_my_passports_${user.address.toLowerCase()}`, JSON.stringify(updateList(addrStored)));
-      }
-
+      setCounterHandoverTxHash(payoutRes?.txHash || null);
       setCounterHandoverSuccess(true);
       if (onRefreshData) onRefreshData();
+
+      // Trigger balance refresh for the store owner
+      if (user?.address) {
+        try {
+          const sellerLower = (userStore?.ownerAddress || user.address).toLowerCase();
+          const curBal = parseFloat(localStorage.getItem(`hual_usdc_balance_${sellerLower}`) || '1000');
+          window.dispatchEvent(new CustomEvent('hual_balance_updated', {
+            detail: { address: sellerLower, newBalance: curBal }
+          }));
+        } catch {}
+      }
 
       setTimeout(() => {
         setCounterHandoverSuccess(false);
         setCounterLookupResult(null);
         setCounterCodeInput('');
-      }, 3000);
+        setCounterHandoverTxHash(null);
+      }, 5000);
     } catch (err) {
       console.error('Handover error:', err);
+      alert('Handover error: ' + (err.reason || err.message || err));
     } finally {
       setCounterChecking(false);
     }
@@ -3054,15 +3048,46 @@ export default function ProfilePage({
                   outline: 'none'
                 }}
               />
-              <button
-                type="submit"
-                disabled={counterChecking || !counterCodeInput.trim()}
-                className="btn-pill-primary"
-                style={{ padding: '0 24px', fontWeight: 800, fontSize: '0.86rem', height: '46px' }}
-              >
-                {counterChecking ? 'Verifying...' : 'Verify Code'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="submit"
+                  disabled={counterChecking || !counterCodeInput.trim()}
+                  className="btn-pill-primary"
+                  style={{ padding: '0 24px', fontWeight: 800, fontSize: '0.86rem', height: '46px' }}
+                >
+                  {counterChecking ? 'Verifying...' : 'Verify Code'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsQrScannerOpen(true)}
+                  className="btn-pill-secondary"
+                  style={{
+                    padding: '0 18px',
+                    fontWeight: 800,
+                    fontSize: '0.86rem',
+                    height: '46px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    borderColor: 'var(--brand-green-border)',
+                    color: 'var(--brand-green)'
+                  }}
+                >
+                  <Camera size={16} />
+                  <span>Scan Customer QR</span>
+                </button>
+              </div>
             </form>
+
+            {/* QrScannerModal for Live Scanning */}
+            <QrScannerModal
+              isOpen={isQrScannerOpen}
+              onClose={() => setIsQrScannerOpen(false)}
+              onScanSuccess={(scannedCode) => {
+                setCounterCodeInput(scannedCode);
+                handleLookupCodeDirect(scannedCode);
+              }}
+            />
 
             {/* Verification Results Box */}
             {counterLookupResult && (
@@ -3111,17 +3136,26 @@ export default function ProfilePage({
                       </div>
 
                       {counterHandoverSuccess ? (
-                        <div style={{ padding: '14px', background: 'var(--brand-green-dim)', borderRadius: '12px', border: '1px solid var(--brand-green-border)', color: 'var(--brand-green)', fontSize: '0.88rem', fontWeight: 800, textAlign: 'center' }}>
+                        <div style={{ padding: '16px', background: 'var(--brand-green-dim)', borderRadius: '14px', border: '1px solid var(--brand-green-border)', color: 'var(--brand-green)', fontSize: '0.88rem', fontWeight: 800, textAlign: 'center' }}>
                           <CheckCircle2 size={24} style={{ margin: '0 auto 6px' }} />
-                          <div>Handover Complete! ${counterLookupResult.item.originalPriceUsd || 250.00} USDC escrow funds settled to your merchant wallet.</div>
+                          <div style={{ fontSize: '1rem', marginBottom: '4px' }}>Handover Complete! Escrow Payment Released</div>
+                          <div style={{ fontSize: '0.82rem', color: '#D1D5DB', fontWeight: 600 }}>
+                            ${counterLookupResult.item.originalPriceUsd || 250.00} USDC sent directly to your store owner wallet: <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--brand-green)' }}>{(counterLookupResult.payoutAddress).slice(0, 10)}...</span>
+                          </div>
+                          {counterHandoverTxHash && (
+                            <div style={{ marginTop: '8px', fontSize: '0.74rem', color: '#9CA3AF', fontFamily: 'var(--font-mono)' }}>
+                              Live Monad TX: {counterHandoverTxHash.slice(0, 20)}...
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <button
                           onClick={handleMerchantConfirmHandover}
+                          disabled={counterChecking}
                           className="btn-pill-primary"
-                          style={{ width: '100%', padding: '12px', fontWeight: 800, fontSize: '0.9rem' }}
+                          style={{ width: '100%', padding: '14px', fontWeight: 800, fontSize: '0.92rem' }}
                         >
-                          Confirm In-Store Handover & Release Escrow (${counterLookupResult.item.originalPriceUsd || 250.00} USDC)
+                          {counterChecking ? 'Releasing Escrow Onchain...' : `Confirm In-Store Handover & Release Escrow ($${counterLookupResult.item.originalPriceUsd || 250.00} USDC)`}
                         </button>
                       )}
                     </div>
@@ -3137,7 +3171,7 @@ export default function ProfilePage({
                     </div>
                   )
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#F59E0B', fontSize: '0.84rem', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#F59E0B', fontSize: '0.86rem', fontWeight: 700 }}>
                     <AlertCircle size={16} />
                     <span>{counterLookupResult.error}</span>
                   </div>

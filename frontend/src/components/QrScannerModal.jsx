@@ -1,128 +1,96 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Camera, X, Upload, CheckCircle2, QrCode, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
-import { ModalPortal } from './ModalPortal';
-import { getRegistry } from '../lib/userRegistry';
+import React, { useEffect, useRef, useState } from 'react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { Camera, X, Image as ImageIcon, RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import ModalPortal from './ModalPortal';
 
-/**
- * Interactive QR Code Scanner Modal
- * Supports:
- * 1. Live camera video feed with native BarcodeDetector API & animated laser beam.
- * 2. Upload / drag-and-drop QR image file detection.
- * 3. Quick-select verified Hual recipients / merchant QR codes.
- */
-export default function QrScannerModal({ isOpen, onClose, onScan }) {
-  const [activeMode, setActiveMode] = useState('camera'); // 'camera' | 'upload' | 'presets'
+export default function QrScannerModal({ isOpen, onClose, onScanSuccess }) {
   const [cameraError, setCameraError] = useState(null);
-  const [scanning, setScanning] = useState(false);
-  const [scannedResult, setScannedResult] = useState(null);
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [facingMode, setFacingMode] = useState('environment'); // 'environment' | 'user'
+  const html5QrCodeRef = useRef(null);
   const fileInputRef = useRef(null);
-  const scanIntervalRef = useRef(null);
-
-  // Quick preset recipient codes for instant one-tap scanning from real registered Privy users
-  const PRESET_QR_CODES = useMemo(() => {
-    try {
-      const reg = getRegistry();
-      if (!Array.isArray(reg)) return [];
-      return reg.slice(0, 4).map(u => ({
-        name: u.displayName || u.username,
-        handle: `@${u.username}`,
-        address: u.address,
-        desc: u.storeName || 'Registered Hual User'
-      }));
-    } catch {
-      return [];
-    }
-  }, [isOpen]);
-
-  // Stop camera stream safely
-  const stopCamera = () => {
-    if (scanIntervalRef.current) {
-      clearInterval(scanIntervalRef.current);
-      scanIntervalRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-  };
-
-  // Start live camera
-  const startCamera = async () => {
-    stopCamera();
-    setCameraError(null);
-    setScanning(true);
-
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Camera stream not supported in this browser environment. Use Upload or Quick Presets.');
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
-      });
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.setAttribute('playsinline', 'true');
-        await videoRef.current.play();
-      }
-
-      // If BarcodeDetector is available natively in browser
-      if ('BarcodeDetector' in window) {
-        try {
-          const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-          scanIntervalRef.current = setInterval(async () => {
-            if (videoRef.current && videoRef.current.readyState === 4) {
-              try {
-                const barcodes = await detector.detect(videoRef.current);
-                if (barcodes.length > 0) {
-                  handleSuccess(barcodes[0].rawValue);
-                }
-              } catch (err) {
-                // Ignore detection frame errors
-              }
-            }
-          }, 350);
-        } catch {
-          // Fallback if BarcodeDetector fails constructor
-        }
-      }
-    } catch (err) {
-      console.warn('Camera access issue:', err);
-      setCameraError(err.message || 'Unable to access camera. Please allow camera permissions or pick an option below.');
-    } finally {
-      setScanning(false);
-    }
-  };
 
   useEffect(() => {
-    if (isOpen && activeMode === 'camera') {
-      startCamera();
-    } else {
-      stopCamera();
+    if (!isOpen) {
+      stopScanner();
+      return;
     }
 
-    return () => {
-      stopCamera();
+    let mounted = true;
+
+    const startScanner = async () => {
+      try {
+        setCameraError(null);
+        // Small delay to ensure DOM element is mounted
+        await new Promise(r => setTimeout(r, 200));
+        if (!mounted) return;
+
+        const qrContainer = document.getElementById('qr-reader-container');
+        if (!qrContainer) return;
+
+        if (html5QrCodeRef.current) {
+          try {
+            await html5QrCodeRef.current.stop();
+          } catch {}
+          html5QrCodeRef.current = null;
+        }
+
+        const scanner = new Html5Qrcode('qr-reader-container');
+        html5QrCodeRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: facingMode },
+          {
+            fps: 12,
+            qrbox: { width: 240, height: 240 },
+            aspectRatio: 1.0
+          },
+          (decodedText) => {
+            if (mounted) {
+              stopScanner();
+              if (onScanSuccess) {
+                onScanSuccess(decodedText);
+              }
+              onClose();
+            }
+          },
+          () => {
+            // scan failure ignored per frame
+          }
+        );
+
+        if (mounted) setIsScanning(true);
+      } catch (err) {
+        console.warn('QR camera startup notice:', err);
+        if (mounted) {
+          setIsScanning(false);
+          setCameraError(err.message || 'Camera access unavailable. You can upload an image of the QR code below.');
+        }
+      }
     };
-  }, [isOpen, activeMode]);
 
-  const handleSuccess = (rawVal) => {
-    if (!rawVal) return;
-    stopCamera();
-    // Clean up ethereum: prefix or web3 url prefix if present
-    let clean = rawVal.trim();
-    if (clean.startsWith('ethereum:')) clean = clean.replace('ethereum:', '');
-    if (clean.includes('?')) clean = clean.split('?')[0];
+    startScanner();
 
-    setScannedResult(clean);
-    setTimeout(() => {
-      onScan(clean);
-      onClose();
-    }, 600);
+    return () => {
+      mounted = false;
+      stopScanner();
+    };
+  }, [isOpen, facingMode]);
+
+  const stopScanner = () => {
+    if (html5QrCodeRef.current) {
+      try {
+        html5QrCodeRef.current.stop().then(() => {
+          html5QrCodeRef.current?.clear();
+          html5QrCodeRef.current = null;
+        }).catch(() => {
+          html5QrCodeRef.current = null;
+        });
+      } catch {
+        html5QrCodeRef.current = null;
+      }
+    }
+    setIsScanning(false);
   };
 
   const handleFileUpload = async (e) => {
@@ -130,66 +98,75 @@ export default function QrScannerModal({ isOpen, onClose, onScan }) {
     if (!file) return;
 
     try {
-      if ('BarcodeDetector' in window) {
-        const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-        const img = new Image();
-        img.src = URL.createObjectURL(file);
-        await img.decode();
-        const barcodes = await detector.detect(img);
-        if (barcodes.length > 0) {
-          handleSuccess(barcodes[0].rawValue);
-          return;
-        }
+      setCameraError(null);
+      let scanner = html5QrCodeRef.current;
+      if (!scanner) {
+        scanner = new Html5Qrcode('qr-reader-container');
+        html5QrCodeRef.current = scanner;
       }
-      // If image decoding cannot find native QR detector, fallback with filename or prompt
-      alert('QR image uploaded. Please verify recipient code or select a verified recipient below.');
+
+      const decodedText = await scanner.scanFile(file, true);
+      stopScanner();
+      if (onScanSuccess) {
+        onScanSuccess(decodedText);
+      }
+      onClose();
     } catch (err) {
-      console.warn('File decode error:', err);
-      alert('Could not decode QR code from this file. Try a clear image or choose a preset.');
+      console.warn('File QR decode notice:', err);
+      setCameraError('No valid QR code found in the selected image. Please try another photo.');
     }
+  };
+
+  const toggleCamera = () => {
+    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
   };
 
   if (!isOpen) return null;
 
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={onClose} style={{ zIndex: 10000 }}>
+      <div className="modal-overlay" onClick={onClose} style={{ zIndex: 9999999 }}>
         <div
           className="custom-scrollbar"
           onClick={(e) => e.stopPropagation()}
           style={{
             maxWidth: '460px',
             width: '92%',
-            background: 'linear-gradient(145deg, #0D1616 0%, #060B0B 100%)',
-            border: '1px solid rgba(132, 244, 59, 0.3)',
+            background: 'rgba(11, 18, 18, 0.95)',
+            backdropFilter: 'blur(30px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(30px) saturate(180%)',
+            border: '1px solid rgba(132, 244, 59, 0.25)',
             borderRadius: '24px',
             padding: '24px',
             color: '#FFFFFF',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(132, 244, 59, 0.1)',
-            position: 'relative'
+            fontFamily: "'Sora', sans-serif",
+            position: 'relative',
+            boxShadow: '0 25px 70px rgba(0, 0, 0, 0.9), 0 0 40px rgba(132, 244, 59, 0.12)',
+            margin: '0 auto'
           }}
         >
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '12px',
-                background: 'rgba(132, 244, 59, 0.12)',
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: 'var(--brand-green-dim)',
+                border: '1px solid var(--brand-green-border)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'var(--brand-green)'
               }}>
-                <QrCode size={20} />
+                <Camera size={18} />
               </div>
               <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>
-                  Scan Recipient QR
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: '#FFFFFF' }}>
+                  Scan Customer QR Code
                 </h3>
-                <p style={{ fontSize: '0.74rem', color: '#9CA3AF', margin: 0 }}>
-                  Point at any Monad address or Hual QR code
+                <p style={{ margin: 0, fontSize: '0.74rem', color: '#9CA3AF' }}>
+                  Point camera at customer's Living Passport QR
                 </p>
               </div>
             </div>
@@ -197,282 +174,140 @@ export default function QrScannerModal({ isOpen, onClose, onScan }) {
             <button
               onClick={onClose}
               style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#9CA3AF',
+                borderRadius: '50%',
                 width: '32px',
                 height: '32px',
-                borderRadius: '50%',
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: 'none',
-                color: '#9CA3AF',
-                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                cursor: 'pointer'
               }}
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
 
-          {/* Mode Tabs */}
+          {/* Scanner Viewport */}
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '6px',
-            padding: '4px',
-            background: '#080F0F',
-            borderRadius: '12px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            marginBottom: '18px'
+            position: 'relative',
+            borderRadius: '18px',
+            overflow: 'hidden',
+            background: '#040707',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            minHeight: '280px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            <button
-              onClick={() => setActiveMode('camera')}
-              style={{
-                padding: '8px',
-                borderRadius: '8px',
-                background: activeMode === 'camera' ? 'rgba(132, 244, 59, 0.15)' : 'transparent',
-                border: activeMode === 'camera' ? '1px solid rgba(132, 244, 59, 0.4)' : '1px solid transparent',
-                color: activeMode === 'camera' ? 'var(--brand-green)' : '#9CA3AF',
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px'
-              }}
-            >
-              <Camera size={14} /> Camera
-            </button>
-            <button
-              onClick={() => setActiveMode('upload')}
-              style={{
-                padding: '8px',
-                borderRadius: '8px',
-                background: activeMode === 'upload' ? 'rgba(132, 244, 59, 0.15)' : 'transparent',
-                border: activeMode === 'upload' ? '1px solid rgba(132, 244, 59, 0.4)' : '1px solid transparent',
-                color: activeMode === 'upload' ? 'var(--brand-green)' : '#9CA3AF',
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px'
-              }}
-            >
-              <Upload size={14} /> Upload
-            </button>
-            <button
-              onClick={() => setActiveMode('presets')}
-              style={{
-                padding: '8px',
-                borderRadius: '8px',
-                background: activeMode === 'presets' ? 'rgba(132, 244, 59, 0.15)' : 'transparent',
-                border: activeMode === 'presets' ? '1px solid rgba(132, 244, 59, 0.4)' : '1px solid transparent',
-                color: activeMode === 'presets' ? 'var(--brand-green)' : '#9CA3AF',
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px'
-              }}
-            >
-              <Sparkles size={14} /> Presets
-            </button>
-          </div>
+            <div
+              id="qr-reader-container"
+              style={{ width: '100%', height: '100%', minHeight: '280px' }}
+            />
 
-          {/* Scanned Success Confirmation */}
-          {scannedResult && (
-            <div style={{
-              padding: '16px',
-              borderRadius: '16px',
-              background: 'rgba(132, 244, 59, 0.15)',
-              border: '1px solid var(--brand-green)',
-              textAlign: 'center',
-              marginBottom: '16px'
-            }}>
-              <CheckCircle2 size={32} color="var(--brand-green)" style={{ margin: '0 auto 8px' }} />
-              <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#FFFFFF' }}>
-                QR Code Captured!
-              </div>
-              <div style={{ fontSize: '0.74rem', color: 'var(--brand-green)', fontFamily: 'var(--font-mono)', wordBreak: 'break-all', marginTop: '4px' }}>
-                {scannedResult}
-              </div>
-            </div>
-          )}
-
-          {/* Mode 1: Camera Scanner */}
-          {activeMode === 'camera' && !scannedResult && (
-            <div>
+            {/* Scanning Overlay Reticle */}
+            {isScanning && !cameraError && (
               <div style={{
-                position: 'relative',
-                width: '100%',
-                height: '240px',
-                borderRadius: '18px',
-                overflow: 'hidden',
-                background: '#040808',
-                border: '2px solid rgba(132, 244, 59, 0.3)',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                pointerEvents: 'none',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <video
-                  ref={videoRef}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  muted
-                  playsInline
-                />
-
-                {/* Viewfinder Overlay Frame */}
                 <div style={{
-                  position: 'absolute',
-                  width: '160px',
-                  height: '160px',
-                  border: '2px dashed var(--brand-green)',
+                  width: '210px',
+                  height: '210px',
+                  border: '2px solid var(--brand-green)',
                   borderRadius: '16px',
-                  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.55)',
-                  pointerEvents: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
+                  boxShadow: '0 0 25px rgba(132, 244, 59, 0.4), inset 0 0 25px rgba(132, 244, 59, 0.2)',
+                  position: 'relative'
                 }}>
-                  {/* Laser Beam Animation */}
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '2px',
-                    background: 'var(--brand-green)',
-                    boxShadow: '0 0 10px var(--brand-green)',
-                    animation: 'scannerLaser 2s ease-in-out infinite alternate'
-                  }} />
+                  {/* Corner Accents */}
+                  <div style={{ position: 'absolute', top: '-2px', left: '-2px', width: '20px', height: '20px', borderTop: '4px solid #FFFFFF', borderLeft: '4px solid #FFFFFF', borderTopLeftRadius: '16px' }} />
+                  <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '20px', height: '20px', borderTop: '4px solid #FFFFFF', borderRight: '4px solid #FFFFFF', borderTopRightRadius: '16px' }} />
+                  <div style={{ position: 'absolute', bottom: '-2px', left: '-2px', width: '20px', height: '20px', borderBottom: '4px solid #FFFFFF', borderLeft: '4px solid #FFFFFF', borderBottomLeftRadius: '16px' }} />
+                  <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', width: '20px', height: '20px', borderBottom: '4px solid #FFFFFF', borderRight: '4px solid #FFFFFF', borderBottomRightRadius: '16px' }} />
                 </div>
               </div>
+            )}
 
-              {cameraError && (
-                <div style={{
-                  marginTop: '12px',
-                  padding: '10px 14px',
-                  borderRadius: '12px',
-                  background: 'rgba(255, 59, 48, 0.1)',
-                  border: '1px solid rgba(255, 59, 48, 0.3)',
-                  color: '#FF6B6B',
-                  fontSize: '0.74rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <AlertCircle size={14} style={{ flexShrink: 0 }} />
-                  <span>{cameraError}</span>
+            {/* Error or Permission fallback */}
+            {cameraError && (
+              <div style={{
+                padding: '24px',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <AlertCircle size={32} color="#F59E0B" />
+                <div style={{ fontSize: '0.86rem', color: '#E5E7EB', lineHeight: 1.45, maxWidth: '300px' }}>
+                  {cameraError}
                 </div>
-              )}
+              </div>
+            )}
+          </div>
 
-              <p style={{ fontSize: '0.72rem', color: '#6B7280', textAlign: 'center', marginTop: '12px', marginBottom: 0 }}>
-                Align the recipient's QR code within the frame to automatically fill their address.
-              </p>
-            </div>
-          )}
-
-          {/* Mode 2: Upload File */}
-          {activeMode === 'upload' && !scannedResult && (
-            <div
+          {/* Action Controls */}
+          <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+            <button
               onClick={() => fileInputRef.current?.click()}
               style={{
-                border: '2px dashed rgba(132, 244, 59, 0.3)',
-                borderRadius: '18px',
-                padding: '36px 20px',
-                textAlign: 'center',
-                background: 'rgba(255, 255, 255, 0.02)',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
+                flex: 1,
+                padding: '11px 16px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '12px',
+                color: '#FFFFFF',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                cursor: 'pointer'
               }}
             >
-              <Upload size={36} color="var(--brand-green)" style={{ margin: '0 auto 12px' }} />
-              <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '4px' }}>
-                Upload or Drop QR Code Image
-              </div>
-              <p style={{ fontSize: '0.74rem', color: '#9CA3AF', margin: 0 }}>
-                Supports PNG, JPG, WEBP, or screenshot
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                style={{ display: 'none' }}
-              />
-            </div>
-          )}
+              <ImageIcon size={15} color="var(--brand-green)" />
+              <span>Upload QR Image</span>
+            </button>
 
-          {/* Mode 3: Verified Presets */}
-          {activeMode === 'presets' && !scannedResult && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ fontSize: '0.74rem', color: '#9CA3AF', marginBottom: '2px' }}>
-                Tap any verified recipient to auto-populate instantly:
-              </div>
-              {PRESET_QR_CODES.map((preset) => (
-                <div
-                  key={preset.handle}
-                  onClick={() => handleSuccess(preset.address)}
-                  style={{
-                    padding: '12px 14px',
-                    borderRadius: '14px',
-                    background: '#0D1616',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--brand-green)';
-                    e.currentTarget.style.background = 'rgba(132, 244, 59, 0.06)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                    e.currentTarget.style.background = '#0D1616';
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#FFFFFF' }}>{preset.name}</span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--brand-green)', fontWeight: 800 }}>{preset.handle}</span>
-                    </div>
-                    <div style={{ fontSize: '0.68rem', color: '#6B7280', fontFamily: 'var(--font-mono)', marginTop: '2px' }}>
-                      {preset.address.slice(0, 10)}...{preset.address.slice(-6)}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: '8px',
-                      background: 'rgba(132, 244, 59, 0.15)',
-                      border: '1px solid rgba(132, 244, 59, 0.3)',
-                      color: 'var(--brand-green)',
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Use
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+            <button
+              onClick={toggleCamera}
+              style={{
+                padding: '11px 16px',
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '12px',
+                color: '#9CA3AF',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer'
+              }}
+              title="Flip camera (front / back)"
+            >
+              <RefreshCw size={15} />
+              <span>Flip</span>
+            </button>
+          </div>
 
-          {/* Laser animation keyframe style tag */}
-          <style>{`
-            @keyframes scannerLaser {
-              0% { top: 0; }
-              100% { top: 100%; }
-            }
-          `}</style>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleFileUpload}
+          />
         </div>
       </div>
     </ModalPortal>

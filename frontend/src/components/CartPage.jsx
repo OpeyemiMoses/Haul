@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
 import { formatCurrency } from '../lib/formatters';
-import { buyWithUsdcEscrow } from '../lib/web3';
+import { buyWithUsdcEscrow, releaseEscrowPayoutToStoreOwner } from '../lib/web3';
+import { recordNewOrder } from '../lib/ordersRegistry';
 import ProductReceiptModal from './ProductReceiptModal';
 import useScrollReveal from '../lib/useScrollReveal';
 
@@ -135,26 +136,37 @@ export default function CartPage({
         deductUsdc(subtotal);
       }
 
-      const newOrderItems = cart.map((item, index) => ({
-        orderItemId: `order-item-${Date.now()}-${index}`,
-        productId: item.productId,
-        name: item.name,
-        priceUsd: item.priceUsd,
-        quantity: item.quantity || 1,
-        size: item.selectedSize || item.size || 'Standard',
-        merchant: item.merchant || 'Verified Merchant Store',
-        merchantLocation: item.merchantLocation || 'Victoria Island, Lagos',
-        imageUri: item.imageUri || '/assets/air_max_95.jpg',
-        brand: item.brand || 'Luxury Goods',
-        status: 'in_escrow', // 'in_escrow' | 'released'
-        escrowAmount: item.priceUsd * (item.quantity || 1),
-        purchasedAt: new Date().toISOString(),
-        deliveryMethod: cartDeliveryMethod,
-        txHash: realTxHash || `0x${Math.random().toString(16).substring(2, 42)}`
-      }));
+      const orderIdStr = `ORD-${Date.now()}`;
+      const newOrderItems = cart.map((item, index) => {
+        const itemSeller = item.seller || item.ownerAddress || null;
+        const itemAvatar = item.merchantAvatar || item.storeAvatar || null;
+        return {
+          orderItemId: `order-item-${Date.now()}-${index}`,
+          productId: item.productId,
+          name: item.name,
+          priceUsd: item.priceUsd,
+          quantity: item.quantity || 1,
+          size: item.selectedSize || item.size || 'Standard',
+          merchant: item.merchant || 'Verified Merchant Store',
+          merchantId: item.merchantId || null,
+          sellerAddress: itemSeller,
+          merchantLocation: item.merchantLocation || 'Victoria Island, Lagos',
+          merchantAvatar: itemAvatar,
+          imageUri: item.imageUri || '/assets/air_max_95.jpg',
+          brand: item.brand || 'Luxury Goods',
+          status: 'in_escrow',
+          escrowAmount: item.priceUsd * (item.quantity || 1),
+          purchasedAt: new Date().toISOString(),
+          deliveryMethod: cartDeliveryMethod,
+          pickupPIN: uniquePin,
+          txHash: realTxHash || `0x${Math.random().toString(16).substring(2, 42)}`
+        };
+      });
+
+      const primarySeller = newOrderItems[0]?.sellerAddress || cart[0]?.seller || cart[0]?.ownerAddress || null;
 
       const newOrder = {
-        orderId: `ORD-${Date.now()}`,
+        orderId: orderIdStr,
         totalAmount: subtotal,
         itemCount: cart.length,
         createdAt: new Date().toISOString(),
@@ -162,8 +174,61 @@ export default function CartPage({
         buyerAddress: user?.address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
         buyerLocation: userLocation || 'Victoria Island, Lagos',
         deliveryMethod: cartDeliveryMethod,
+        pickupPIN: uniquePin,
+        sellerAddress: primarySeller,
         txHash: realTxHash
       };
+
+      // Record into unified registries
+      recordNewOrder({
+        orderId: orderIdStr,
+        buyerAddress: user?.address || '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
+        buyerId: user?.id || user?.email || user?.address,
+        sellerAddress: primarySeller,
+        merchant: newOrderItems[0]?.merchant || 'Verified Merchant Store',
+        merchantId: newOrderItems[0]?.merchantId || null,
+        merchantLocation: newOrderItems[0]?.merchantLocation || 'Victoria Island, Lagos',
+        merchantAvatar: newOrderItems[0]?.merchantAvatar || null,
+        deliveryMethod: cartDeliveryMethod,
+        pickupPIN: uniquePin,
+        items: newOrderItems,
+        txHash: realTxHash,
+        totalAmount: subtotal
+      });
+
+      // Mint Living Passports immediately to user collection so customer has their PIN & QR
+      newOrderItems.forEach(item => {
+        const tokId = Math.floor(Math.random() * 9000) + 1000;
+        const pass = {
+          tokenId: tokId,
+          orderId: orderIdStr,
+          productId: item.productId,
+          productName: item.name,
+          productBrand: item.brand,
+          originalMerchant: item.merchant,
+          merchantLocation: item.merchantLocation,
+          originalPriceUsd: item.priceUsd,
+          imageUri: item.imageUri,
+          deliveryMethod: cartDeliveryMethod,
+          currentState: cartDeliveryMethod === 'pickup' ? 'READY_FOR_PICKUP' : 'IN_TRANSIT',
+          currentStateIndex: cartDeliveryMethod === 'pickup' ? 3 : 2,
+          pickupPIN: uniquePin,
+          sellerAddress: item.sellerAddress,
+          purchaseTimestamp: new Date().toLocaleString(),
+          warrantyExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          daysRemainingWarranty: 365
+        };
+
+        const existingPass = JSON.parse(localStorage.getItem('hual_my_passports') || '[]');
+        localStorage.setItem('hual_my_passports', JSON.stringify([pass, ...existingPass]));
+        if (user?.address) {
+          const addrKey = `hual_my_passports_${user.address.toLowerCase()}`;
+          const addrPass = JSON.parse(localStorage.getItem(addrKey) || '[]');
+          localStorage.setItem(addrKey, JSON.stringify([pass, ...addrPass]));
+        }
+
+        if (onPassportMinted) onPassportMinted(pass);
+      });
 
       // Update orders and empty cart
       const updatedOrders = [newOrder, ...activeOrders];
@@ -171,7 +236,7 @@ export default function CartPage({
       if (onClearCart) onClearCart();
 
       setActiveTab('orders');
-      setSuccessToast(`Checkout Complete! $${subtotal.toLocaleString()} locked in Monad Escrow. Live TX: ${realTxHash ? realTxHash.slice(0, 10) + '...' : 'Confirmed'}`);
+      setSuccessToast(`Checkout Complete! $${subtotal.toLocaleString()} locked in Monad Escrow. Pickup PIN: ${uniquePin}`);
       setTimeout(() => setSuccessToast(null), 8000);
     } catch (err) {
       console.error('Batch checkout failed:', err);
@@ -182,51 +247,68 @@ export default function CartPage({
   };
 
   // Individual item release: User marks item as received -> sends funds directly to merchant
-  const handleMarkItemReceived = (orderId, orderItemId) => {
+  const handleMarkItemReceived = async (orderId, orderItemId) => {
     setReleasingItem(orderItemId);
 
-    setTimeout(() => {
-      let releasedItemObj = null;
-
-      const updated = activeOrders.map(order => {
-        if (order.orderId === orderId) {
-          const updatedItems = order.items.map(item => {
-            if (item.orderItemId === orderItemId) {
-              releasedItemObj = item;
-              return {
-                ...item,
-                status: 'released',
-                releasedAt: new Date().toISOString()
-              };
-            }
-            return item;
-          });
-          return { ...order, items: updatedItems };
-        }
-        return order;
-      });
-
-      saveOrders(updated);
-      setReleasingItem(null);
-
-      if (releasedItemObj) {
-        // Mint living passport to user collection
-        if (onPassportMinted) {
-          onPassportMinted({
-            productId: releasedItemObj.productId,
-            name: releasedItemObj.name,
-            brand: releasedItemObj.brand,
-            merchant: releasedItemObj.merchant,
-            imageUri: releasedItemObj.imageUri,
-            priceUsd: releasedItemObj.priceUsd,
-            warrantyExpiry: '2027-10-09'
-          });
-        }
-
-        setSuccessToast(`Success! Escrow of $${releasedItemObj.escrowAmount.toLocaleString()} released directly to ${releasedItemObj.merchant}. Living Passport minted to your profile!`);
-        setTimeout(() => setSuccessToast(null), 7000);
+    let releasedItemObj = null;
+    const updated = activeOrders.map(order => {
+      if (order.orderId === orderId) {
+        const updatedItems = order.items.map(item => {
+          if (item.orderItemId === orderItemId) {
+            releasedItemObj = item;
+            return {
+              ...item,
+              status: 'released',
+              releasedAt: new Date().toISOString()
+            };
+          }
+          return item;
+        });
+        return { ...order, items: updatedItems };
       }
-    }, 600);
+      return order;
+    });
+
+    saveOrders(updated);
+
+    if (releasedItemObj) {
+      // Trigger real onchain escrow payout to store owner
+      let payoutTxHash = null;
+      try {
+        const targetSeller = releasedItemObj.sellerAddress || releasedItemObj.seller || null;
+        if (targetSeller) {
+          const payoutRes = await releaseEscrowPayoutToStoreOwner({
+            sellerAddress: targetSeller,
+            amountUsdc: releasedItemObj.escrowAmount || releasedItemObj.priceUsd,
+            orderId: orderId,
+            orderName: releasedItemObj.name
+          });
+          payoutTxHash = payoutRes?.txHash;
+        }
+      } catch (payoutErr) {
+        console.warn('Payout execution notice:', payoutErr);
+      }
+
+      // Mint/update living passport to user collection
+      if (onPassportMinted) {
+        onPassportMinted({
+          productId: releasedItemObj.productId,
+          name: releasedItemObj.name,
+          brand: releasedItemObj.brand,
+          merchant: releasedItemObj.merchant,
+          imageUri: releasedItemObj.imageUri,
+          priceUsd: releasedItemObj.priceUsd,
+          currentState: 'COLLECTED',
+          isCollected: true,
+          payoutTxHash,
+          warrantyExpiry: '2027-10-09'
+        });
+      }
+
+      setSuccessToast(`Order Confirmed! $${releasedItemObj.escrowAmount.toLocaleString()} USDC released directly to store owner on Monad. TX: ${payoutTxHash ? payoutTxHash.slice(0, 10) + '...' : 'Settled'}`);
+      setTimeout(() => setSuccessToast(null), 8000);
+    }
+    setReleasingItem(null);
   };
 
   return (
@@ -862,11 +944,20 @@ export default function CartPage({
                                     color: item.color || 'Midnight Black',
                                     selectedSize: item.size
                                   },
-                                  merchant: {
-                                    name: item.merchant,
-                                    location: 'Lagos, Nigeria',
-                                    fullAddress: `${item.merchant} • 2nd Floor, Ikeja City Mall`
-                                  }
+                                  merchant: (() => {
+                                    let storeAvatar = item.merchantAvatar || item.storeAvatar || null;
+                                    try {
+                                      const allStores = JSON.parse(localStorage.getItem('hual_all_created_stores') || '[]');
+                                      const match = allStores.find(s => s && (s.name === item.merchant || s.id === item.merchantId));
+                                      if (match?.avatar) storeAvatar = match.avatar;
+                                    } catch {}
+                                    return {
+                                      name: item.merchant,
+                                      avatar: storeAvatar,
+                                      location: item.merchantLocation || 'Lagos, Nigeria',
+                                      fullAddress: `${item.merchant} • ${item.merchantLocation || 'Victoria Island, Lagos'}`
+                                    };
+                                  })()
                                 });
                               }}
                               style={{
