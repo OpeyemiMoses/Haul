@@ -476,13 +476,13 @@ html, body {
   position: relative;
 }
 
-/* Living 3D Passports Showcase Responsive Display */
-.showcase-mobile-switchable {
+/* The Living Product Loop Responsive Display */
+.lifecycle-mobile-switcher {
   display: none;
 }
 
-.showcase-desktop-view {
-  display: flex;
+.lifecycle-desktop-grid {
+  display: grid;
 }
 
 /* Marketplace Products Grid Default */
@@ -521,12 +521,12 @@ html, body {
     max-width: 100% !important;
   }
 
-  /* Showcase Switchable on Mobile & Tablet */
-  .showcase-mobile-switchable {
+  /* The Living Product Loop Switchable on Mobile */
+  .lifecycle-mobile-switcher {
     display: flex !important;
   }
 
-  .showcase-desktop-view {
+  .lifecycle-desktop-grid {
     display: none !important;
   }
 
@@ -592,8 +592,45 @@ html, body {
     gap: 10px !important;
   }
 
-  /* Mobile modal adjustments */
-  .modal-overlay > div {
+  /* Messenger / Inbox Mobile View (prevent input cut-off) */
+  .inbox-messenger-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: auto !important;
+  }
+
+  .inbox-sidebar-mobile-hidden {
+    display: none !important;
+  }
+
+  .mobile-back-to-inbox-btn {
+    display: inline-flex !important;
+  }
+
+  .inbox-feed-column {
+    width: 100% !important;
+    min-height: calc(100dvh - 200px) !important;
+  }
+
+  /* AI Assistant Page Grid on Mobile */
+  .ai-companion-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Chat Modal Windows on Mobile (never cut off inputs) */
+  .ai-chat-modal-window,
+  .commerce-chat-modal-window {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: calc(100dvh - 24px) !important;
+    max-height: calc(100dvh - 24px) !important;
+    border-radius: 20px !important;
+    padding: 0 !important;
+    margin: auto !important;
+  }
+
+  /* Generic mobile modal adjustments (exclude chat modals) */
+  .modal-overlay > div:not(.ai-chat-modal-window):not(.commerce-chat-modal-window) {
     width: 95% !important;
     padding: 20px 16px !important;
     max-height: 90vh !important;

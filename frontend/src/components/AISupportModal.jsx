@@ -381,9 +381,9 @@ How can I help you today?`;
 
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay ai-support-modal-overlay" onClick={onClose} style={{ zIndex: 100010 }}>
         <div
-          className="custom-scrollbar"
+          className="custom-scrollbar ai-chat-modal-window"
           onClick={(e) => e.stopPropagation()}
           style={{
             maxWidth: '660px',
@@ -1021,15 +1021,19 @@ How can I help you today?`;
               </div>
 
               {/* INPUT BAR */}
-              <div style={{
-                padding: '14px 20px',
-                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                background: 'rgba(7, 12, 12, 0.95)',
-                display: 'flex',
-                gap: '10px',
-                alignItems: 'center',
-                flexShrink: 0
-              }}>
+              <div 
+                className="ai-chat-input-bar"
+                style={{
+                  padding: '12px 16px',
+                  paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
+                  borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'rgba(7, 12, 12, 0.98)',
+                  display: 'flex',
+                  gap: '10px',
+                  alignItems: 'center',
+                  flexShrink: 0
+                }}
+              >
                 <input
                   type="text"
                   placeholder={currentActiveOrder ? `Ask about ${currentActiveOrder.productName || 'this order'}, PIN, or escrow...` : "Ask about your orders, PIN code, escrow, shipping..."}

@@ -110,8 +110,9 @@ export default function CommerceChatModal({
 
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-overlay commerce-chat-modal-overlay" onClick={onClose} style={{ zIndex: 100010 }}>
       <div 
+        className="commerce-chat-modal-window"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: '#0D1616',
@@ -353,13 +354,16 @@ export default function CommerceChatModal({
             e.preventDefault();
             handleSendMessage();
           }}
+          className="commerce-chat-input-bar"
           style={{
-            padding: '14px 18px',
+            padding: '12px 16px',
+            paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
             background: '#0D1616',
             borderTop: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             alignItems: 'center',
-            gap: '10px'
+            gap: '10px',
+            flexShrink: 0
           }}
         >
           <input

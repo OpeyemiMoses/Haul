@@ -85,20 +85,7 @@ const SHOWCASE_ITEMS = [
 ];
 
 export default function LiquidGlassShowcase({ onExploreItem }) {
-  const [activeIdx, setActiveIdx] = useState(0);
   useScrollReveal();
-
-  const activeItem = SHOWCASE_ITEMS[activeIdx];
-
-  const handlePrev = (e) => {
-    if (e) e.stopPropagation();
-    setActiveIdx((prev) => (prev === 0 ? SHOWCASE_ITEMS.length - 1 : prev - 1));
-  };
-
-  const handleNext = (e) => {
-    if (e) e.stopPropagation();
-    setActiveIdx((prev) => (prev === SHOWCASE_ITEMS.length - 1 ? 0 : prev + 1));
-  };
 
   return (
     <section style={{
@@ -144,257 +131,8 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
         </p>
       </div>
 
-      {/* ================= MOBILE SWITCHABLE CAROUSEL VIEW ================= */}
-      <div className="showcase-mobile-switchable" style={{
-        flexDirection: 'column',
-        gap: '16px',
-        position: 'relative',
-        zIndex: 1,
-        width: '100%',
-        maxWidth: '100%'
-      }}>
-        {/* Horizontal Segmented Switcher Pills */}
-        <div style={{
-          display: 'flex',
-          gap: '8px',
-          overflowX: 'auto',
-          paddingBottom: '4px',
-          width: '100%',
-          scrollbarWidth: 'none',
-          WebkitOverflowScrolling: 'touch',
-          justifyContent: 'center'
-        }}>
-          {SHOWCASE_ITEMS.map((item, idx) => {
-            const isActive = idx === activeIdx;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveIdx(idx)}
-                style={{
-                  padding: '7px 14px',
-                  borderRadius: '999px',
-                  fontSize: '0.74rem',
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                  background: isActive ? 'rgba(132, 244, 59, 0.18)' : 'rgba(255, 255, 255, 0.05)',
-                  border: isActive ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
-                  color: isActive ? 'var(--brand-green)' : '#9CA3AF',
-                  boxShadow: isActive ? '0 0 16px rgba(132, 244, 59, 0.25)' : 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                <span>{item.id === 'headset' ? '🎧 Headset' : item.id === 'phone' ? '📱 iPhone 16' : '🧥 Nanotech Jacket'}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Carousel Prev/Next & Dots bar */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 4px',
-          marginBottom: '2px'
-        }}>
-          <button
-            onClick={handlePrev}
-            aria-label="Previous Living Passport"
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '50%',
-              width: '34px',
-              height: '34px',
-              color: '#FFFFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer'
-            }}
-          >
-            <ChevronLeft size={18} />
-          </button>
-
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            {SHOWCASE_ITEMS.map((_, dotIdx) => (
-              <span
-                key={dotIdx}
-                onClick={() => setActiveIdx(dotIdx)}
-                style={{
-                  width: dotIdx === activeIdx ? '18px' : '6px',
-                  height: '6px',
-                  borderRadius: '999px',
-                  background: dotIdx === activeIdx ? 'var(--brand-green)' : 'rgba(255, 255, 255, 0.25)',
-                  transition: 'all 0.25s ease',
-                  cursor: 'pointer'
-                }}
-              />
-            ))}
-          </div>
-
-          <button
-            onClick={handleNext}
-            aria-label="Next Living Passport"
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '50%',
-              width: '34px',
-              height: '34px',
-              color: '#FFFFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer'
-            }}
-          >
-            <ChevronRight size={18} />
-          </button>
-        </div>
-
-        {/* The Single Active Mobile Card */}
-        <div 
-          key={activeItem.id}
-          className="liquid-glass-card"
-          style={{
-            padding: '16px',
-            borderRadius: '24px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '14px',
-            position: 'relative',
-            overflow: 'hidden'
-          }}
-          onClick={() => onExploreItem && onExploreItem(activeItem.id)}
-        >
-          {/* Product Image Frame */}
-          <div style={{
-            width: '100%',
-            height: '210px',
-            borderRadius: '18px',
-            background: 'radial-gradient(circle at center, #101B1B 0%, #060B0B 100%)',
-            border: '1px solid rgba(132, 244, 59, 0.25)',
-            boxShadow: '0 15px 35px rgba(0, 0, 0, 0.8), 0 0 25px rgba(132, 244, 59, 0.15)',
-            overflow: 'hidden',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative'
-          }}>
-            <img 
-              src={activeItem.imageUri} 
-              alt={activeItem.title} 
-              style={{ width: '85%', height: '85%', objectFit: 'contain' }}
-            />
-            <span style={{
-              position: 'absolute',
-              top: '10px',
-              right: '10px',
-              fontSize: '0.66rem',
-              fontWeight: 800,
-              textTransform: 'uppercase',
-              color: 'var(--brand-green)',
-              background: 'rgba(8, 15, 15, 0.85)',
-              padding: '3px 8px',
-              borderRadius: '999px',
-              border: '1px solid var(--brand-green-border)'
-            }}>
-              VERIFIED 3D
-            </span>
-          </div>
-
-          {/* Details & Specs */}
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{
-                fontSize: '0.68rem',
-                fontWeight: 800,
-                textTransform: 'uppercase',
-                color: 'var(--brand-green)',
-                background: 'var(--brand-green-dim)',
-                padding: '3px 8px',
-                borderRadius: '999px',
-                border: '1px solid var(--brand-green-border)'
-              }}>
-                {activeItem.category}
-              </span>
-              <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
-                {activeItem.price}
-              </span>
-            </div>
-
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 4px', lineHeight: 1.3 }}>
-              {activeItem.title}
-            </h3>
-            <p style={{ fontSize: '0.76rem', color: '#9CA3AF', margin: '0 0 12px', lineHeight: 1.45 }}>
-              {activeItem.subtitle}
-            </p>
-
-            {/* Specs 2x2 grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '8px',
-              marginBottom: '14px'
-            }}>
-              {activeItem.specs.map((spec, i) => (
-                <div key={i} style={{
-                  padding: '7px 10px',
-                  borderRadius: '10px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.06)'
-                }}>
-                  <div style={{ fontSize: '0.64rem', color: '#9CA3AF', textTransform: 'uppercase' }}>{spec.label}</div>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#FFFFFF', marginTop: '1px' }}>{spec.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Passport Row */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '8px 12px',
-              borderRadius: '10px',
-              background: 'var(--brand-green-dim)',
-              border: '1px solid var(--brand-green-border)',
-              marginBottom: '14px',
-              fontSize: '0.7rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#E5E7EB' }}>
-                <ShieldCheck size={14} color="var(--brand-green)" />
-                <span style={{ fontFamily: 'var(--font-mono)' }}>{activeItem.passportId}</span>
-              </div>
-              <span style={{ color: 'var(--brand-green)', fontWeight: 700, fontSize: '0.66rem' }}>
-                {activeItem.warranty}
-              </span>
-            </div>
-
-            {/* CTA Button */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onExploreItem) onExploreItem(activeItem.id);
-              }}
-              className="btn-pill-primary"
-              style={{ width: '100%', padding: '9px', fontSize: '0.8rem', fontWeight: 800, gap: '6px' }}
-            >
-              <ShoppingBag size={14} />
-              <span>Inspect Passport</span>
-              <ArrowRight size={13} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ================= DESKTOP SHOWCASE CARDS LIST ================= */}
-      <div className="showcase-desktop-view" style={{ flexDirection: 'column', gap: '54px', position: 'relative', zIndex: 1 }}>
+      {/* Showcase Cards List with Alternating Angles and Rising & Rotating Elements */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(32px, 5vw, 54px)', position: 'relative', zIndex: 1 }}>
         {SHOWCASE_ITEMS.map((item, index) => {
           const isImageLeft = item.imageSide === 'left';
           const imageCardClass = isImageLeft ? 'card-reveal-left' : 'card-reveal-right';
@@ -406,9 +144,9 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
               className="perspective-container"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
                 alignItems: 'center',
-                gap: '36px',
+                gap: 'clamp(20px, 4vw, 36px)',
                 position: 'relative'
               }}
             >
@@ -421,14 +159,16 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
                   justifyContent: 'center',
                   alignItems: 'center',
                   position: 'relative',
-                  padding: '16px'
+                  padding: 'clamp(8px, 2vw, 16px)',
+                  maxWidth: '100%',
+                  overflow: 'hidden'
                 }}
               >
                 {/* Ambient Halo behind 3D render */}
                 <div style={{
                   position: 'absolute',
-                  width: '320px',
-                  height: '320px',
+                  width: 'min(320px, 80vw)',
+                  height: 'min(320px, 80vw)',
                   borderRadius: '50%',
                   background: 'radial-gradient(circle, rgba(132, 244, 59, 0.28) 0%, rgba(132, 244, 59, 0.08) 50%, transparent 70%)',
                   filter: 'blur(35px)',
@@ -443,11 +183,11 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
                     zIndex: 1,
                     width: '100%',
                     maxWidth: '380px',
-                    borderRadius: '28px',
+                    borderRadius: '24px',
                     overflow: 'hidden',
                     background: 'radial-gradient(circle at center, #101B1B 0%, #060B0B 100%)',
                     border: '1px solid rgba(132, 244, 59, 0.25)',
-                    boxShadow: '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(132, 244, 59, 0.18)',
+                    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(132, 244, 59, 0.18)',
                     cursor: 'pointer',
                     transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
                   }}
@@ -460,7 +200,7 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0) scale(1)';
                     e.currentTarget.style.borderColor = 'rgba(132, 244, 59, 0.25)';
-                    e.currentTarget.style.boxShadow = '0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(132, 244, 59, 0.18)';
+                    e.currentTarget.style.boxShadow = '0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(132, 244, 59, 0.18)';
                   }}
                 >
                   <img
@@ -468,9 +208,10 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
                     alt={item.title}
                     style={{
                       width: '100%',
-                      height: '360px',
-                      objectFit: 'cover',
-                      display: 'block'
+                      height: 'clamp(220px, 32vw, 360px)',
+                      objectFit: 'contain',
+                      display: 'block',
+                      padding: '10px'
                     }}
                   />
                 </div>
@@ -481,8 +222,8 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
                 className={`liquid-pill-dark ${pillCardClass}`}
                 style={{
                   order: isImageLeft ? 2 : 1,
-                  padding: '32px',
-                  borderRadius: '32px',
+                  padding: 'clamp(18px, 3.5vw, 32px)',
+                  borderRadius: 'clamp(20px, 3.5vw, 32px)',
                   cursor: 'pointer',
                   position: 'relative',
                   overflow: 'hidden'

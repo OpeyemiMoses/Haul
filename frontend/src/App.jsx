@@ -1380,32 +1380,6 @@ function MainApp() {
             )}
           </main>
 
-          {/* Footer */}
-          <footer style={{
-            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-            padding: '24px 20px',
-            fontSize: '0.78rem',
-            color: '#9CA3AF',
-            background: 'rgba(10, 16, 16, 0.65)',
-            backdropFilter: 'blur(30px) saturate(200%)',
-            WebkitBackdropFilter: 'blur(30px) saturate(200%)'
-          }}>
-            <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <strong style={{ color: '#FFFFFF', fontSize: '1rem' }}>Hual</strong>
-                  <span style={{ fontSize: '0.66rem', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: 'var(--brand-green-dim)', color: 'var(--brand-green)', border: '1px solid var(--brand-green-border)' }}>VERIFIED COMMERCE</span>
-                </div>
-                <div style={{ fontSize: '0.74rem' }}>Buy it. Own it. Prove it.</div>
-              </div>
-              <div style={{ display: 'flex', gap: '18px', alignItems: 'center', flexWrap: 'wrap', fontSize: '0.74rem' }}>
-                <span style={{ color: '#9CA3AF' }}>• Protected Checkout</span>
-                <span style={{ color: '#9CA3AF' }}>• 100% Verified Authenticity</span>
-                <span style={{ color: '#9CA3AF' }}>• Digital Warranty Passports</span>
-              </div>
-            </div>
-          </footer>
-
           {/* Mobile Bottom Navigation Bar */}
           <BottomNav 
             activeTab={activeTab} 

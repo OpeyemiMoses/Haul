@@ -13,6 +13,7 @@ import {
   Smartphone, 
   ExternalLink,
   ChevronRight,
+  ChevronLeft,
   ShoppingBag,
   LogIn,
   User,
@@ -23,10 +24,18 @@ import HualBrand, { HualIcon } from './HualLogo';
 import LiquidGlassShowcase from './LiquidGlassShowcase';
 import useScrollReveal from '../lib/useScrollReveal';
 
+const LIFECYCLE_STEPS = [
+  { step: '01', title: 'Discover & Buy', shortLabel: '01 Discover', desc: 'Browse curated goods from verified retail stores with zero gas tokens required.' },
+  { step: '02', title: 'Collect & Handover', shortLabel: '02 Collect', desc: 'Present your encrypted in-store QR pass or PIN for instant physical pickup.' },
+  { step: '03', title: 'Factory Warranty', shortLabel: '03 Warranty', desc: 'Access active warranty coverage and repair claims directly from your passport.' },
+  { step: '04', title: 'Transfer & Resell', shortLabel: '04 Resell', desc: 'Transfer authentic ownership or resell on secondary markets with verified provenance.' }
+];
+
 export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigateToSignIn, onOpenLoginModal }) {
   const { user, authenticated, logout, profilePicture, isAgeVerified, setAgeVerificationOpen, openLoginModal, login } = useAuth();
   const [copiedContract, setCopiedContract] = useState(false);
   const [activeFaq, setActiveFaq] = useState(null);
+  const [activeStepIdx, setActiveStepIdx] = useState(0);
 
   useScrollReveal();
 
@@ -505,21 +514,168 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
           </p>
         </div>
 
-        {/* Interactive Steps Grid with Alternating Angles and Staggered Rise */}
+        {/* ================= MOBILE SWITCHABLE TABS VIEW ================= */}
+        <div className="lifecycle-mobile-switcher" style={{
+          flexDirection: 'column',
+          gap: '16px',
+          width: '100%',
+          maxWidth: '100%'
+        }}>
+          {/* Segmented Horizontal Pill Switcher */}
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            overflowX: 'auto',
+            paddingBottom: '4px',
+            width: '100%',
+            scrollbarWidth: 'none',
+            WebkitOverflowScrolling: 'touch',
+            justifyContent: 'center'
+          }}>
+            {LIFECYCLE_STEPS.map((item, idx) => {
+              const isActive = idx === activeStepIdx;
+              return (
+                <button
+                  key={item.step}
+                  onClick={() => setActiveStepIdx(idx)}
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: '999px',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    background: isActive ? 'rgba(132, 244, 59, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+                    border: isActive ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    color: isActive ? 'var(--brand-green)' : '#9CA3AF',
+                    boxShadow: isActive ? '0 0 16px rgba(132, 244, 59, 0.25)' : 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>{item.shortLabel}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Carousel Arrows & Dot Indicators */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0 4px',
+            marginBottom: '4px'
+          }}>
+            <button
+              onClick={() => setActiveStepIdx(prev => (prev === 0 ? LIFECYCLE_STEPS.length - 1 : prev - 1))}
+              aria-label="Previous Step"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '50%',
+                width: '34px',
+                height: '34px',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {LIFECYCLE_STEPS.map((_, dotIdx) => (
+                <span
+                  key={dotIdx}
+                  onClick={() => setActiveStepIdx(dotIdx)}
+                  style={{
+                    width: dotIdx === activeStepIdx ? '18px' : '6px',
+                    height: '6px',
+                    borderRadius: '999px',
+                    background: dotIdx === activeStepIdx ? 'var(--brand-green)' : 'rgba(255, 255, 255, 0.25)',
+                    transition: 'all 0.25s ease',
+                    cursor: 'pointer'
+                  }}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={() => setActiveStepIdx(prev => (prev === LIFECYCLE_STEPS.length - 1 ? 0 : prev + 1))}
+              aria-label="Next Step"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '50%',
+                width: '34px',
+                height: '34px',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          {/* Active Single Step Card on Mobile */}
+          {(() => {
+            const currentStep = LIFECYCLE_STEPS[activeStepIdx];
+            return (
+              <div 
+                key={currentStep.step}
+                className="liquid-glass-card"
+                style={{
+                  padding: '22px 18px',
+                  borderRadius: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: '1.6rem', fontFamily: 'var(--font-mono)', fontWeight: 800, color: 'var(--brand-green)' }}>
+                    {currentStep.step}
+                  </div>
+                  <span style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '999px',
+                    background: 'var(--brand-green-dim)',
+                    color: 'var(--brand-green)',
+                    border: '1px solid var(--brand-green-border)'
+                  }}>
+                    Step {activeStepIdx + 1} of 4
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+                  {currentStep.title}
+                </h3>
+                <p style={{ fontSize: '0.86rem', color: '#9CA3AF', lineHeight: 1.55, margin: 0 }}>
+                  {currentStep.desc}
+                </p>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* ================= DESKTOP GRID VIEW ================= */}
         <div 
-          className="stagger-group perspective-container"
+          className="lifecycle-desktop-grid stagger-group perspective-container"
           style={{
-            display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
             gap: '20px'
           }}
         >
-          {[
-            { step: '01', title: 'Discover & Buy', desc: 'Browse curated goods from verified retail stores with zero gas tokens required.' },
-            { step: '02', title: 'Collect & Handover', desc: 'Present your encrypted in-store QR pass or PIN for instant physical pickup.' },
-            { step: '03', title: 'Factory Warranty', desc: 'Access active warranty coverage and repair claims directly from your passport.' },
-            { step: '04', title: 'Transfer & Resell', desc: 'Transfer authentic ownership or resell on secondary markets with verified provenance.' }
-          ].map((item, idx) => {
+          {LIFECYCLE_STEPS.map((item, idx) => {
             const isLeft = idx % 2 === 0;
             const cardAngleClass = isLeft ? 'card-reveal-left' : 'card-reveal-right';
 

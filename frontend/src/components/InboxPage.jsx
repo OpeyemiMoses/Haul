@@ -17,7 +17,8 @@ import {
   PhoneCall,
   User,
   Inbox,
-  Tag
+  Tag,
+  ChevronLeft
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
 import { formatCurrency } from '../lib/formatters';
@@ -286,17 +287,20 @@ export default function InboxPage({
       </div>
 
       {/* Main Two-Column Messenger Layout */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '340px 1fr',
-        gap: '20px',
-        minHeight: '700px',
-        alignItems: 'stretch'
-      }}>
+      <div 
+        className="inbox-messenger-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '340px 1fr',
+          gap: '20px',
+          minHeight: '700px',
+          alignItems: 'stretch'
+        }}
+      >
         
         {/* Left Column: Folder Switcher + Conversation List */}
         <div 
-          className="reveal-on-scroll"
+          className={`reveal-on-scroll inbox-sidebar-column ${selectedConv ? 'inbox-sidebar-mobile-hidden' : ''}`}
           style={{
           background: '#0D1616',
           borderRadius: '20px',
@@ -573,7 +577,7 @@ export default function InboxPage({
         {/* Right Column: Active Conversation Feed */}
         {selectedConv ? (
           <div 
-            className="card-reveal-right"
+            className="card-reveal-right inbox-feed-column"
             style={{
             background: '#0D1616',
             borderRadius: '20px',
@@ -584,20 +588,41 @@ export default function InboxPage({
           }}>
             {/* Header */}
             <div style={{
-              padding: '16px 20px',
+              padding: '14px 18px',
               borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               background: '#0A1212',
               flexWrap: 'wrap',
-              gap: '12px'
+              gap: '10px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedConvId(null)}
+                  className="mobile-back-to-inbox-btn"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '999px',
+                    padding: '5px 10px',
+                    color: 'var(--brand-green)',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'none',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <ChevronLeft size={14} />
+                  <span>Chats</span>
+                </button>
                 <img 
                   src={selectedConv.storeAvatar} 
                   alt={selectedConv.storeName} 
-                  style={{ width: '44px', height: '44px', borderRadius: '12px', objectFit: 'cover', background: '#080F0F', border: '1px solid rgba(255,255,255,0.1)' }} 
+                  style={{ width: '40px', height: '40px', borderRadius: '12px', objectFit: 'cover', background: '#080F0F', border: '1px solid rgba(255,255,255,0.1)' }} 
                 />
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -810,13 +835,17 @@ export default function InboxPage({
             </div>
 
             {/* Input Form */}
-            <form onSubmit={handleSendMessage} style={{
-              padding: '14px 18px',
+            <form onSubmit={handleSendMessage} className="inbox-input-form" style={{
+              padding: '12px 16px',
+              paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
               borderTop: '1px solid rgba(255, 255, 255, 0.08)',
               background: '#0A1212',
               display: 'flex',
               gap: '10px',
-              alignItems: 'center'
+              alignItems: 'center',
+              position: 'sticky',
+              bottom: 0,
+              zIndex: 10
             }}>
               <input
                 type="text"
