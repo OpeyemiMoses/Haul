@@ -86,6 +86,29 @@ const SHOWCASE_ITEMS = [
 
 export default function LiquidGlassShowcase({ onExploreItem }) {
   useScrollReveal();
+  const [activeShowcaseIdx, setActiveShowcaseIdx] = useState(0);
+  const scrollContainerRef = React.useRef(null);
+
+  const scrollToShowcaseItem = (index) => {
+    setActiveShowcaseIdx(index);
+    if (scrollContainerRef.current) {
+      const cards = scrollContainerRef.current.querySelectorAll('.showcase-item-card');
+      if (cards && cards[index]) {
+        cards[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  };
+
+  const handleScroll = (e) => {
+    const el = e.currentTarget;
+    const cardWidth = el.offsetWidth * 0.85;
+    if (cardWidth > 0) {
+      const nextIdx = Math.round(el.scrollLeft / cardWidth);
+      if (nextIdx >= 0 && nextIdx < SHOWCASE_ITEMS.length && nextIdx !== activeShowcaseIdx) {
+        setActiveShowcaseIdx(nextIdx);
+      }
+    }
+  };
 
   return (
     <section style={{
@@ -132,7 +155,12 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
       </div>
 
       {/* Showcase Cards List with Alternating Angles and Rising & Rotating Elements */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(32px, 5vw, 54px)', position: 'relative', zIndex: 1 }}>
+      <div 
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="showcase-items-container"
+        style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(32px, 5vw, 54px)', position: 'relative', zIndex: 1 }}
+      >
         {SHOWCASE_ITEMS.map((item, index) => {
           const isImageLeft = item.imageSide === 'left';
           const imageCardClass = isImageLeft ? 'card-reveal-left' : 'card-reveal-right';
@@ -141,7 +169,7 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
           return (
             <div
               key={item.id}
-              className="perspective-container"
+              className="perspective-container showcase-item-card"
               style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
@@ -152,7 +180,7 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
             >
               {/* 3D Item Card (Enters from alternating angle) */}
               <div 
-                className={`${imageCardClass} ${item.floatClass}`}
+                className={`${imageCardClass} ${item.floatClass} showcase-item-image-wrapper`}
                 style={{
                   order: isImageLeft ? 1 : 2,
                   display: 'flex',
@@ -219,7 +247,7 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
 
               {/* Apple Liquid Glass Foreground Details Pill (Enters from opposite angle) */}
               <div 
-                className={`liquid-pill-dark ${pillCardClass}`}
+                className={`liquid-pill-dark ${pillCardClass} showcase-item-pill-wrapper`}
                 style={{
                   order: isImageLeft ? 2 : 1,
                   padding: 'clamp(18px, 3.5vw, 32px)',
@@ -388,6 +416,89 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
             </div>
           );
         })}
+      </div>
+
+      {/* Mobile Swipe Navigation Controls & Dot Indicators */}
+      <div className="showcase-mobile-nav" style={{
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 8px',
+        marginTop: '20px',
+        position: 'relative',
+        zIndex: 2
+      }}>
+        <button
+          onClick={() => scrollToShowcaseItem(Math.max(0, activeShowcaseIdx - 1))}
+          disabled={activeShowcaseIdx === 0}
+          aria-label="Previous Product"
+          style={{
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '50%',
+            width: '36px',
+            height: '36px',
+            color: '#FFFFFF',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: activeShowcaseIdx === 0 ? 'default' : 'pointer',
+            opacity: activeShowcaseIdx === 0 ? 0.35 : 1
+          }}
+        >
+          <ChevronLeft size={18} />
+        </button>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {SHOWCASE_ITEMS.map((item, idx) => (
+            <button
+              key={item.id}
+              onClick={() => scrollToShowcaseItem(idx)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 12px',
+                borderRadius: '999px',
+                background: idx === activeShowcaseIdx ? 'rgba(132, 244, 59, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+                border: idx === activeShowcaseIdx ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
+                color: idx === activeShowcaseIdx ? 'var(--brand-green)' : '#9CA3AF',
+                fontSize: '0.74rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <span style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: idx === activeShowcaseIdx ? 'var(--brand-green)' : 'rgba(255, 255, 255, 0.3)'
+              }} />
+              <span>0{idx + 1}</span>
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={() => scrollToShowcaseItem(Math.min(SHOWCASE_ITEMS.length - 1, activeShowcaseIdx + 1))}
+          disabled={activeShowcaseIdx === SHOWCASE_ITEMS.length - 1}
+          aria-label="Next Product"
+          style={{
+            background: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '50%',
+            width: '36px',
+            height: '36px',
+            color: '#FFFFFF',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: activeShowcaseIdx === SHOWCASE_ITEMS.length - 1 ? 'default' : 'pointer',
+            opacity: activeShowcaseIdx === SHOWCASE_ITEMS.length - 1 ? 0.35 : 1
+          }}
+        >
+          <ChevronRight size={18} />
+        </button>
       </div>
     </section>
   );

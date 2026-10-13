@@ -227,32 +227,28 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
             </a>
           </div>
 
-          {/* 4 Core Pillars with Staggered Pop */}
+          {/* 4 Core Pillars */}
           <div 
-            className="stagger-group"
+            className="hero-pillars-track"
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '12px',
-              maxWidth: '480px',
               paddingTop: '20px',
               borderTop: '1px solid rgba(255, 255, 255, 0.08)'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#D1D5DB' }}>
-              <CheckCircle2 size={15} color="var(--brand-green)" />
+            <div className="hero-pillar-item">
+              <CheckCircle2 size={14} color="var(--brand-green)" />
               <span>Verified Merchants</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#D1D5DB' }}>
-              <CheckCircle2 size={15} color="var(--brand-green)" />
+            <div className="hero-pillar-item">
+              <CheckCircle2 size={14} color="var(--brand-green)" />
               <span>Gasless Checkout</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#D1D5DB' }}>
-              <CheckCircle2 size={15} color="var(--brand-green)" />
+            <div className="hero-pillar-item">
+              <CheckCircle2 size={14} color="var(--brand-green)" />
               <span>Digital Product Passport</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#D1D5DB' }}>
-              <CheckCircle2 size={15} color="var(--brand-green)" />
+            <div className="hero-pillar-item">
+              <CheckCircle2 size={14} color="var(--brand-green)" />
               <span>Transfer & Resell</span>
             </div>
           </div>
@@ -467,31 +463,63 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
           background: 'rgba(12, 18, 18, 0.55)',
           backdropFilter: 'blur(32px) saturate(200%)',
           WebkitBackdropFilter: 'blur(32px) saturate(200%)',
-          padding: '24px 24px'
+          padding: '20px 0',
+          overflow: 'hidden'
         }}
       >
         <div style={{ maxWidth: '1200px', margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontSize: '0.68rem', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: '16px' }}>
+          <div style={{ fontSize: '0.68rem', color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginBottom: '14px', padding: '0 16px' }}>
             Trusted Brands & Verified Merchants
           </div>
 
           <div 
-            className="stagger-group"
+            className="trusted-vendors-scroll-track"
             style={{
               display: 'flex',
-              justifyContent: 'space-around',
               alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '24px',
-              opacity: 0.85
+              overflowX: 'auto',
+              flexWrap: 'nowrap',
+              gap: '14px',
+              padding: '4px 20px',
+              scrollbarWidth: 'none',
+              WebkitOverflowScrolling: 'touch',
+              opacity: 0.95
             }}
           >
-            <span style={{ fontFamily: 'var(--font-main)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.15em', color: '#FFFFFF' }}>NIKE</span>
-            <span style={{ fontFamily: 'var(--font-main)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.15em', color: '#FFFFFF' }}>SONY</span>
-            <span style={{ fontFamily: 'var(--font-main)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.15em', color: '#FFFFFF' }}>ADIDAS</span>
-            <span style={{ fontFamily: 'var(--font-main)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.15em', color: '#FFFFFF' }}>APPLE</span>
-            <span style={{ fontFamily: 'var(--font-main)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.15em', color: '#FFFFFF' }}>SAMSUNG</span>
-            <span style={{ fontFamily: 'var(--font-main)', fontSize: '0.9rem', fontWeight: 800, letterSpacing: '0.15em', color: '#FFFFFF' }}>JBL</span>
+            {[
+              { name: 'NIKE', tag: 'Verified' },
+              { name: 'SONY', tag: 'Official' },
+              { name: 'ADIDAS', tag: 'Verified' },
+              { name: 'APPLE', tag: 'Authorized' },
+              { name: 'SAMSUNG', tag: 'Flagship' },
+              { name: 'JBL', tag: 'Official' },
+              { name: 'ROLEX', tag: 'Verified' },
+              { name: 'BALENCIAGA', tag: 'Curated' },
+              { name: 'PRADA', tag: 'Verified' }
+            ].map((vendor) => (
+              <div
+                key={vendor.name}
+                className="trusted-vendor-pill"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  flexShrink: 0,
+                  padding: '6px 14px',
+                  borderRadius: '999px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span style={{ fontFamily: 'var(--font-main)', fontSize: '0.86rem', fontWeight: 800, letterSpacing: '0.12em', color: '#FFFFFF' }}>
+                  {vendor.name}
+                </span>
+                <span style={{ fontSize: '0.62rem', color: 'var(--brand-green)', fontWeight: 700 }}>
+                  • {vendor.tag}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </section>

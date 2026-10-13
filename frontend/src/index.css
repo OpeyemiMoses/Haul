@@ -1415,6 +1415,194 @@ html, body {
   }
 }
 
+/* ========================================================
+   LANDING PAGE HORIZONTAL SCROLL TRACKS (VENDORS & SHOWCASE)
+   ======================================================== */
+
+/* Trusted Brands & Verified Merchants horizontal track */
+.trusted-vendors-scroll-track {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.trusted-vendors-scroll-track::-webkit-scrollbar {
+  display: none !important;
+}
+
+.trusted-vendor-pill,
+.trusted-vendors-scroll-track > * {
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: fit-content !important;
+  display: inline-flex !important;
+  box-sizing: border-box !important;
+}
+
+/* Hero Core Pillars track */
+.hero-pillars-track {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  max-width: 480px;
+  width: 100%;
+}
+
+.hero-pillar-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: #D1D5DB;
+}
+
+/* Showcase Desktop Default */
+.showcase-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(32px, 5vw, 54px);
+  position: relative;
+  z-index: 1;
+}
+
+.showcase-item-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  align-items: center;
+  gap: clamp(20px, 4vw, 36px);
+  position: relative;
+}
+
+.showcase-mobile-nav {
+  display: none !important;
+}
+
+/* Mobile & Tablet Overrides for Landing Page Horizontal Scroll Tracks */
+@media (max-width: 768px) {
+  /* Trusted Vendors on Mobile: clean horizontal swipe without wrap */
+  .trusted-vendors-scroll-track {
+    padding: 6px 16px 8px !important;
+    gap: 10px !important;
+    justify-content: flex-start !important;
+  }
+
+  .trusted-vendor-pill {
+    padding: 6px 12px !important;
+  }
+
+  /* Hero Pillars on Mobile: single horizontal scrollable row */
+  .hero-pillars-track {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: nowrap !important;
+    gap: 8px !important;
+    padding-bottom: 6px !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .hero-pillars-track::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .hero-pillar-item {
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    white-space: nowrap !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    padding: 6px 12px !important;
+    border-radius: 999px !important;
+    font-size: 0.74rem !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  /* Liquid Glass Showcase Models on Mobile: Horizontal Swipe Track */
+  .showcase-items-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 16px !important;
+    padding: 8px 16px 16px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .showcase-items-container::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .showcase-item-card {
+    min-width: 86vw !important;
+    max-width: 88vw !important;
+    width: 86vw !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    scroll-snap-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .showcase-item-card > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .showcase-item-image-wrapper {
+    order: 1 !important;
+    padding: 0 !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  .showcase-item-image-wrapper img {
+    height: 180px !important;
+    max-height: 180px !important;
+    padding: 8px !important;
+    object-fit: contain !important;
+  }
+
+  .showcase-item-pill-wrapper {
+    order: 2 !important;
+    padding: 16px 14px !important;
+    border-radius: 20px !important;
+  }
+
+  .showcase-mobile-nav {
+    display: flex !important;
+  }
+}
+
+
 
 
 
