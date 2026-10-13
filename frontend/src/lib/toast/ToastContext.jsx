@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
-import ModalPortal from '../../components/ModalPortal';
 
 const ToastContext = createContext(null);
 
@@ -72,7 +72,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ showToast: addToast, toast }}>
       {children}
-      <ModalPortal>
+      {typeof document !== 'undefined' && createPortal(
         <div
           style={{
             position: 'fixed',
@@ -183,8 +183,9 @@ export function ToastProvider({ children }) {
               </div>
             );
           })}
-        </div>
-      </ModalPortal>
+        </div>,
+        document.body
+      )}
     </ToastContext.Provider>
   );
 }
