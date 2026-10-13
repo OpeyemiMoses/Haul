@@ -3,7 +3,7 @@
   "networkName": "monadMainnet",
   "contracts": {
     "USDC": {
-      "address": "0xE4d1a20BC3F037a95fA1BD09C3382906591dcb4A",
+      "address": "0x754704Bc059F8C67012fEd69BC8A327a5aafb603",
       "abi": [
         {
           "inputs": [],
@@ -413,7 +413,7 @@
       ]
     },
     "Passport": {
-      "address": "0x5F37Dda882340a5F13E2feC3fA075b7C360BaB57",
+      "address": "0xb56BDf7C9EC3B265A4e531FDD297771f60354d6A",
       "abi": [
         {
           "inputs": [],
@@ -1642,7 +1642,7 @@
       ]
     },
     "Escrow": {
-      "address": "0xEDf5e8E09568F93f19F5DB168eCa608D67f75A8c",
+      "address": "0xE6f09EfEEA37F4c5D94f299c8DAf8f9E99A3989e",
       "abi": [
         {
           "inputs": [
@@ -2108,7 +2108,7 @@
       ]
     },
     "Commerce": {
-      "address": "0x1267d94c2174fc5e719a7B3ed272D6e0F3e93380",
+      "address": "0x021b27596a0496a8e3cd1306b89EfbDaD85B692E",
       "abi": [
         {
           "inputs": [

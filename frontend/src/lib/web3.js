@@ -302,14 +302,7 @@ export async function buyWithUsdcEscrow(arg1, arg2, arg3, arg4) {
     : BigInt(prodPriceCents || 25000);
   const amountUsdc = priceUsdCents * 10_000n; // 6 decimals
 
-  // 2. Ensure paymaster relayer has sufficient USDC
-  const paymasterBal = await usdc.balanceOf(relayer.address);
-  if (paymasterBal < amountUsdc) {
-    const mintTx = await usdc.mint(relayer.address, 100_000n * 10n ** 6n);
-    await mintTx.wait();
-  }
-
-  // 3. Ensure paymaster relayer has approved Commerce contract
+  // 2. Ensure paymaster relayer has approved Commerce contract
   const currentAllowance = await usdc.allowance(relayer.address, commerceAddr);
   if (currentAllowance < amountUsdc) {
     const approveTx = await usdc.approve(commerceAddr, ethers.MaxUint256);
@@ -695,13 +688,6 @@ export async function releaseEscrowPayoutToStoreOwner({ sellerAddress, amountUsd
   let receipt = null;
 
   try {
-    // Ensure relayer has sufficient balance to transfer
-    const relayerBal = await usdc.balanceOf(relayer.address);
-    if (relayerBal < amountUnits) {
-      const mintTx = await usdc.mint(relayer.address, 100_000n * 10n ** 6n);
-      await mintTx.wait();
-    }
-
     // Execute real onchain transfer to seller's address on Monad Mainnet
     const tx = await usdc.transfer(validSellerAddress, amountUnits);
     receipt = await tx.wait();

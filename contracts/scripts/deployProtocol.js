@@ -26,12 +26,17 @@ async function main() {
     process.exit(1);
   }
 
-  // 1. Deploy TestUSDC
-  const TestUSDC = await hre.ethers.getContractFactory("TestUSDC");
-  const usdc = await TestUSDC.deploy();
-  await usdc.waitForDeployment();
-  const usdcAddress = await usdc.getAddress();
-  console.log("✓ TestUSDC deployed to:", usdcAddress);
+  // 1. Resolve Official USDC on Monad Mainnet
+  let usdcAddress = process.env.OFFICIAL_USDC_ADDRESS || "0x754704Bc059F8C67012fEd69BC8A327a5aafb603";
+  if (hre.network.name === "hardhat" || hre.network.name === "localhost") {
+    const TestUSDC = await hre.ethers.getContractFactory("TestUSDC");
+    const usdc = await TestUSDC.deploy();
+    await usdc.waitForDeployment();
+    usdcAddress = await usdc.getAddress();
+    console.log("✓ (Local Dev) Mock USDC deployed to:", usdcAddress);
+  } else {
+    console.log("✓ Using Official Monad USDC at:", usdcAddress);
+  }
 
   // 2. Deploy HualPassport
   const HualPassport = await hre.ethers.getContractFactory("HualPassport");

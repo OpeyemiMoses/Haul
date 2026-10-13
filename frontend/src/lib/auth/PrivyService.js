@@ -101,20 +101,10 @@ export class PrivyService {
   }
 
   /**
-   * Faucet test USDC directly to the embedded wallet on Monad
+   * Mainnet uses official Circle USDC (no-op faucet)
    */
   static async faucetUsdc(address, amount = 1000) {
-    if (!address || !config.contracts?.USDC?.address) return;
-    const relayer = getRelayerSigner();
-    const usdc = new ethers.Contract(
-      config.contracts.USDC.address,
-      config.contracts.USDC.abi,
-      relayer
-    );
-    const amountUnits = BigInt(amount) * 10n ** 6n;
-    const tx = await usdc.mint(address, amountUnits);
-    await tx.wait();
-    return tx.hash;
+    return null;
   }
 
   /**
