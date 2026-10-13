@@ -639,27 +639,74 @@ html, body {
   /* ========================================================
      COMPACT MOBILE CARD DETAILS & PROFILE ADAPTATIONS
      ======================================================== */
+  html, body, #root, .app-layout, .app-main-content {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+
+  .app-main-content {
+    padding: 16px 14px calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
   .perspective-container {
     perspective: none !important;
+    transform: none !important;
   }
 
   .card-reveal-left,
-  .card-reveal-right {
+  .card-reveal-right,
+  .landing-stagger > *,
+  .stagger-group > *,
+  .rise-rotate-in,
+  .rise-rotate-in-reverse,
+  .card-reveal-left.is-revealed,
+  .card-reveal-right.is-revealed,
+  .landing-stagger > *.is-revealed,
+  .stagger-group > *.is-revealed,
+  .rise-rotate-in.is-revealed,
+  .rise-rotate-in-reverse.is-revealed {
     transform: none !important;
+    animation: none !important;
+    opacity: 1 !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
+    box-sizing: border-box !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Grid containers on mobile: single column or 2-column, never overflowing */
+  .categories-cards-grid,
+  .stores-cards-grid,
+  .wishlist-cards-grid,
+  .cart-page-grid,
+  .pdp-showcase-grid,
+  .profile-overview-grid,
+  .profile-passports-grid,
+  .profile-header-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
   /* General Cards on Mobile: reduce bulky padding and prevent cut-offs */
   .apple-liquid-glass-card,
-  .liquid-glass-card {
+  .liquid-glass-card,
+  .store-card-animated,
+  .glass-panel {
     padding: 14px 12px !important;
     border-radius: 16px !important;
     box-sizing: border-box !important;
     min-width: 0 !important;
     max-width: 100% !important;
+    width: 100% !important;
   }
 
   /* Profile Header & Top Cards */
@@ -1307,6 +1354,67 @@ html, body {
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 24px rgba(132, 244, 59, 0.22) !important;
   border-color: rgba(132, 244, 59, 0.5) !important;
 }
+
+/* ========================================================
+   GLOBAL MOBILE ZERO HORIZONTAL OVERFLOW SHIELD
+   ======================================================== */
+@media (max-width: 768px) {
+  html, body, #root, .app-layout, .app-main-content {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+
+  .perspective-container {
+    perspective: none !important;
+    transform: none !important;
+  }
+
+  /* Completely eliminate horizontal slide-in offsets and 3D tilts on mobile */
+  .card-reveal-left,
+  .card-reveal-right,
+  .landing-stagger > *,
+  .stagger-group > *,
+  .rise-rotate-in,
+  .rise-rotate-in-reverse,
+  .card-reveal-left.is-revealed,
+  .card-reveal-right.is-revealed,
+  .landing-stagger > *.is-revealed,
+  .stagger-group > *.is-revealed,
+  .rise-rotate-in.is-revealed,
+  .rise-rotate-in-reverse.is-revealed {
+    transform: none !important;
+    animation: none !important;
+    opacity: 1 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Force all full-card lists to single column on mobile */
+  .categories-cards-grid,
+  .stores-cards-grid,
+  .wishlist-cards-grid,
+  .cart-page-grid,
+  .pdp-showcase-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .liquid-glass-card,
+  .apple-liquid-glass-card,
+  .store-card-animated,
+  .glass-panel {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+}
+
 
 
 

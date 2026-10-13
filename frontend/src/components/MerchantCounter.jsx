@@ -159,7 +159,7 @@ export default function MerchantCounter({ allPassports, onActionComplete }) {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px', marginBottom: '36px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '18px', marginBottom: '36px', width: '100%', boxSizing: 'border-box' }}>
         {/* Verification Terminal Card */}
         <div className="glass-panel" style={{ padding: '24px', background: '#121520' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>

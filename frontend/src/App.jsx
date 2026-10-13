@@ -1050,7 +1050,7 @@ function MainApp() {
             setSelectedCategory={setSelectedCategory}
           />
 
-          <main style={{ maxWidth: '1440px', margin: '0 auto', width: '100%', padding: '28px 24px 80px', flex: 1 }}>
+          <main className="app-main-content" style={{ maxWidth: '1440px', margin: '0 auto', width: '100%', padding: '28px 24px 80px', flex: 1, boxSizing: 'border-box' }}>
             {error && (
               <div style={{
                 padding: '16px 20px',

@@ -2297,7 +2297,7 @@ export default function Marketplace({
                 </button>
               </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '32px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '20px' }}>
                   {/* Left Column: Form & Summary */}
                   <div>
                     {/* Delivery Method Segment (Figma Screen 04) */}

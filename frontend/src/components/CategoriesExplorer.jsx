@@ -83,15 +83,15 @@ export default function CategoriesExplorer({ onSelectCategory }) {
   }, []);
 
   return (
-    <div className="page-fade-in" style={{ maxWidth: '1440px', margin: '0 auto', padding: '0 0 60px' }}>
+    <div className="page-fade-in" style={{ maxWidth: '1440px', margin: '0 auto', padding: '0 0 60px', width: '100%', boxSizing: 'border-box' }}>
       
       {/* Header Banner */}
       <div className="reveal-pop" style={{
-        padding: '36px',
+        padding: 'clamp(20px, 4vw, 36px)',
         background: 'linear-gradient(135deg, rgba(14, 24, 24, 0.95) 0%, rgba(8, 15, 15, 0.95) 100%)',
-        borderRadius: '26px',
+        borderRadius: '22px',
         border: '1px solid rgba(132, 244, 59, 0.25)',
-        marginBottom: '36px',
+        marginBottom: '24px',
         position: 'relative',
         overflow: 'hidden',
         boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)'
@@ -114,11 +114,11 @@ export default function CategoriesExplorer({ onSelectCategory }) {
             <span>CURATED LUXURY CATEGORIES</span>
           </div>
 
-          <h1 className="font-display" style={{ fontSize: '2.2rem', fontWeight: 900, color: '#FFFFFF', margin: '0 0 10px', lineHeight: 1.15 }}>
+          <h1 className="font-display" style={{ fontSize: 'clamp(1.4rem, 5vw, 2.2rem)', fontWeight: 900, color: '#FFFFFF', margin: '0 0 10px', lineHeight: 1.15 }}>
             Explore Verified Goods by Category
           </h1>
 
-          <p style={{ fontSize: '0.9rem', color: '#9CA3AF', margin: 0, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 'clamp(0.8rem, 2.5vw, 0.9rem)', color: '#9CA3AF', margin: 0, lineHeight: 1.5 }}>
             Every category features living digital Product Passports minted on Monad with guaranteed authentic chain of custody.
           </p>
         </div>
@@ -126,11 +126,13 @@ export default function CategoriesExplorer({ onSelectCategory }) {
 
       {/* Categories Grid */}
       <div 
-        className="stagger-group perspective-container"
+        className="stagger-group perspective-container categories-cards-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-          gap: '24px'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
+          gap: '18px',
+          width: '100%',
+          boxSizing: 'border-box'
         }}
       >
         {CATEGORIES_DATA.map((cat) => (
@@ -161,14 +163,14 @@ export default function CategoriesExplorer({ onSelectCategory }) {
           >
             {/* Image Preview Banner */}
             <div style={{
-              height: '180px',
+              height: 'clamp(135px, 25vw, 180px)',
               background: '#080F0F',
               position: 'relative',
               overflow: 'hidden',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '16px'
+              padding: '12px'
             }}>
               <img 
                 src={cat.imageUri} 
@@ -178,15 +180,15 @@ export default function CategoriesExplorer({ onSelectCategory }) {
               
               <div style={{
                 position: 'absolute',
-                top: '14px',
-                right: '14px',
-                padding: '4px 10px',
+                top: '12px',
+                right: '12px',
+                padding: '3px 9px',
                 borderRadius: '999px',
                 background: 'rgba(6, 10, 10, 0.85)',
                 backdropFilter: 'blur(10px)',
                 border: '1px solid rgba(255, 255, 255, 0.15)',
                 color: '#FFFFFF',
-                fontSize: '0.72rem',
+                fontSize: '0.68rem',
                 fontWeight: 700
               }}>
                 {cat.badge}
@@ -194,12 +196,12 @@ export default function CategoriesExplorer({ onSelectCategory }) {
             </div>
 
             {/* Content Details */}
-            <div style={{ padding: '22px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
+            <div style={{ padding: 'clamp(14px, 3vw, 22px)', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between', minWidth: 0, overflow: 'hidden' }}>
               <div>
-                <h3 className="font-display" style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 4px' }}>
+                <h3 className="font-display" style={{ fontSize: 'clamp(1.05rem, 3.2vw, 1.25rem)', fontWeight: 800, color: '#FFFFFF', margin: '0 0 4px', lineHeight: 1.2 }}>
                   {cat.name}
                 </h3>
-                <p style={{ fontSize: '0.8rem', color: '#9CA3AF', margin: '0 0 16px', lineHeight: 1.4 }}>
+                <p style={{ fontSize: '0.78rem', color: '#9CA3AF', margin: '0 0 14px', lineHeight: 1.35 }}>
                   {cat.subtitle}
                 </p>
 

@@ -183,10 +183,12 @@ export default function WishlistPage({
         </div>
       ) : (
         /* Saved Items Grid */
-        <div className="stagger-group perspective-container" style={{
+        <div className="stagger-group perspective-container wishlist-cards-grid" style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-          gap: '22px'
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
+          gap: '16px',
+          width: '100%',
+          boxSizing: 'border-box'
         }}>
           {wishlist.map((item) => (
             <div

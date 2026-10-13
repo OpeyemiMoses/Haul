@@ -68,7 +68,7 @@ export default function LaunchSplitPage({
     <div className="page-fade-in" style={{
       minHeight: '100vh',
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
       background: '#FFFFFF',
       position: 'relative'
     }}>

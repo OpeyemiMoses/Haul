@@ -467,10 +467,10 @@ export default function CartPage({
               </button>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '28px', alignItems: 'start' }}>
+            <div className="cart-page-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '20px', alignItems: 'start', width: '100%', boxSizing: 'border-box' }}>
               
               {/* Left: Cart Items List */}
-              <div className="card-reveal-left stagger-group" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div className="card-reveal-left stagger-group" style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%', minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px' }}>
                   <span style={{ fontSize: '0.86rem', fontWeight: 700, color: '#9CA3AF' }}>
                     {cart.length} {cart.length === 1 ? 'Item' : 'Items'} in Cart

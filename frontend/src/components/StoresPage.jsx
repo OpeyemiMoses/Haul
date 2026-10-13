@@ -498,12 +498,14 @@ export default function StoresPage({
       ) : (
         /* Verified Stores Cards Grid */
         <div 
-          className="stagger-group"
+          className="stagger-group stores-cards-grid"
           style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-          gap: '22px'
-        }}>
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
+            gap: '16px',
+            width: '100%',
+            boxSizing: 'border-box'
+          }}>
           {filteredVerifiedStores.map((store, idx) => {
             const prox = calculateProximity(buyerLocation, store.location);
             const isFollowed = followedStores.includes(store.id);
@@ -514,13 +516,17 @@ export default function StoresPage({
                 className={`liquid-glass-card store-card-animated ${idx % 2 === 0 ? 'card-reveal-left' : 'card-reveal-right'}`}
                 onClick={() => onSelectStore && onSelectStore(store)}
                 style={{
-                  borderRadius: '22px',
+                  borderRadius: '20px',
                   overflow: 'hidden',
                   cursor: 'pointer',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   display: 'flex',
                   flexDirection: 'column',
-                  position: 'relative'
+                  position: 'relative',
+                  width: '100%',
+                  maxWidth: '100%',
+                  boxSizing: 'border-box',
+                  minWidth: 0
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = 'rgba(132, 244, 59, 0.45)';

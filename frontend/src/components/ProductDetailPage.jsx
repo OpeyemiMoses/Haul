@@ -296,12 +296,14 @@ export default function ProductDetailPage({
       </div>
 
       {/* Main 2-Column Product Showcase */}
-      <div style={{
+      <div className="pdp-showcase-grid" style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-        gap: '36px',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
+        gap: '24px',
         alignItems: 'start',
-        marginBottom: '48px'
+        marginBottom: '36px',
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
 
         {/* LEFT COLUMN: Visual Media Gallery & Monad Digital Passport */}
