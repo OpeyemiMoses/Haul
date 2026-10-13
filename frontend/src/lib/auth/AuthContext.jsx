@@ -514,7 +514,7 @@ export function AuthProvider({ children }) {
       }
 
       if (savedVal === null) {
-        const balToSet = onchainBal > 0 ? onchainBal : 2500;
+        const balToSet = onchainBal > 0 ? onchainBal : 0;
         setUsdcBalance(balToSet);
         keys.forEach(k => localStorage.setItem(k, String(balToSet)));
       } else {
@@ -689,7 +689,7 @@ export function useAuth() {
       user: null,
       authenticated: false,
       ready: true,
-      usdcBalance: 2500,
+      usdcBalance: 0,
       loadingBalance: false,
       deductUsdc: () => {},
       userLocation: 'Victoria Island, Lagos',

@@ -42,25 +42,54 @@ import { getProductStockOverride } from './lib/ordersRegistry';
 
 const INITIAL_DEMO_PASSPORTS = [];
 
-// Clean one-time purge of stale testnet data for Monad Mainnet
-if (typeof window !== 'undefined' && !localStorage.getItem('hual_mainnet_v1_migrated')) {
+// Comprehensive purge of all testnet items, Privy test accounts, messages, and state for Monad Mainnet
+export function purgeAllTestnetAndPrivyState(force = false) {
+  if (typeof window === 'undefined') return;
   try {
-    localStorage.removeItem('hual_escrow_orders');
-    localStorage.removeItem('hual_all_pickup_orders');
-    localStorage.removeItem('hual_my_passports_guest');
-    localStorage.removeItem('hual_collected_passports');
-    localStorage.removeItem('hual_refunded_passports');
-    localStorage.removeItem('hual_deleted_passports');
-    localStorage.removeItem('hual_usdc_balance');
-    Object.keys(localStorage).forEach(k => {
-      if (k.startsWith('hual_usdc_balance_') || k.startsWith('hual_my_passports_')) {
-        localStorage.removeItem(k);
+    const savedTheme = localStorage.getItem('hual_theme_mode') || 'dark';
+
+    // 1. Clear every testing key across localStorage
+    const keys = Object.keys(localStorage);
+    keys.forEach(k => {
+      if (k === 'hual_theme_mode') return; // Preserve user theme preference
+      if (!force && k === 'hual_clean_slate_mainnet_reset_v2') return;
+
+      if (
+        k.startsWith('hual_') ||
+        k.startsWith('privy') ||
+        k.startsWith('@privy-io') ||
+        k.startsWith('wagmi')
+      ) {
+        try {
+          localStorage.removeItem(k);
+        } catch {}
       }
     });
-    localStorage.setItem('hual_mainnet_v1_migrated', 'true');
-  } catch (e) {
-    console.warn('Mainnet storage migration error:', e);
+
+    // 2. Re-establish pristine empty registries for Mainnet
+    localStorage.setItem('hual_user_registry', JSON.stringify([]));
+    localStorage.setItem('hual_shared_conversations_v2', JSON.stringify([]));
+    localStorage.setItem('hual_shared_conversations', JSON.stringify([]));
+    localStorage.setItem('hual_all_created_stores', JSON.stringify([]));
+    localStorage.setItem('hual_custom_listed_products', JSON.stringify([]));
+    localStorage.setItem('hual_escrow_orders', JSON.stringify([]));
+    localStorage.setItem('hual_all_pickup_orders', JSON.stringify([]));
+    localStorage.setItem('hual_my_passports', JSON.stringify([]));
+    localStorage.setItem('hual_theme_mode', savedTheme);
+    localStorage.setItem('hual_clean_slate_mainnet_reset_v2', 'true');
+
+    // 3. Dispatch system events to notify all listening components
+    window.dispatchEvent(new CustomEvent('hual_messages_updated', { detail: { conversations: [] } }));
+    window.dispatchEvent(new CustomEvent('hual_balance_updated', { detail: { newBalance: 0 } }));
+    window.dispatchEvent(new Event('hual_auth_signout'));
+  } catch (err) {
+    console.warn('Mainnet clean slate storage migration error:', err);
   }
+}
+
+// Automatic one-time run on startup for all visitors
+if (typeof window !== 'undefined' && !localStorage.getItem('hual_clean_slate_mainnet_reset_v2')) {
+  purgeAllTestnetAndPrivyState(false);
 }
 
 function MainApp() {

@@ -374,7 +374,7 @@ export async function completePickupAndPayout({
     ].filter(Boolean);
 
     for (const k of userKeys) {
-      const cur = parseFloat(localStorage.getItem(k) || '1000');
+      const cur = parseFloat(localStorage.getItem(k) || '0');
       const updated = Number((cur + orderAmount).toFixed(2));
       localStorage.setItem(k, String(updated));
     }

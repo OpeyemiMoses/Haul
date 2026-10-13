@@ -1085,7 +1085,7 @@ export default function ProfilePage({
       try {
         const storeOwnerAddr = userStore?.ownerAddress || user?.address || '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC';
         const sellerLower = storeOwnerAddr.toLowerCase();
-        const curBal = parseFloat(localStorage.getItem(`hual_usdc_balance_${sellerLower}`) || localStorage.getItem('hual_usdc_balance') || '1000');
+        const curBal = parseFloat(localStorage.getItem(`hual_usdc_balance_${sellerLower}`) || localStorage.getItem('hual_usdc_balance') || '0');
         window.dispatchEvent(new CustomEvent('hual_balance_updated', {
           detail: { 
             address: sellerLower, 

@@ -22,6 +22,8 @@ import {
 import { getSavedTheme, applyTheme } from '../lib/theme';
 import { useAuth } from '../lib/auth/AuthContext';
 import { BUYER_LOCATIONS } from '../lib/catalogData';
+import { toast } from '../lib/toast/ToastContext';
+import { purgeAllTestnetAndPrivyState } from '../App';
 
 export default function SettingsPage({ onNavigateTab }) {
   const { user, authenticated, userRole, userStore, userLocation, updateUserLocation, isAgeVerified, setAgeVerificationOpen } = useAuth();
@@ -55,11 +57,15 @@ export default function SettingsPage({ onNavigateTab }) {
 
   const handleClearCache = () => {
     try {
-      localStorage.removeItem('hual_current_conversation_id');
-      localStorage.removeItem('hual_deleted_passports');
+      purgeAllTestnetAndPrivyState(true);
       setResetSuccess(true);
-      setTimeout(() => setResetSuccess(false), 3000);
-    } catch {}
+      toast.success('Clean Slate: All testnet items, test accounts, and messages have been reset!');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err) {
+      toast.error('Failed to reset: ' + err.message);
+    }
   };
 
   return (
@@ -427,7 +433,7 @@ export default function SettingsPage({ onNavigateTab }) {
               </div>
             </div>
 
-            {/* Clear Session Cache Button */}
+            {/* Clear State & Reset Test Data Button */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -435,8 +441,8 @@ export default function SettingsPage({ onNavigateTab }) {
               paddingTop: '6px'
             }}>
               <div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>Session Cache</div>
-                <div style={{ fontSize: '0.72rem', color: '#9CA3AF' }}>Clear temporary chat and modal preferences</div>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>Clean Slate & Reset Test Data</div>
+                <div style={{ fontSize: '0.72rem', color: '#9CA3AF' }}>Purge all testnet items, test accounts, and messages for Mainnet</div>
               </div>
 
               <button
@@ -449,14 +455,14 @@ export default function SettingsPage({ onNavigateTab }) {
                   borderRadius: '999px',
                   background: resetSuccess ? 'rgba(132, 244, 59, 0.15)' : '#162424',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
-                  color: resetSuccess ? 'var(--brand-green)' : '#9CA3AF',
+                  color: resetSuccess ? 'var(--brand-green)' : '#EF4444',
                   fontSize: '0.74rem',
                   fontWeight: 700,
                   cursor: 'pointer'
                 }}
               >
                 <Trash2 size={12} />
-                <span>{resetSuccess ? 'Cache Cleared' : 'Clear Cache'}</span>
+                <span>{resetSuccess ? 'Reset Complete!' : 'Reset All State'}</span>
               </button>
             </div>
 
