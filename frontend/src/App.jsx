@@ -27,6 +27,7 @@ import PrivyModal from './lib/auth/PrivyModal';
 import AgeVerificationModal from './components/AgeVerificationModal';
 import ModalPortal from './components/ModalPortal';
 import { AuthProvider, useAuth } from './lib/auth/AuthContext';
+import { toast } from './lib/toast/ToastContext';
 import useScrollReveal from './lib/useScrollReveal';
 import { 
   fetchOnchainProducts, 
@@ -339,7 +340,7 @@ function MainApp() {
       (userStore && product.merchant && product.merchant.toLowerCase() === userStore.name?.toLowerCase())
     );
     if (isOwner) {
-      alert("You cannot add items listed by your own store to your cart.");
+      toast.warning("You cannot add items listed by your own store to your cart.");
       return;
     }
 
@@ -588,7 +589,7 @@ function MainApp() {
       const isSameStoreName = Boolean(userStore?.name && merchant.name && userStore.name.toLowerCase() === merchant.name.toLowerCase());
 
       if (isSameOwnerAddr || isSameStoreId || isSameStoreName) {
-        alert("You cannot message your own store.");
+        toast.warning("You cannot message your own store.");
         return;
       }
     }

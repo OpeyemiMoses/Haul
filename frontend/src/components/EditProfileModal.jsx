@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, User, AtSign, FileText, CheckCircle2, Sparkles, Camera, Image, AlertCircle } from 'lucide-react';
 import { ModalPortal } from './ModalPortal';
 import { isUsernameAvailable } from '../lib/userRegistry';
+import { toast } from '../lib/toast/ToastContext';
 
 const AVATAR_PRESETS = [
   { name: 'VIP Passport', url: '/assets/air_max_95.jpg' },
@@ -64,7 +65,7 @@ export default function EditProfileModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAvailable) {
-      alert(`Username @${cleanUsername} is already taken by another user. Please choose another username.`);
+      toast.warning(`Username @${cleanUsername} is already taken by another user. Please choose another username.`, 'Username Unavailable');
       return;
     }
     setSaving(true);
@@ -76,13 +77,14 @@ export default function EditProfileModal({
         bio: bio.trim()
       });
       setSavedSuccess(true);
+      toast.success('Profile updated successfully!');
       setTimeout(() => {
         setSavedSuccess(false);
         onClose();
       }, 900);
     } catch (err) {
       console.error('Error updating profile:', err);
-      alert(err.message || 'Failed to save profile');
+      toast.error(err.message || 'Failed to save profile');
     } finally {
       setSaving(false);
     }

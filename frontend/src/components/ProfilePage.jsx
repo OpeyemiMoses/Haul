@@ -64,6 +64,7 @@ import {
 } from '../lib/ownershipTransferRegistry';
 import ModalPortal from './ModalPortal';
 import useScrollReveal from '../lib/useScrollReveal';
+import { toast } from '../lib/toast/ToastContext';
 
 export default function ProfilePage({ 
   activeTab = 'profile',
@@ -256,7 +257,7 @@ export default function ProfilePage({
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 8 * 1024 * 1024) {
-        alert('Profile picture file must be under 8MB');
+        toast.warning('Profile picture file must be under 8MB');
         return;
       }
       const reader = new FileReader();
@@ -405,7 +406,7 @@ export default function ProfilePage({
     } catch (err) {
       console.error('Cancellation failed:', err);
       setCancellingOrder(false);
-      alert('Failed to process cancellation. Please try again.');
+      toast.error('Failed to process cancellation. Please try again.');
     }
   };
 
@@ -422,18 +423,18 @@ export default function ProfilePage({
     e.preventDefault();
     const parsedAmount = parseFloat(sendAmount);
     if (!sendRecipient.trim() || isNaN(parsedAmount) || parsedAmount <= 0) {
-      alert('Please enter a valid recipient address/username and amount.');
+      toast.warning('Please enter a valid recipient address/username and amount.');
       return;
     }
     if (parsedAmount > usdcBalance) {
-      alert(`Insufficient balance. You have $${usdcBalance.toLocaleString()} USD available.`);
+      toast.warning(`Insufficient balance. You have $${usdcBalance.toLocaleString()} USD available.`);
       return;
     }
 
     const resolved = resolveRecipient(sendRecipient);
     const destAddr = resolved?.address || (sendRecipient.startsWith('0x') ? sendRecipient.trim() : null);
     if (!destAddr) {
-      alert('Could not resolve recipient to a valid Monad address. Please enter a valid @username, email, or 0x address.');
+      toast.warning('Could not resolve recipient to a valid Monad address. Please enter a valid @username, email, or 0x address.');
       return;
     }
 
@@ -460,7 +461,7 @@ export default function ProfilePage({
       }, 2000);
     } catch (err) {
       console.error('Send funds error:', err);
-      alert('Failed to send funds: ' + (err.message || err));
+      toast.error('Failed to send funds: ' + (err.message || err));
       setSendingFunds(false);
     }
   };
@@ -661,7 +662,7 @@ export default function ProfilePage({
   const handleInitiateResale = (passport) => {
     const target = passport || effectivePassports[0];
     if (!target) {
-      alert('You have no verified products in your vault to list for resale.');
+      toast.warning('You have no verified products in your vault to list for resale.');
       return;
     }
     if (!userStore && userRole !== 'merchant') {
@@ -862,7 +863,7 @@ export default function ProfilePage({
     const targetTx = transactions.find(t => String(t.id) === idStr);
     const isEscrowLocked = targetTx && !targetTx.status?.includes('Released') && !targetTx.status?.includes('Cancelled') && !targetTx.status?.includes('Refunded') && !targetTx.status?.includes('Completed');
     if (isEscrowLocked) {
-      alert("Cannot delete an active escrow order! Please cancel the order first to refund your locked USDC funds back to your wallet before removing it from history.");
+      toast.warning("Cannot delete an active escrow order! Please cancel the order first to refund your locked USDC funds back to your wallet before removing it from history.");
       return;
     }
     
@@ -1100,7 +1101,7 @@ export default function ProfilePage({
       }, 7000);
     } catch (err) {
       console.error('Handover error:', err);
-      alert('Handover error: ' + (err.reason || err.message || err));
+      toast.error('Handover error: ' + (err.reason || err.message || err));
     } finally {
       setCounterChecking(false);
     }
@@ -1180,7 +1181,7 @@ export default function ProfilePage({
       setTimeout(() => setTransferToast(null), 5000);
       if (onRefreshData) onRefreshData();
     } catch (err) {
-      alert(err.message || 'Failed to accept transfer.');
+      toast.error(err.message || 'Failed to accept transfer.');
     }
   };
 

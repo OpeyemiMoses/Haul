@@ -50,6 +50,7 @@ import useScrollReveal from '../lib/useScrollReveal';
 import ProductDetailPage from './ProductDetailPage';
 import ProductReceiptModal from './ProductReceiptModal';
 import { recordNewOrder, getSoldItemsForStore, getProductStockOverride } from '../lib/ordersRegistry';
+import { toast } from '../lib/toast/ToastContext';
 
 export default function Marketplace({ 
   products = [], 
@@ -565,7 +566,7 @@ export default function Marketplace({
       return;
     }
     if (isMyProduct(product)) {
-      alert("You cannot purchase items listed by your own store.");
+      toast.warning("You cannot purchase items listed by your own store.");
       return;
     }
     setSelectedProduct(null);
@@ -580,7 +581,7 @@ export default function Marketplace({
       return;
     }
     if (isMerchantMyStore(merchant) || (product && isMyProduct(product))) {
-      alert("You cannot message your own store.");
+      toast.warning("You cannot message your own store.");
       return;
     }
     setSelectedProduct(null);
@@ -597,7 +598,7 @@ export default function Marketplace({
     const currentBal = Number(usdcBalance) || 0;
     const reqPrice = Number(checkoutProduct.priceUsd) || 0;
     if (currentBal < reqPrice) {
-      alert(`Insufficient funds! Your USDC balance is $${currentBal.toLocaleString()}, but this order costs $${reqPrice.toLocaleString()}. Please deposit USDC into your wallet address to proceed.`);
+      toast.warning(`Insufficient funds! Your USDC balance is $${currentBal.toLocaleString()}, but this order costs $${reqPrice.toLocaleString()}. Please deposit USDC into your wallet address to proceed.`);
       return;
     }
     setPurchasing(true);
@@ -712,7 +713,7 @@ export default function Marketplace({
       });
     } catch (err) {
       console.error('Onchain checkout error:', err);
-      alert('Transaction error: ' + (err.reason || err.message || err));
+      toast.error('Transaction error: ' + (err.reason || err.message || err));
     } finally {
       setPurchasing(false);
     }

@@ -23,6 +23,7 @@ import { buyWithUsdcEscrow, releaseEscrowPayoutToStoreOwner } from '../lib/web3'
 import { recordNewOrder } from '../lib/ordersRegistry';
 import ProductReceiptModal from './ProductReceiptModal';
 import useScrollReveal from '../lib/useScrollReveal';
+import { toast } from '../lib/toast/ToastContext';
 
 export default function CartPage({ 
   cart = [], 
@@ -105,7 +106,7 @@ export default function CartPage({
     if (cart.length === 0) return;
 
     if (usdcBalance < subtotal) {
-      alert(`Insufficient balance ($${usdcBalance.toLocaleString()}). You need $${subtotal.toLocaleString()} to complete this checkout. Please deposit USDC into your wallet address to proceed.`);
+      toast.warning(`Insufficient balance ($${usdcBalance.toLocaleString()}). You need $${subtotal.toLocaleString()} to complete this checkout. Please deposit USDC into your wallet address to proceed.`);
       return;
     }
 
@@ -240,7 +241,7 @@ export default function CartPage({
       setTimeout(() => setSuccessToast(null), 8000);
     } catch (err) {
       console.error('Batch checkout failed:', err);
-      alert('Checkout error: ' + err.message);
+      toast.error('Checkout error: ' + err.message);
     } finally {
       setCheckingOut(false);
     }

@@ -25,6 +25,7 @@ import {
 import { PrivyService } from '../lib/auth/PrivyService';
 import ModalPortal from './ModalPortal';
 import { formatCurrency } from '../lib/formatters';
+import { toast } from '../lib/toast/ToastContext';
 
 export default function PassportCard({ passport, onUpdate }) {
   const [showHistory, setShowHistory] = useState(false);
@@ -68,10 +69,10 @@ export default function PassportCard({ passport, onUpdate }) {
     setConfirmingDelivery(true);
     try {
       await confirmDeliveryOnchain(passport.tokenId);
-      alert('Delivery confirmed! Warranty activated.');
+      toast.success('Delivery confirmed! Warranty activated.');
       if (onUpdate) onUpdate();
     } catch (err) {
-      alert('Confirmation completed!');
+      toast.success('Confirmation completed!');
       if (onUpdate) onUpdate();
     } finally {
       setConfirmingDelivery(false);
@@ -90,7 +91,7 @@ export default function PassportCard({ passport, onUpdate }) {
         finalTarget = derived.address;
       }
       await transferPassportOnchain(passport.tokenId, finalTarget);
-      alert(`Living Passport #${passport.tokenId} transferred successfully to ${finalTarget}! Gas sponsored by Paymaster.`);
+      toast.success(`Living Passport #${passport.tokenId} transferred successfully to ${finalTarget}! Gas sponsored by Paymaster.`);
       setShowTransferModal(false);
       setRecipientAddr('');
       if (onUpdate) onUpdate();
@@ -100,7 +101,7 @@ export default function PassportCard({ passport, onUpdate }) {
       const stored = JSON.parse(localStorage.getItem('hual_my_passports') || '[]');
       const updated = stored.filter(p => p.tokenId !== passport.tokenId);
       localStorage.setItem('hual_my_passports', JSON.stringify(updated));
-      alert(`Ownership certificate #${passport.tokenId} transferred to ${recipientAddr}!`);
+      toast.success(`Ownership certificate #${passport.tokenId} transferred to ${recipientAddr}!`);
       setShowTransferModal(false);
       setRecipientAddr('');
       if (onUpdate) onUpdate();
@@ -115,11 +116,12 @@ export default function PassportCard({ passport, onUpdate }) {
     setSubmittingWarranty(true);
     try {
       await recordWarrantyClaimOnchain(passport.tokenId, warrantyNote);
+      toast.success('Warranty service claim logged on passport record!');
       setShowWarrantyModal(false);
       setWarrantyNote('');
       if (onUpdate) onUpdate();
     } catch (err) {
-      alert('Warranty service claim logged on passport record!');
+      toast.success('Warranty service claim logged on passport record!');
       setShowWarrantyModal(false);
       setWarrantyNote('');
       if (onUpdate) onUpdate();

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldCheck, Mail, ArrowRight, X, Lock, CheckCircle2, User, Sparkles } from 'lucide-react';
 import { PrivyService } from './PrivyService';
 import HualBrand, { HualIcon } from '../../components/HualLogo';
+import { toast } from '../toast/ToastContext';
 
 export default function PrivyLoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [googleEmail, setGoogleEmail] = useState('');
@@ -18,10 +19,11 @@ export default function PrivyLoginModal({ isOpen, onClose, onLoginSuccess }) {
       const email = customEmail || googleEmail.trim() || 'shopper@gmail.com';
       const name = customName || googleName.trim() || email.split('@')[0];
       const { session, isNewUser } = await PrivyService.loginWithProvider('google', email, name);
+      toast.success(`Welcome to Haul, ${name}!`);
       onLoginSuccess(session, isNewUser);
       onClose();
     } catch (err) {
-      alert('Login error: ' + err.message);
+      toast.error('Login error: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -34,10 +36,11 @@ export default function PrivyLoginModal({ isOpen, onClose, onLoginSuccess }) {
     try {
       const name = emailInput.split('@')[0];
       const { session, isNewUser } = await PrivyService.loginWithProvider('email', emailInput.trim(), name);
+      toast.success(`Welcome back, ${name}!`);
       onLoginSuccess(session, isNewUser);
       onClose();
     } catch (err) {
-      alert('Email login error: ' + err.message);
+      toast.error('Email login error: ' + err.message);
     } finally {
       setLoading(false);
     }

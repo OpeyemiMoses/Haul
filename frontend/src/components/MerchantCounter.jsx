@@ -16,6 +16,7 @@ import {
   completePickupHandoverOnchain, 
   listProductOnchain 
 } from '../lib/web3';
+import { toast } from '../lib/toast/ToastContext';
 
 const CATEGORY_OPTIONS = [
   'Audio & Electronics',
@@ -50,9 +51,10 @@ export default function MerchantCounter({ allPassports, onActionComplete }) {
   const handleMarkReady = async (orderId) => {
     try {
       await markOrderReadyOnchain(orderId);
+      toast.success(`Order #${orderId} marked ready for pickup!`);
       if (onActionComplete) onActionComplete();
     } catch (err) {
-      alert('Error marking ready: ' + (err.reason || err.message));
+      toast.error('Error marking ready: ' + (err.reason || err.message));
     }
   };
 
@@ -60,9 +62,10 @@ export default function MerchantCounter({ allPassports, onActionComplete }) {
   const handleDispatch = async (orderId) => {
     try {
       await dispatchDeliveryOnchain(orderId);
+      toast.success(`Order #${orderId} dispatched for delivery!`);
       if (onActionComplete) onActionComplete();
     } catch (err) {
-      alert('Error dispatching delivery: ' + (err.reason || err.message));
+      toast.error('Error dispatching delivery: ' + (err.reason || err.message));
     }
   };
 
@@ -117,9 +120,10 @@ export default function MerchantCounter({ allPassports, onActionComplete }) {
       setNewProdName('');
       setNewProdBrand('');
       setNewProdDesc('');
+      toast.success('Product listed onchain successfully!');
       if (onActionComplete) onActionComplete();
     } catch (err) {
-      alert('Failed to list product onchain: ' + (err.reason || err.message));
+      toast.error('Failed to list product onchain: ' + (err.reason || err.message));
     } finally {
       setAddingProduct(false);
     }

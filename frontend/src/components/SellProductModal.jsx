@@ -22,7 +22,9 @@ import {
 } from 'lucide-react';
 import { listProductOnchain } from '../lib/web3';
 import { useAuth } from '../lib/auth/AuthContext';
+import { toast } from '../lib/toast/ToastContext';
 import ModalPortal from './ModalPortal';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 // Preset high-res demo items across distinct categories
 const PRESET_ITEMS = [
@@ -132,6 +134,7 @@ export default function SellProductModal({
   onProductDeleted = null
 }) {
   const { user, userRole, userStore } = useAuth();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   
   // Basic Info
   const [name, setName] = useState('');
@@ -1425,12 +1428,7 @@ export default function SellProductModal({
                 {productToEdit ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete "${productToEdit.name}"? This will permanently remove the item from your store.`)) {
-                        if (onProductDeleted) onProductDeleted(productToEdit);
-                        onClose();
-                      }
-                    }}
+                    onClick={() => setDeleteConfirmOpen(true)}
                     style={{
                       padding: '10px 18px',
                       borderRadius: '999px',
@@ -1484,6 +1482,19 @@ export default function SellProductModal({
         </div>
       </div>
     </div>
+
+    {deleteConfirmOpen && productToEdit && (
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={(p) => {
+          if (onProductDeleted) onProductDeleted(p);
+          toast.success('Listing permanently deleted from your store catalog.');
+          onClose();
+        }}
+        product={productToEdit}
+      />
+    )}
     </ModalPortal>
   );
 }

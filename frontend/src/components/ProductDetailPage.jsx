@@ -28,6 +28,8 @@ import useScrollReveal from '../lib/useScrollReveal';
 import { VERIFIED_MERCHANTS } from '../lib/catalogData';
 import { getProductStockOverride } from '../lib/ordersRegistry';
 import { useAuth } from '../lib/auth/AuthContext';
+import { toast } from '../lib/toast/ToastContext';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 export default function ProductDetailPage({
   product,
@@ -52,6 +54,7 @@ export default function ProductDetailPage({
   const [copiedLink, setCopiedLink] = useState(false);
   const [helpfulVotes, setHelpfulVotes] = useState({});
   const [productReviews, setProductReviews] = useState([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   // Dynamic live inventory stock
   const [liveStock, setLiveStock] = useState(() => {
@@ -716,12 +719,7 @@ export default function ProductDetailPage({
                     <span>Edit Store Listing</span>
                   </button>
                   <button
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete "${product.name}"? This will permanently remove the item from your store.`)) {
-                        if (onDeleteProduct) onDeleteProduct(product);
-                        if (onBack) onBack();
-                      }
-                    }}
+                    onClick={() => setDeleteConfirmOpen(true)}
                     className="btn-pill-secondary"
                     style={{
                       width: '100%',
@@ -1081,6 +1079,17 @@ export default function ProductDetailPage({
 
       </div>
 
+      {/* Item Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={(p) => {
+          if (onDeleteProduct) onDeleteProduct(p);
+          toast.success('Listing permanently removed from your store catalog.');
+          if (onBack) onBack();
+        }}
+        product={product}
+      />
     </div>
   );
 }

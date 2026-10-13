@@ -4,6 +4,7 @@ import { PrivyProvider } from '@privy-io/react-auth'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './lib/auth/AuthContext'
+import { ToastProvider } from './lib/toast/ToastContext'
 import { initTheme } from './lib/theme'
 
 // Initialize System / Light / Dark Theme Mode
@@ -69,7 +70,9 @@ createRoot(document.getElementById('root')).render(
         }}
       >
         <AuthProvider>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </AuthProvider>
       </PrivyProvider>
     </ErrorBoundary>
