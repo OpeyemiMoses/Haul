@@ -41,6 +41,26 @@ import { getProductStockOverride } from './lib/ordersRegistry';
 
 const INITIAL_DEMO_PASSPORTS = [];
 
+// Clean one-time purge of stale testnet data for Monad Mainnet
+if (typeof window !== 'undefined' && !localStorage.getItem('hual_mainnet_v1_migrated')) {
+  try {
+    localStorage.removeItem('hual_escrow_orders');
+    localStorage.removeItem('hual_all_pickup_orders');
+    localStorage.removeItem('hual_my_passports_guest');
+    localStorage.removeItem('hual_collected_passports');
+    localStorage.removeItem('hual_refunded_passports');
+    localStorage.removeItem('hual_deleted_passports');
+    localStorage.removeItem('hual_usdc_balance');
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('hual_usdc_balance_') || k.startsWith('hual_my_passports_')) {
+        localStorage.removeItem(k);
+      }
+    });
+    localStorage.setItem('hual_mainnet_v1_migrated', 'true');
+  } catch (e) {
+    console.warn('Mainnet storage migration error:', e);
+  }
+}
 
 function MainApp() {
   const { 

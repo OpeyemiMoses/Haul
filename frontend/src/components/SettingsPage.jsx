@@ -6,7 +6,6 @@ import {
   Check, 
   CheckCircle2, 
   ShieldCheck, 
-  Network, 
   Sliders, 
   Lock, 
   Copy, 
@@ -318,121 +317,7 @@ export default function SettingsPage({ onNavigateTab }) {
           </div>
         </section>
 
-        {/* ========================================================
-            2. BLOCKCHAIN NETWORK & UPCOMING MAINNET NOTICE
-            ======================================================== */}
-        <section 
-          className="liquid-glass-card" 
-          style={{
-            padding: '28px',
-            borderRadius: '24px',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
-          }}
-        >
-          <div style={{ marginBottom: '18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <Network size={17} color="var(--brand-green)" />
-              <h2 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
-                Blockchain Network & Mainnet Roadmap
-              </h2>
-            </div>
-            <p style={{ fontSize: '0.78rem', color: '#9CA3AF', margin: 0 }}>
-              Underlying distributed ledger parameters for smart escrow, passports, and sponsored relayers.
-            </p>
-          </div>
 
-          {/* Mainnet Readiness Notice Card */}
-          <div style={{
-            padding: '16px 20px',
-            borderRadius: '16px',
-            background: 'linear-gradient(135deg, rgba(132, 244, 59, 0.1) 0%, rgba(13, 22, 22, 0.7) 100%)',
-            border: '1px solid rgba(132, 244, 59, 0.3)',
-            marginBottom: '18px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{
-                fontSize: '0.68rem',
-                fontWeight: 800,
-                padding: '2px 8px',
-                borderRadius: '999px',
-                background: 'var(--brand-green)',
-                color: '#080F0F'
-              }}>
-                MAINNET LIVE
-              </span>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>
-                Monad Mainnet Protocol Deployment
-              </span>
-            </div>
-            <p style={{ fontSize: '0.76rem', color: '#D1D5DB', margin: 0, lineHeight: 1.5 }}>
-              Haul is deployed and executing on the high-throughput <strong>Monad Mainnet</strong> (10,000 TPS).
-              All protocol contracts (HualPassport, HualEscrow, HualCommerce) and the gasless relayer operate on Chain ID 143.
-            </p>
-          </div>
-
-          {/* Network Parameter Rows */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '12px'
-          }}>
-            <div style={{
-              padding: '14px 16px',
-              borderRadius: '14px',
-              background: '#0D1616',
-              border: '1px solid rgba(255, 255, 255, 0.08)'
-            }}>
-              <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase', fontWeight: 700 }}>
-                Current Active Chain
-              </div>
-              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#FFFFFF', marginTop: '3px' }}>
-                Monad Mainnet (Chain ID: 143)
-              </div>
-            </div>
-
-            <div style={{
-              padding: '14px 16px',
-              borderRadius: '14px',
-              background: '#0D1616',
-              border: '1px solid rgba(255, 255, 255, 0.08)'
-            }}>
-              <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase', fontWeight: 700 }}>
-                Gas Sponsorship Engine
-              </div>
-              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--brand-green)', marginTop: '3px' }}>
-                Active (0 MON Cost to Consumer)
-              </div>
-            </div>
-
-            <div style={{
-              padding: '14px 16px',
-              borderRadius: '14px',
-              background: '#0D1616',
-              border: '1px solid rgba(255, 255, 255, 0.08)'
-            }}>
-              <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase', fontWeight: 700 }}>
-                Escrow Settlement
-              </div>
-              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#FFFFFF', marginTop: '3px' }}>
-                TestUSDC (1:1 Pegged Escrow)
-              </div>
-            </div>
-
-            <div style={{
-              padding: '14px 16px',
-              borderRadius: '14px',
-              background: '#0D1616',
-              border: '1px solid rgba(255, 255, 255, 0.08)'
-            }}>
-              <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'uppercase', fontWeight: 700 }}>
-                Sub-Second Finality
-              </div>
-              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#FFFFFF', marginTop: '3px' }}>
-                Instant POS Pickup Verification
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* ========================================================
             3. ACCOUNT & WALLET DETAILS

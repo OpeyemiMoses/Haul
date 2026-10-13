@@ -266,10 +266,15 @@ export function AuthProvider({ children }) {
       if (scopedBal !== null && !isNaN(parseFloat(scopedBal))) {
         setUsdcBalance(parseFloat(scopedBal));
       } else {
-        setUsdcBalance(1000);
+        setUsdcBalance(0);
+      }
+      if (userAddr) {
+        PrivyService.getUsdcBalance(userAddr).then(bal => {
+          if (!isNaN(bal)) setUsdcBalance(bal);
+        }).catch(() => {});
       }
     } catch {
-      setUsdcBalance(1000);
+      setUsdcBalance(0);
     }
   }, [isAuthenticated, activeUserKey]);
 

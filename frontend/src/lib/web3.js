@@ -709,7 +709,7 @@ export async function releaseEscrowPayoutToStoreOwner({ sellerAddress, amountUsd
 
     const currentBal = parseFloat(localStorage.getItem(`hual_usdc_balance_${sellerLower}`) || 
                                 (origLower ? localStorage.getItem(`hual_usdc_balance_${origLower}`) : null) || 
-                                localStorage.getItem('hual_usdc_balance') || '1000');
+                                localStorage.getItem('hual_usdc_balance') || '0');
     const newBal = Number((currentBal + amountNumber).toFixed(2));
 
     // Save to address keys and general key
