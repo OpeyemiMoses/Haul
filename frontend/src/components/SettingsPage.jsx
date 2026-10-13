@@ -11,7 +11,6 @@ import {
   Copy, 
   ArrowLeft, 
   Globe, 
-  Trash2, 
   RefreshCw,
   Sparkles,
   MapPin,
@@ -22,15 +21,12 @@ import {
 import { getSavedTheme, applyTheme } from '../lib/theme';
 import { useAuth } from '../lib/auth/AuthContext';
 import { BUYER_LOCATIONS } from '../lib/catalogData';
-import { toast } from '../lib/toast/ToastContext';
-import { purgeAllTestnetAndPrivyState } from '../App';
 
 export default function SettingsPage({ onNavigateTab }) {
   const { user, authenticated, userRole, userStore, userLocation, updateUserLocation, isAgeVerified, setAgeVerificationOpen } = useAuth();
   
   const [themeMode, setThemeMode] = useState(() => getSavedTheme());
   const [copiedAddr, setCopiedAddr] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -53,19 +49,6 @@ export default function SettingsPage({ onNavigateTab }) {
     navigator.clipboard?.writeText(walletAddr);
     setCopiedAddr(true);
     setTimeout(() => setCopiedAddr(false), 2000);
-  };
-
-  const handleClearCache = () => {
-    try {
-      purgeAllTestnetAndPrivyState(true);
-      setResetSuccess(true);
-      toast.success('Clean Slate: All testnet items, test accounts, and messages have been reset!');
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } catch (err) {
-      toast.error('Failed to reset: ' + err.message);
-    }
   };
 
   return (
@@ -431,39 +414,6 @@ export default function SettingsPage({ onNavigateTab }) {
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* Clear State & Reset Test Data Button */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: '6px'
-            }}>
-              <div>
-                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>Clean Slate & Reset Test Data</div>
-                <div style={{ fontSize: '0.72rem', color: '#9CA3AF' }}>Purge all testnet items, test accounts, and messages for Mainnet</div>
-              </div>
-
-              <button
-                onClick={handleClearCache}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '7px 14px',
-                  borderRadius: '999px',
-                  background: resetSuccess ? 'rgba(132, 244, 59, 0.15)' : '#162424',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  color: resetSuccess ? 'var(--brand-green)' : '#EF4444',
-                  fontSize: '0.74rem',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                <Trash2 size={12} />
-                <span>{resetSuccess ? 'Reset Complete!' : 'Reset All State'}</span>
-              </button>
             </div>
 
           </div>

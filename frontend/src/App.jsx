@@ -42,8 +42,8 @@ import { getProductStockOverride } from './lib/ordersRegistry';
 
 const INITIAL_DEMO_PASSPORTS = [];
 
-// Comprehensive purge of all testnet items, Privy test accounts, messages, and state for Monad Mainnet
-export function purgeAllTestnetAndPrivyState(force = false) {
+// Internal one-time purge of stale testnet data for Monad Mainnet
+function purgeAllTestnetAndPrivyState() {
   if (typeof window === 'undefined') return;
   try {
     const savedTheme = localStorage.getItem('hual_theme_mode') || 'dark';
