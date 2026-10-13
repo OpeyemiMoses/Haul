@@ -618,13 +618,12 @@ export function AuthProvider({ children }) {
 
   const triggerLogin = () => {
     try {
-      if (privyReady && privyLogin && privyLogin !== privyLoginEmpty) {
+      if (privyLogin && typeof privyLogin === 'function' && privyLogin !== privyLoginEmpty) {
         privyLogin();
-      } else {
-        setLoginModalOpen(true);
+        return;
       }
-    } catch {
-      setLoginModalOpen(true);
+    } catch (e) {
+      console.warn('Official Privy login invocation:', e);
     }
   };
 
@@ -650,7 +649,7 @@ export function AuthProvider({ children }) {
         createStore,
         updateStore,
         login: triggerLogin,
-        openLoginModal: () => setLoginModalOpen(true),
+        openLoginModal: triggerLogin,
         logout,
         loginWithPrivy,
         refreshBalance,

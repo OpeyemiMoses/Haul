@@ -20,6 +20,7 @@ import {
   Check
 } from 'lucide-react';
 import { useAuth } from '../lib/auth/AuthContext';
+import { usePrivy } from '@privy-io/react-auth';
 import HualBrand, { HualIcon } from './HualLogo';
 import LiquidGlassShowcase from './LiquidGlassShowcase';
 import useScrollReveal from '../lib/useScrollReveal';
@@ -32,7 +33,8 @@ const LIFECYCLE_STEPS = [
 ];
 
 export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigateToSignIn, onOpenLoginModal }) {
-  const { user, authenticated, logout, profilePicture, isAgeVerified, setAgeVerificationOpen, openLoginModal, login } = useAuth();
+  const { user, authenticated, logout, profilePicture, isAgeVerified, setAgeVerificationOpen, login } = useAuth();
+  const { login: privyOfficialLogin } = usePrivy();
   const [copiedContract, setCopiedContract] = useState(false);
   const [activeFaq, setActiveFaq] = useState(null);
   const [activeStepIdx, setActiveStepIdx] = useState(0);
@@ -43,9 +45,19 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
   const userInitial = (displayName[0] || 'U').toUpperCase();
 
   const handleSignIn = () => {
+    try {
+      if (privyOfficialLogin) {
+        privyOfficialLogin();
+        return;
+      }
+    } catch (e) {
+      console.warn('Privy official login error:', e);
+    }
+    if (login) {
+      login();
+      return;
+    }
     if (onOpenLoginModal) onOpenLoginModal();
-    else if (openLoginModal) openLoginModal();
-    else if (login) login();
     else if (onNavigateToSignIn) onNavigateToSignIn();
     else handleEnter('shop');
   };
@@ -67,7 +79,6 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'transparent', color: '#FFFFFF', fontFamily: "'Sora', sans-serif", position: 'relative', zIndex: 1, overflowX: 'hidden', width: '100%', maxWidth: '100%' }}>
       
       {/* ================= 1. FLOATING NAVIGATION BAR ================= */}
-      {/* ================= 1. FLOATING NAVIGATION BAR ================= */}
       <header 
         className="landing-fixed-header"
         style={{
@@ -79,7 +90,7 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
           maxWidth: '1240px',
           width: 'calc(100% - 24px)',
           margin: '0 auto',
-          pointerEvents: 'none'
+          pointerEvents: 'auto'
         }}
       >
         <div className="apple-glass-dock landing-header-dock" style={{

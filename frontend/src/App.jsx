@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { usePrivy } from '@privy-io/react-auth';
 import LandingPage from './components/LandingPage';
 import SignInPage from './components/SignInPage';
 import LaunchSplitPage from './components/LaunchSplitPage';
@@ -93,6 +94,7 @@ if (typeof window !== 'undefined' && !localStorage.getItem('hual_clean_slate_mai
 }
 
 function MainApp() {
+  const { login: privyLogin } = usePrivy();
   const { 
     user, 
     authenticated, 
@@ -945,11 +947,11 @@ function MainApp() {
             setActiveTab(validTab);
           }} 
           onOpenLoginModal={() => {
-            if (openLoginModal) openLoginModal();
+            if (privyLogin) privyLogin();
             else if (login) login();
           }}
           onNavigateToSignIn={() => {
-            if (openLoginModal) openLoginModal();
+            if (privyLogin) privyLogin();
             else if (login) login();
             else setCurrentView('signin');
           }}
@@ -1302,7 +1304,10 @@ function MainApp() {
                   <AIAssistantPage
                     user={user}
                     authenticated={authenticated}
-                    onLogin={() => setPrivyModalOpen(true)}
+                    onLogin={() => {
+                      if (privyLogin) privyLogin();
+                      else if (login) login();
+                    }}
                     onNavigateTab={(tab) => {
                       if (tab === 'shop') setSelectedStore(null);
                       setActiveTab(tab);
@@ -1498,7 +1503,10 @@ function MainApp() {
         }}
         user={user}
         authenticated={authenticated}
-        onLogin={() => setPrivyModalOpen(true)}
+        onLogin={() => {
+          if (privyLogin) privyLogin();
+          else if (login) login();
+        }}
         onNavigateToSignIn={() => setCurrentView('signin')}
         userStore={userStore}
         userRole={userRole}

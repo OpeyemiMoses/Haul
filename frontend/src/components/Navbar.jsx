@@ -548,7 +548,10 @@ export default function Navbar({
             </button>
           ) : (
             <button
-              onClick={() => onNavigateToSignIn ? onNavigateToSignIn() : login()}
+              onClick={() => {
+                if (login) login();
+                else if (onNavigateToSignIn) onNavigateToSignIn();
+              }}
               className="btn-pill-primary"
               style={{
                 padding: '6px 16px',
