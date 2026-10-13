@@ -468,6 +468,30 @@ body {
   display: flex !important;
 }
 
+/* Global Responsive Overflow Prevention */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+  position: relative;
+}
+
+/* Living 3D Passports Showcase Responsive Display */
+.showcase-mobile-switchable {
+  display: none;
+}
+
+.showcase-desktop-view {
+  display: flex;
+}
+
+/* Marketplace Products Grid Default */
+.marketplace-products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
 /* Mobile & Tablet viewports */
 @media (max-width: 868px) {
   .mobile-bottom-nav {
@@ -497,10 +521,75 @@ body {
     max-width: 100% !important;
   }
 
-  /* Mobile Grid optimizations */
+  /* Showcase Switchable on Mobile & Tablet */
+  .showcase-mobile-switchable {
+    display: flex !important;
+  }
+
+  .showcase-desktop-view {
+    display: none !important;
+  }
+
+  /* Landing Page Header Dock on Mobile */
+  .landing-desktop-nav {
+    display: none !important;
+  }
+
+  .landing-header-dock {
+    padding: 8px 14px !important;
+  }
+
+  /* AI Concierge FAB sits above BottomNav on mobile */
+  .ai-support-fab-btn {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    right: 16px !important;
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  /* Mobile Grid: 2-column side by side */
+  .marketplace-products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .marketplace-products-grid .marketplace-product-card {
+    padding: 10px !important;
+    border-radius: 16px !important;
+  }
+
+  .marketplace-products-grid .marketplace-product-image-box {
+    height: 135px !important;
+    border-radius: 12px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .marketplace-products-grid .marketplace-product-title {
+    font-size: 0.78rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 4px !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .marketplace-products-grid .marketplace-product-merchant {
+    font-size: 0.64rem !important;
+    gap: 2px !important;
+  }
+
+  .marketplace-products-grid .marketplace-product-merchant span {
+    font-size: 0.64rem !important;
+  }
+
+  .marketplace-products-grid .marketplace-product-price {
+    font-size: 0.85rem !important;
+  }
+
   .mobile-product-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
   }
 
   /* Mobile modal adjustments */
@@ -512,8 +601,15 @@ body {
 }
 
 @media (max-width: 480px) {
+  /* Maintain 2-column side by side layout on small phones */
+  .marketplace-products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
   .mobile-product-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
   }
 
   .header-brand-title {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldCheck, Mail, ArrowRight, X, Lock, CheckCircle2, User, Sparkles } from 'lucide-react';
 import { PrivyService } from './PrivyService';
 import HualBrand, { HualIcon } from '../../components/HualLogo';
+import ModalPortal from '../../components/ModalPortal';
 import { toast } from '../toast/ToastContext';
 
 export default function PrivyLoginModal({ isOpen, onClose, onLoginSuccess }) {
@@ -47,30 +48,39 @@ export default function PrivyLoginModal({ isOpen, onClose, onLoginSuccess }) {
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0, 0, 0, 0.85)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10000,
-      padding: '16px'
-    }}>
-      <div style={{
-        background: '#0D1616',
-        border: '1px solid rgba(132, 244, 59, 0.35)',
-        borderRadius: '24px',
-        padding: '36px 32px',
-        maxWidth: '440px',
-        width: '100%',
-        position: 'relative',
-        boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(132, 244, 59, 0.15)',
-        color: '#FFFFFF',
-        fontFamily: "'Sora', sans-serif"
-      }}>
+    <ModalPortal lockScroll={true}>
+      <div 
+        id="privy-login-modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.88)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 100050,
+          padding: '16px'
+        }}
+      >
+        <div style={{
+          background: '#0D1616',
+          border: '1px solid rgba(132, 244, 59, 0.35)',
+          borderRadius: '24px',
+          padding: '32px 24px',
+          maxWidth: '440px',
+          width: '100%',
+          maxHeight: '92vh',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          position: 'relative',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(132, 244, 59, 0.2)',
+          color: '#FFFFFF',
+          fontFamily: "'Sora', sans-serif"
+        }}>
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -302,5 +312,6 @@ export default function PrivyLoginModal({ isOpen, onClose, onLoginSuccess }) {
         </div>
       </div>
     </div>
+  </ModalPortal>
   );
 }

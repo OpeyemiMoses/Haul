@@ -45,12 +45,6 @@ export default function BottomNav({
       badge: null
     },
     {
-      id: 'assistant',
-      label: 'AI Concierge',
-      icon: Sparkles,
-      badge: null
-    },
-    {
       id: 'passports',
       label: 'Passports',
       icon: ShieldCheck,
@@ -86,12 +80,12 @@ export default function BottomNav({
         left: 0,
         right: 0,
         zIndex: 9999,
-        background: 'rgba(8, 14, 14, 0.88)',
-        backdropFilter: 'blur(36px) saturate(220%)',
-        WebkitBackdropFilter: 'blur(36px) saturate(220%)',
+        background: 'rgba(8, 14, 14, 0.92)',
+        backdropFilter: 'blur(40px) saturate(220%)',
+        WebkitBackdropFilter: 'blur(40px) saturate(220%)',
         borderTop: '1px solid rgba(255, 255, 255, 0.12)',
-        boxShadow: '0 -10px 30px rgba(0, 0, 0, 0.7), 0 -1px 0 rgba(255, 255, 255, 0.06)',
-        padding: '6px 8px calc(8px + env(safe-area-inset-bottom, 0px))',
+        boxShadow: '0 -10px 30px rgba(0, 0, 0, 0.8), 0 -1px 0 rgba(255, 255, 255, 0.08)',
+        padding: '8px 10px calc(10px + env(safe-area-inset-bottom, 0px))',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
@@ -108,23 +102,24 @@ export default function BottomNav({
             id={`mobile-nav-${item.id}`}
             type="button"
             onClick={() => setActiveTab && setActiveTab(item.id)}
+            title={item.label}
+            aria-label={item.label}
             style={{
               flex: 1,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '4px',
-              padding: '6px 2px',
+              padding: '8px 2px',
               background: 'transparent',
               border: 'none',
               outline: 'none',
               cursor: 'pointer',
               position: 'relative',
-              borderRadius: '12px',
+              borderRadius: '16px',
               transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               color: isActive ? 'var(--brand-green)' : 'rgba(255, 255, 255, 0.55)',
-              transform: isActive ? 'scale(1.05)' : 'scale(1)'
+              transform: isActive ? 'scale(1.08)' : 'scale(1)'
             }}
           >
             {/* Active Pill Glow Backdrop */}
@@ -132,10 +127,10 @@ export default function BottomNav({
               <div 
                 style={{
                   position: 'absolute',
-                  inset: '2px 6px',
-                  background: 'rgba(132, 244, 59, 0.12)',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(132, 244, 59, 0.25)',
+                  inset: '2px 4px',
+                  background: 'rgba(132, 244, 59, 0.14)',
+                  borderRadius: '14px',
+                  border: '1px solid rgba(132, 244, 59, 0.3)',
                   boxShadow: '0 0 16px rgba(132, 244, 59, 0.2)',
                   zIndex: -1,
                   animation: 'fadeIn 0.2s ease-out'
@@ -146,7 +141,7 @@ export default function BottomNav({
             {/* Icon Container with Badge */}
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon 
-                size={20} 
+                size={22} 
                 strokeWidth={isActive ? 2.5 : 1.9}
                 color={isActive ? 'var(--brand-green)' : 'currentColor'}
               />
@@ -178,19 +173,6 @@ export default function BottomNav({
               )}
             </div>
 
-            {/* Label */}
-            <span 
-              style={{
-                fontSize: '0.68rem',
-                fontWeight: isActive ? 800 : 500,
-                letterSpacing: isActive ? '0.02em' : 'normal',
-                color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.55)',
-                transition: 'color 0.15s ease'
-              }}
-            >
-              {item.label}
-            </span>
-
             {/* Active Micro Dot Indicator */}
             {isActive && (
               <div 
@@ -199,8 +181,8 @@ export default function BottomNav({
                   height: '4px',
                   borderRadius: '50%',
                   background: 'var(--brand-green)',
-                  boxShadow: '0 0 6px var(--brand-green)',
-                  marginTop: '-2px'
+                  boxShadow: '0 0 8px var(--brand-green)',
+                  marginTop: '4px'
                 }} 
               />
             )}

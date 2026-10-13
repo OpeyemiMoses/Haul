@@ -104,7 +104,9 @@ function MainApp() {
     isAgeVerified,
     ageVerificationOpen,
     setAgeVerificationOpen,
-    verifyUserAge
+    verifyUserAge,
+    login,
+    openLoginModal
   } = useAuth();
   
   const [currentView, setCurrentView] = useState(() => {
@@ -115,7 +117,7 @@ function MainApp() {
       const savedView = localStorage.getItem('hual_current_view');
       if (savedView) return savedView;
     }
-    return 'storefront';
+    return 'landing';
   });
 
   const [activeTab, setActiveTab] = useState(() => {
@@ -134,7 +136,7 @@ function MainApp() {
     const handlePopState = () => {
       try {
         const searchParams = new URLSearchParams(window.location.search);
-        const urlView = searchParams.get('view') || localStorage.getItem('hual_current_view') || 'storefront';
+        const urlView = searchParams.get('view') || localStorage.getItem('hual_current_view') || 'landing';
         const urlTab = searchParams.get('tab') || localStorage.getItem('hual_active_tab') || 'shop';
         setCurrentView(urlView);
         setActiveTab(urlTab);
@@ -942,7 +944,15 @@ function MainApp() {
             setCurrentView('storefront');
             setActiveTab(validTab);
           }} 
-          onNavigateToSignIn={() => setCurrentView('signin')}
+          onOpenLoginModal={() => {
+            if (openLoginModal) openLoginModal();
+            else if (login) login();
+          }}
+          onNavigateToSignIn={() => {
+            if (openLoginModal) openLoginModal();
+            else if (login) login();
+            else setCurrentView('signin');
+          }}
           onOpenProfileModal={() => {
             setSelectedStore(null);
             setCurrentView('storefront');
@@ -1524,10 +1534,12 @@ function MainApp() {
         onOpenInbox={handleOpenInbox}
       />
 
-      {/* Floating Action Button (FAB) for AI Support */}
-      <AISupportFAB
-        onClick={() => handleOpenAiSupport(null)}
-      />
+      {/* Floating Action Button (FAB) for AI Support - Storefront and internal views only */}
+      {currentView !== 'landing' && (
+        <AISupportFAB
+          onClick={() => handleOpenAiSupport(null)}
+        />
+      )}
 
       {/* Onboarding Wizard Modal */}
       <OnboardingModal

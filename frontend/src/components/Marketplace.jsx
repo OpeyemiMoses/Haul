@@ -1912,10 +1912,9 @@ export default function Marketplace({
           ) : (
           <div 
             key={`catalog-grid-${activeCategory || 'all'}-${selectedMerchant?.id || 'all'}-${sortBy}`}
-            className="stagger-group perspective-container"
+            className="stagger-group perspective-container marketplace-products-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
               gap: '24px'
             }}
           >
@@ -1935,7 +1934,7 @@ export default function Marketplace({
             return (
               <div
                 key={cardKey}
-                className="liquid-glass-card"
+                className="liquid-glass-card marketplace-product-card"
               style={{
                 padding: '16px',
                 display: 'flex',
@@ -1948,19 +1947,22 @@ export default function Marketplace({
             >
               {/* Product Image Frame */}
               <div>
-                <div style={{
-                  width: '100%',
-                  height: '240px',
-                  borderRadius: '14px',
-                  background: '#0D1616',
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '14px'
-                }}>
+                <div 
+                  className="marketplace-product-image-box"
+                  style={{
+                    width: '100%',
+                    height: '240px',
+                    borderRadius: '14px',
+                    background: '#0D1616',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '14px'
+                  }}
+                >
                   <img 
                     src={product.imageUri} 
                     alt={product.name} 
@@ -2024,12 +2026,12 @@ export default function Marketplace({
                 </div>
 
                 {/* Title & Brand */}
-                <h3 style={{ fontSize: '0.94rem', fontWeight: 700, color: '#FFFFFF', margin: '0 0 4px', lineHeight: 1.3 }}>
+                <h3 className="marketplace-product-title" style={{ fontSize: '0.94rem', fontWeight: 700, color: '#FFFFFF', margin: '0 0 4px', lineHeight: 1.3 }}>
                   {product.name}
                 </h3>
                 
                 {/* Merchant & Location Tag */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '10px' }}>
+                <div className="marketplace-product-merchant" style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginBottom: '10px' }}>
                   <div 
                     onClick={(e) => {
                       e.stopPropagation();

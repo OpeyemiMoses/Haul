@@ -23,8 +23,8 @@ import HualBrand, { HualIcon } from './HualLogo';
 import LiquidGlassShowcase from './LiquidGlassShowcase';
 import useScrollReveal from '../lib/useScrollReveal';
 
-export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigateToSignIn }) {
-  const { user, authenticated, logout, profilePicture, isAgeVerified, setAgeVerificationOpen } = useAuth();
+export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigateToSignIn, onOpenLoginModal }) {
+  const { user, authenticated, logout, profilePicture, isAgeVerified, setAgeVerificationOpen, openLoginModal, login } = useAuth();
   const [copiedContract, setCopiedContract] = useState(false);
   const [activeFaq, setActiveFaq] = useState(null);
 
@@ -32,6 +32,14 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
 
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'You');
   const userInitial = (displayName[0] || 'U').toUpperCase();
+
+  const handleSignIn = () => {
+    if (onOpenLoginModal) onOpenLoginModal();
+    else if (openLoginModal) openLoginModal();
+    else if (login) login();
+    else if (onNavigateToSignIn) onNavigateToSignIn();
+    else handleEnter('shop');
+  };
 
   const handleEnter = (targetTab = 'shop') => {
     const validTab = (typeof targetTab === 'string' && targetTab) ? targetTab : 'shop';
@@ -42,36 +50,36 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
     if (authenticated) {
       if (onLaunchApp) onLaunchApp(validTab);
     } else {
-      if (onNavigateToSignIn) onNavigateToSignIn();
-      else if (onLaunchApp) onLaunchApp(validTab);
+      handleSignIn();
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'transparent', color: '#FFFFFF', fontFamily: "'Sora', sans-serif", position: 'relative', zIndex: 1 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'transparent', color: '#FFFFFF', fontFamily: "'Sora', sans-serif", position: 'relative', zIndex: 1, overflowX: 'hidden', width: '100%', maxWidth: '100%' }}>
       
       {/* ================= 1. FLOATING NAVIGATION BAR ================= */}
       <header style={{
         position: 'sticky',
-        top: '16px',
+        top: '12px',
         zIndex: 50,
         maxWidth: '1240px',
         margin: '0 auto',
-        width: 'calc(100% - 32px)',
+        width: 'calc(100% - 24px)',
       }}>
-        <div className="apple-glass-dock" style={{
+        <div className="apple-glass-dock landing-header-dock" style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 22px'
+          padding: '10px 18px',
+          gap: '12px'
         }}>
           {/* Brand Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => handleEnter('shop')}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 }} onClick={() => handleEnter('shop')}>
             <HualBrand size={24} name="Hual" showTagline={false} />
           </div>
 
-          {/* Center Links */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
+          {/* Center Links (Hidden on mobile <768px to eliminate compression) */}
+          <nav className="landing-desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '28px' }}>
             <span 
               onClick={() => handleEnter('shop')}
               style={{ fontSize: '0.8rem', color: '#9CA3AF', cursor: 'pointer', fontWeight: 600, transition: 'color 0.2s' }}
@@ -99,13 +107,13 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
           </nav>
 
           {/* Right Action: Sign In or Enter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             {authenticated && user ? (
               <button
                 onClick={() => (onLaunchApp ? onLaunchApp('shop') : handleEnter('shop'))}
                 className="btn-pill-primary"
                 style={{
-                  padding: '7px 20px',
+                  padding: '7px 18px',
                   fontWeight: 700,
                   fontSize: '0.8rem',
                   letterSpacing: '0.01em',
@@ -120,14 +128,15 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
               </button>
             ) : (
               <button
-                onClick={() => (onNavigateToSignIn ? onNavigateToSignIn() : handleEnter('shop'))}
+                onClick={handleSignIn}
                 className="btn-pill-primary"
                 style={{
                   padding: '7px 18px',
                   fontWeight: 700,
                   fontSize: '0.78rem',
                   letterSpacing: '0.01em',
-                  boxShadow: '0 0 16px rgba(132, 244, 59, 0.25)'
+                  boxShadow: '0 0 16px rgba(132, 244, 59, 0.25)',
+                  cursor: 'pointer'
                 }}
               >
                 <span>Sign In</span>
@@ -142,21 +151,22 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
         maxWidth: '1280px',
         margin: '0 auto',
         width: '100%',
-        padding: '48px 24px 60px',
+        padding: '36px 16px 50px',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-        gap: '40px',
-        alignItems: 'center'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(290px, 100%), 1fr))',
+        gap: '36px',
+        alignItems: 'center',
+        overflow: 'hidden'
       }}>
         {/* Left Column: Headlines & CTA with Pop & Stagger */}
-        <div className="reveal-pop">
+        <div className="reveal-pop" style={{ maxWidth: '100%', minWidth: 0 }}>
           <div className="eyebrow" style={{ marginBottom: '14px', fontSize: '0.72rem' }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--brand-green)' }} />
             <span>Verified Consumer Commerce</span>
           </div>
 
           <h1 className="font-display" style={{
-            fontSize: 'clamp(1.75rem, 3.4vw, 2.4rem)',
+            fontSize: 'clamp(1.6rem, 3.4vw, 2.4rem)',
             fontWeight: 800,
             lineHeight: 1.18,
             color: '#FFFFFF',
@@ -191,7 +201,7 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
           {/* CTAs */}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '32px' }}>
             <button 
-              onClick={() => handleEnter('shop')}
+              onClick={() => (authenticated ? handleEnter('shop') : handleSignIn())}
               className="btn-pill-primary"
               style={{ fontWeight: 800, padding: '9px 20px', fontSize: '0.82rem' }}
             >
@@ -242,13 +252,14 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
         {/* Right Column: Sony WH-1000XM4 Passport Card Entering from Right Angle */}
         <div 
           className="card-reveal-right perspective-container"
-          style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+          style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', maxWidth: '100%', overflow: 'hidden', padding: '16px 0' }}
         >
           {/* Glowing Green Ambient Radial Energy Vortex */}
           <div style={{
             position: 'absolute',
-            width: '440px',
-            height: '440px',
+            width: 'min(440px, 92vw)',
+            height: 'min(440px, 92vw)',
+            maxWidth: '100%',
             borderRadius: '50%',
             background: 'radial-gradient(circle, rgba(132, 244, 59, 0.35) 0%, rgba(132, 244, 59, 0.12) 45%, transparent 70%)',
             filter: 'blur(40px)',
@@ -265,7 +276,10 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
               position: 'absolute', 
               zIndex: 0, 
               pointerEvents: 'none',
-              filter: 'drop-shadow(0 0 25px rgba(132, 244, 59, 0.6))'
+              filter: 'drop-shadow(0 0 25px rgba(132, 244, 59, 0.6))',
+              maxWidth: '100%',
+              width: 'min(420px, 92vw)',
+              height: 'min(420px, 92vw)'
             }}
           >
             <defs>

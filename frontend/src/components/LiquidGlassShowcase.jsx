@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ShieldCheck, 
   ArrowRight, 
@@ -8,7 +8,9 @@ import {
   Layers, 
   ExternalLink,
   ShoppingBag,
-  Award
+  Award,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { HualIcon } from './HualLogo';
 import useScrollReveal from '../lib/useScrollReveal';
@@ -83,15 +85,29 @@ const SHOWCASE_ITEMS = [
 ];
 
 export default function LiquidGlassShowcase({ onExploreItem }) {
+  const [activeIdx, setActiveIdx] = useState(0);
   useScrollReveal();
+
+  const activeItem = SHOWCASE_ITEMS[activeIdx];
+
+  const handlePrev = (e) => {
+    if (e) e.stopPropagation();
+    setActiveIdx((prev) => (prev === 0 ? SHOWCASE_ITEMS.length - 1 : prev - 1));
+  };
+
+  const handleNext = (e) => {
+    if (e) e.stopPropagation();
+    setActiveIdx((prev) => (prev === SHOWCASE_ITEMS.length - 1 ? 0 : prev + 1));
+  };
 
   return (
     <section style={{
       maxWidth: '1280px',
       margin: '0 auto',
       width: '100%',
-      padding: '70px 24px 90px',
-      position: 'relative'
+      padding: '48px 16px 70px',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
       {/* Background Ambient Radial Glow Mesh */}
       <div style={{
@@ -99,8 +115,8 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
         top: '20%',
         left: '50%',
         transform: 'translateX(-50%)',
-        width: '900px',
-        height: '900px',
+        width: 'min(900px, 100vw)',
+        height: 'min(900px, 100vw)',
         background: 'radial-gradient(circle, rgba(132, 244, 59, 0.08) 0%, rgba(20, 184, 166, 0.05) 45%, transparent 70%)',
         filter: 'blur(90px)',
         pointerEvents: 'none',
@@ -108,28 +124,277 @@ export default function LiquidGlassShowcase({ onExploreItem }) {
       }} />
 
       {/* Section Header with Scroll Reveal Pop */}
-      <div className="reveal-pop" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 60px', position: 'relative', zIndex: 1 }}>
+      <div className="reveal-pop" style={{ textAlign: 'center', maxWidth: '700px', margin: '0 auto 40px', position: 'relative', zIndex: 1 }}>
         <div className="eyebrow" style={{ marginBottom: '12px', display: 'inline-flex' }}>
           <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--brand-green)' }} />
           <span>LIVING 3D PRODUCT PASSPORTS</span>
         </div>
         <h2 className="font-display" style={{
-          fontSize: 'clamp(1.75rem, 3.5vw, 2.5rem)',
+          fontSize: 'clamp(1.6rem, 3.5vw, 2.5rem)',
           fontWeight: 800,
           color: '#FFFFFF',
-          margin: '0 0 14px',
+          margin: '0 0 12px',
           letterSpacing: '-0.02em',
           lineHeight: 1.2
         }}>
           Physical Luxury. <span style={{ color: 'var(--brand-green)' }}>Verifiable Onchain.</span>
         </h2>
-        <p style={{ fontSize: '0.88rem', color: '#9CA3AF', margin: 0, lineHeight: 1.6 }}>
+        <p style={{ fontSize: '0.86rem', color: '#9CA3AF', margin: 0, lineHeight: 1.6 }}>
           Explore physical merchandise paired with immutable digital ownership, instant store collection, and lifetime warranty tracking.
         </p>
       </div>
 
-      {/* Showcase Cards List with Alternating Angles and Rising & Rotating Elements */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '54px', position: 'relative', zIndex: 1 }}>
+      {/* ================= MOBILE SWITCHABLE CAROUSEL VIEW ================= */}
+      <div className="showcase-mobile-switchable" style={{
+        flexDirection: 'column',
+        gap: '16px',
+        position: 'relative',
+        zIndex: 1,
+        width: '100%',
+        maxWidth: '100%'
+      }}>
+        {/* Horizontal Segmented Switcher Pills */}
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          overflowX: 'auto',
+          paddingBottom: '4px',
+          width: '100%',
+          scrollbarWidth: 'none',
+          WebkitOverflowScrolling: 'touch',
+          justifyContent: 'center'
+        }}>
+          {SHOWCASE_ITEMS.map((item, idx) => {
+            const isActive = idx === activeIdx;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveIdx(idx)}
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '999px',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                  background: isActive ? 'rgba(132, 244, 59, 0.18)' : 'rgba(255, 255, 255, 0.05)',
+                  border: isActive ? '1px solid var(--brand-green)' : '1px solid rgba(255, 255, 255, 0.1)',
+                  color: isActive ? 'var(--brand-green)' : '#9CA3AF',
+                  boxShadow: isActive ? '0 0 16px rgba(132, 244, 59, 0.25)' : 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <span>{item.id === 'headset' ? '🎧 Headset' : item.id === 'phone' ? '📱 iPhone 16' : '🧥 Nanotech Jacket'}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Carousel Prev/Next & Dots bar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 4px',
+          marginBottom: '2px'
+        }}>
+          <button
+            onClick={handlePrev}
+            aria-label="Previous Living Passport"
+            style={{
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '50%',
+              width: '34px',
+              height: '34px',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {SHOWCASE_ITEMS.map((_, dotIdx) => (
+              <span
+                key={dotIdx}
+                onClick={() => setActiveIdx(dotIdx)}
+                style={{
+                  width: dotIdx === activeIdx ? '18px' : '6px',
+                  height: '6px',
+                  borderRadius: '999px',
+                  background: dotIdx === activeIdx ? 'var(--brand-green)' : 'rgba(255, 255, 255, 0.25)',
+                  transition: 'all 0.25s ease',
+                  cursor: 'pointer'
+                }}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={handleNext}
+            aria-label="Next Living Passport"
+            style={{
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '50%',
+              width: '34px',
+              height: '34px',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer'
+            }}
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
+        {/* The Single Active Mobile Card */}
+        <div 
+          key={activeItem.id}
+          className="liquid-glass-card"
+          style={{
+            padding: '16px',
+            borderRadius: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '14px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+          onClick={() => onExploreItem && onExploreItem(activeItem.id)}
+        >
+          {/* Product Image Frame */}
+          <div style={{
+            width: '100%',
+            height: '210px',
+            borderRadius: '18px',
+            background: 'radial-gradient(circle at center, #101B1B 0%, #060B0B 100%)',
+            border: '1px solid rgba(132, 244, 59, 0.25)',
+            boxShadow: '0 15px 35px rgba(0, 0, 0, 0.8), 0 0 25px rgba(132, 244, 59, 0.15)',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative'
+          }}>
+            <img 
+              src={activeItem.imageUri} 
+              alt={activeItem.title} 
+              style={{ width: '85%', height: '85%', objectFit: 'contain' }}
+            />
+            <span style={{
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              fontSize: '0.66rem',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              color: 'var(--brand-green)',
+              background: 'rgba(8, 15, 15, 0.85)',
+              padding: '3px 8px',
+              borderRadius: '999px',
+              border: '1px solid var(--brand-green-border)'
+            }}>
+              VERIFIED 3D
+            </span>
+          </div>
+
+          {/* Details & Specs */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{
+                fontSize: '0.68rem',
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                color: 'var(--brand-green)',
+                background: 'var(--brand-green-dim)',
+                padding: '3px 8px',
+                borderRadius: '999px',
+                border: '1px solid var(--brand-green-border)'
+              }}>
+                {activeItem.category}
+              </span>
+              <span style={{ fontSize: '1.15rem', fontWeight: 900, color: '#FFFFFF', fontFamily: 'var(--font-mono)' }}>
+                {activeItem.price}
+              </span>
+            </div>
+
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#FFFFFF', margin: '0 0 4px', lineHeight: 1.3 }}>
+              {activeItem.title}
+            </h3>
+            <p style={{ fontSize: '0.76rem', color: '#9CA3AF', margin: '0 0 12px', lineHeight: 1.45 }}>
+              {activeItem.subtitle}
+            </p>
+
+            {/* Specs 2x2 grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '8px',
+              marginBottom: '14px'
+            }}>
+              {activeItem.specs.map((spec, i) => (
+                <div key={i} style={{
+                  padding: '7px 10px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)'
+                }}>
+                  <div style={{ fontSize: '0.64rem', color: '#9CA3AF', textTransform: 'uppercase' }}>{spec.label}</div>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#FFFFFF', marginTop: '1px' }}>{spec.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Passport Row */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '8px 12px',
+              borderRadius: '10px',
+              background: 'var(--brand-green-dim)',
+              border: '1px solid var(--brand-green-border)',
+              marginBottom: '14px',
+              fontSize: '0.7rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#E5E7EB' }}>
+                <ShieldCheck size={14} color="var(--brand-green)" />
+                <span style={{ fontFamily: 'var(--font-mono)' }}>{activeItem.passportId}</span>
+              </div>
+              <span style={{ color: 'var(--brand-green)', fontWeight: 700, fontSize: '0.66rem' }}>
+                {activeItem.warranty}
+              </span>
+            </div>
+
+            {/* CTA Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onExploreItem) onExploreItem(activeItem.id);
+              }}
+              className="btn-pill-primary"
+              style={{ width: '100%', padding: '9px', fontSize: '0.8rem', fontWeight: 800, gap: '6px' }}
+            >
+              <ShoppingBag size={14} />
+              <span>Inspect Passport</span>
+              <ArrowRight size={13} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= DESKTOP SHOWCASE CARDS LIST ================= */}
+      <div className="showcase-desktop-view" style={{ flexDirection: 'column', gap: '54px', position: 'relative', zIndex: 1 }}>
         {SHOWCASE_ITEMS.map((item, index) => {
           const isImageLeft = item.imageSide === 'left';
           const imageCardClass = isImageLeft ? 'card-reveal-left' : 'card-reveal-right';

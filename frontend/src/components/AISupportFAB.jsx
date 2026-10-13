@@ -7,6 +7,7 @@ export default function AISupportFAB({ onClick, hasPendingOrders = false }) {
   return (
     <button
       id="ai-support-fab-btn"
+      className="ai-support-fab-btn"
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
