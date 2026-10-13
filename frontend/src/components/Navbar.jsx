@@ -37,8 +37,7 @@ export default function Navbar({
   onBackToLanding,
   onNavigateToSignIn
 }) {
-  const { user, authenticated, login, usdcBalance, faucetUsdc, refreshBalance, userRole, userLocation, profilePicture, userStore } = useAuth();
-  const [fauceting, setFauceting] = useState(false);
+  const { user, authenticated, login, usdcBalance, refreshBalance, userRole, userLocation, profilePicture, userStore } = useAuth();
   const [cartPulse, setCartPulse] = useState(false);
 
   // Trigger pulse whenever cartCount increases
@@ -53,19 +52,6 @@ export default function Navbar({
   const displayName = user?.name || (user?.email ? user.email.split('@')[0] : 'Member');
   const handle = user?.email ? `@${user.email.split('@')[0]}.ont` : '@member.ont';
   const initial = (displayName[0] || 'M').toUpperCase();
-
-  const handleQuickAddFunds = async (e) => {
-    e.stopPropagation();
-    setFauceting(true);
-    try {
-      await faucetUsdc(1000);
-      await refreshBalance();
-    } catch (err) {
-      console.warn('Faucet error:', err);
-    } finally {
-      setFauceting(false);
-    }
-  };
 
   return (
     <header 
@@ -402,25 +388,6 @@ export default function Navbar({
                 <span style={{ color: 'var(--brand-green)', fontSize: '0.72rem', fontWeight: 800 }}>USD</span>
                 <span>{formatCurrency(usdcBalance)}</span>
               </div>
-
-              <button
-                onClick={handleQuickAddFunds}
-                disabled={fauceting}
-                title="Add $1,000 demo shopping funds"
-                style={{
-                  background: 'var(--brand-green-dim)',
-                  border: '1px solid var(--brand-green-border)',
-                  color: 'var(--brand-green)',
-                  borderRadius: '999px',
-                  padding: '2px 8px',
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {fauceting ? '...' : '+ Add $1k'}
-              </button>
             </div>
           )}
 

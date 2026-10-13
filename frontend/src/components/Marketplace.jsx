@@ -77,7 +77,7 @@ export default function Marketplace({
   onNavigateToSignIn,
   onDeleteProduct
 }) {
-  const { user, authenticated, usdcBalance, refreshBalance, deductUsdc, faucetUsdc, userLocation, updateUserLocation, userRole, userStore, updateStore } = useAuth();
+  const { user, authenticated, usdcBalance, refreshBalance, deductUsdc, userLocation, updateUserLocation, userRole, userStore, updateStore } = useAuth();
   const userKey = user?.id || (user?.email ? user.email.toLowerCase() : 'guest');
   const [verifiedReviewNotice, setVerifiedReviewNotice] = useState(null);
   const [editStoreModalOpen, setEditStoreModalOpen] = useState(false);
@@ -597,7 +597,7 @@ export default function Marketplace({
     const currentBal = Number(usdcBalance) || 0;
     const reqPrice = Number(checkoutProduct.priceUsd) || 0;
     if (currentBal < reqPrice) {
-      alert(`Insufficient funds! Your USDC balance is $${currentBal.toLocaleString()}, but this order costs $${reqPrice.toLocaleString()}. Please tap "+ Faucet $1,000 USDC" in checkout to top up.`);
+      alert(`Insufficient funds! Your USDC balance is $${currentBal.toLocaleString()}, but this order costs $${reqPrice.toLocaleString()}. Please deposit USDC into your wallet address to proceed.`);
       return;
     }
     setPurchasing(true);
@@ -708,7 +708,7 @@ export default function Marketplace({
         txHash,
         blockNumber: res?.blockNumber,
         passport: newPassport,
-        explorerUrl: res?.explorerUrl || `https://testnet.monadexplorer.com/tx/${txHash}`
+        explorerUrl: res?.explorerUrl || `https://monadexplorer.com/tx/${txHash}`
       });
     } catch (err) {
       console.error('Onchain checkout error:', err);
@@ -1748,7 +1748,7 @@ export default function Marketplace({
 
                           {sold.txHash && (
                             <a
-                              href={`https://testnet.monadexplorer.com/tx/${sold.txHash}`}
+                              href={`https://monadexplorer.com/tx/${sold.txHash}`}
                               target="_blank"
                               rel="noreferrer"
                               style={{
@@ -2451,28 +2451,6 @@ export default function Marketplace({
                                 {formatCurrency(currentBal)}
                               </div>
                             </div>
-
-                            {isInsufficient && (
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  if (faucetUsdc) await faucetUsdc(1000);
-                                  if (refreshBalance) await refreshBalance();
-                                }}
-                                className="btn-pill-primary btn-pill-sm"
-                                style={{
-                                  background: 'linear-gradient(135deg, #10B981, #059669)',
-                                  color: '#FFFFFF',
-                                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                                  boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)',
-                                  fontWeight: 800,
-                                  gap: '6px'
-                                }}
-                              >
-                                <Zap size={13} />
-                                <span>+ Faucet $1,000 USDC</span>
-                              </button>
-                            )}
                           </div>
 
                           {isInsufficient && (
@@ -2488,7 +2466,7 @@ export default function Marketplace({
                             }}>
                               <AlertCircle size={20} color="#EF4444" style={{ flexShrink: 0 }} />
                               <div style={{ fontSize: '0.78rem', color: '#FCA5A5', lineHeight: 1.35 }}>
-                                <strong>Insufficient Funds:</strong> You have {formatCurrency(currentBal)}, but this order requires {formatCurrency(cost)} (short by {formatCurrency(deficit)}). Please tap the green faucet button above to fund your balance.
+                                <strong>Insufficient Funds:</strong> You have {formatCurrency(currentBal)}, but this order requires {formatCurrency(cost)} (short by {formatCurrency(deficit)}). Please deposit USDC into your wallet to proceed.
                               </div>
                             </div>
                           )}

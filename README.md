@@ -3,7 +3,7 @@
 <div align="center">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Network: Monad](https://img.shields.io/badge/Network-Monad%20Testnet%20--%3E%20Mainnet%20Ready-836EF9.svg)](https://testnet.monad.xyz)
+[![Network: Monad](https://img.shields.io/badge/Network-Monad%20Mainnet%20(Chain%20143)-836EF9.svg)](https://monad.xyz)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.24%20(Cancun)-363636.svg)](https://soliditylang.org/)
 [![React](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite-61DAFB.svg)](https://react.dev/)
 [![Groq AI](https://img.shields.io/badge/AI%20Engine-Groq%20Llama%203.3%2070B-F55036.svg)](https://groq.com/)
@@ -98,23 +98,23 @@ graph TD
 
 ---
 
-## Deployed Contracts (Testnet and Upcoming Mainnet)
+## Deployed Contracts (Monad Mainnet)
 
-> **Network Roadmap & Mainnet Transition**:  
-> Haul is currently operating on the **Monad Testnet** (Chain ID: 10143) for staging and testing. The entire smart contract architecture is designed for a seamless, modular switch to **Monad Mainnet** upon launch. Switching environments only requires updating the RPC endpoint, chain ID, and deployer address in `contracts/.env` and `frontend/.env`.
+> **Monad Mainnet Deployment**:  
+> Haul is deployed and operating live on **Monad Mainnet** (Chain ID: 143). All protocol contracts (HualPassport, HualEscrow, HualCommerce) and the gasless paymaster relayer are fully operational on Mainnet.
 
-**Current Testnet Parameters:**
-- **Network Name:** Monad Testnet (Upcoming: Monad Mainnet)
-- **Chain ID:** `10143`
-- **RPC URL:** `https://testnet-rpc.monad.xyz`
-- **Block Explorer:** [https://testnet.monadexplorer.com](https://testnet.monadexplorer.com)
+**Mainnet Parameters:**
+- **Network Name:** Monad Mainnet
+- **Chain ID:** `143`
+- **RPC URL:** `https://rpc.monad.xyz`
+- **Block Explorer:** [https://monadexplorer.com](https://monadexplorer.com)
 
 | Contract | Address | Description |
 | :--- | :--- | :--- |
-| **HualPassport** | [`0x6503c1fAE0c50D527fEFd270264a3BC34ff64Bc4`](https://testnet.monadexplorer.com/address/0x6503c1fAE0c50D527fEFd270264a3BC34ff64Bc4) | Dynamic ERC-721 living product passport & lifecycle registry |
-| **HualEscrow** | [`0x6A3ec329593eFef6623493315951183B65faeF6B`](https://testnet.monadexplorer.com/address/0x6A3ec329593eFef6623493315951183B65faeF6B) | Non-custodial escrow holding funds until cryptographic PIN verification |
-| **HualCommerce** | [`0xc3601ccfDb421e71ABBEDbA361f8DF693B5e6d7a`](https://testnet.monadexplorer.com/address/0xc3601ccfDb421e71ABBEDbA361f8DF693B5e6d7a) | Main protocol router coordinating inventory, payments, and minting |
-| **TestUSDC** | [`0xe6aC8c520e61Cd1D48DfaAFa32dc0Ad387d99946`](https://testnet.monadexplorer.com/address/0xe6aC8c520e61Cd1D48DfaAFa32dc0Ad387d99946) | Protocol settlement token with public minting capabilities |
+| **HualPassport** | [`0x5F37Dda882340a5F13E2feC3fA075b7C360BaB57`](https://monadexplorer.com/address/0x5F37Dda882340a5F13E2feC3fA075b7C360BaB57) | Dynamic ERC-721 living product passport & lifecycle registry |
+| **HualEscrow** | [`0xEDf5e8E09568F93f19F5DB168eCa608D67f75A8c`](https://monadexplorer.com/address/0xEDf5e8E09568F93f19F5DB168eCa608D67f75A8c) | Non-custodial escrow holding funds until cryptographic PIN verification |
+| **HualCommerce** | [`0x1267d94c2174fc5e719a7B3ed272D6e0F3e93380`](https://monadexplorer.com/address/0x1267d94c2174fc5e719a7B3ed272D6e0F3e93380) | Main protocol router coordinating inventory, payments, and minting |
+| **USDC** | [`0xE4d1a20BC3F037a95fA1BD09C3382906591dcb4A`](https://monadexplorer.com/address/0xE4d1a20BC3F037a95fA1BD09C3382906591dcb4A) | Protocol settlement token |
 
 ---
 

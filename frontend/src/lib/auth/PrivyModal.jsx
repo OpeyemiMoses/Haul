@@ -3,8 +3,7 @@ import { ShieldCheck, Key, Copy, Check, Fuel, ExternalLink, RefreshCw } from 'lu
 import { useAuth } from './AuthContext';
 
 export default function PrivyModal({ isOpen, onClose }) {
-  const { user, usdcBalance, loadingBalance, checkBalance, faucetUsdc } = useAuth();
-  const [faucetLoading, setFaucetLoading] = useState(false);
+  const { user, usdcBalance, loadingBalance, checkBalance } = useAuth();
   const [copied, setCopied] = useState(false);
   const [privyAppId, setPrivyAppId] = useState(import.meta.env.VITE_PRIVY_APP_ID || '');
 
@@ -15,18 +14,6 @@ export default function PrivyModal({ isOpen, onClose }) {
       navigator.clipboard.writeText(user.address);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleFaucet = async () => {
-    setFaucetLoading(true);
-    try {
-      await faucetUsdc(1000);
-      alert('Success! 1,000 USDC minted to your embedded wallet on Monad.');
-    } catch (err) {
-      alert('Faucet failed: ' + err.message);
-    } finally {
-      setFaucetLoading(false);
     }
   };
 
@@ -104,14 +91,6 @@ export default function PrivyModal({ isOpen, onClose }) {
                 ${usdcBalance.toFixed(2)} USDC
               </div>
             </div>
-            <button
-              onClick={handleFaucet}
-              disabled={faucetLoading}
-              className="btn btn-secondary btn-sm"
-              style={{ fontSize: '0.76rem' }}
-            >
-              {faucetLoading ? 'Minting...' : '+ Faucet $1,000'}
-            </button>
           </div>
         </div>
 

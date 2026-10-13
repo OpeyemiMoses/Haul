@@ -400,7 +400,7 @@ export default function ProductDetailPage({
                 </span>
               </div>
               <span className="eyebrow" style={{ fontSize: '0.64rem', padding: '2px 8px' }}>
-                Monad Testnet
+                Monad Mainnet
               </span>
             </div>
 

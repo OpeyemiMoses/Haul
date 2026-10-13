@@ -593,7 +593,7 @@ export default function SellProductModal({
                   <Zap size={13} />
                   <span>Monad Tx: {String(successTx).slice(0, 10)}...{String(successTx).slice(-8)}</span>
                   <a
-                    href={`https://testnet.monadexplorer.com/tx/${successTx}`}
+                    href={`https://monadexplorer.com/tx/${successTx}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: 'var(--brand-green)', display: 'flex', alignItems: 'center' }}

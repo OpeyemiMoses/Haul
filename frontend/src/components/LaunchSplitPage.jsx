@@ -27,8 +27,6 @@ export default function LaunchSplitPage({
   const [usdcBalance, setUsdcBalance] = useState(0);
   const [loadingBalance, setLoadingBalance] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [fauceting, setFauceting] = useState(false);
-  const [faucetSuccess, setFaucetSuccess] = useState(false);
 
   // Active account address and email from official Privy user object
   const googleAccount = user?.linkedAccounts?.find(a => a.type === 'google') || user?.google;
@@ -64,21 +62,6 @@ export default function LaunchSplitPage({
     navigator.clipboard.writeText(walletAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleFaucet = async () => {
-    setFauceting(true);
-    setFaucetSuccess(false);
-    try {
-      await PrivyService.faucetUsdc(walletAddress, 1000);
-      await refreshWalletBalance();
-      setFaucetSuccess(true);
-      setTimeout(() => setFaucetSuccess(false), 3000);
-    } catch (err) {
-      console.error('Top-up failed:', err);
-    } finally {
-      setFauceting(false);
-    }
   };
 
   return (
@@ -369,55 +352,6 @@ export default function LaunchSplitPage({
                     <span>{copied ? 'Copied' : 'Copy'}</span>
                   </button>
                 </div>
-
-                {/* Quick Add Funds / Refresh Row */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-                  <button
-                    onClick={handleFaucet}
-                    disabled={fauceting}
-                    className="btn-pill-primary btn-pill-sm"
-                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.76rem', fontWeight: 700 }}
-                  >
-                    <PlusCircle size={13} />
-                    <span>{fauceting ? 'Adding...' : '+ Add $1,000 USD'}</span>
-                  </button>
-
-                  <button
-                    onClick={refreshWalletBalance}
-                    disabled={loadingBalance}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: '999px',
-                      background: '#FFFFFF',
-                      border: '1px solid #D1D5DB',
-                      color: '#4B5563',
-                      cursor: 'pointer',
-                      fontSize: '0.76rem'
-                    }}
-                    title="Refresh Balance"
-                  >
-                    <RefreshCw size={12} className={loadingBalance ? 'animate-spin' : ''} />
-                  </button>
-                </div>
-
-                {faucetSuccess && (
-                  <div style={{
-                    marginBottom: '12px',
-                    fontSize: '0.74rem',
-                    color: '#15803d',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    background: 'rgba(132, 244, 59, 0.18)',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(21, 128, 61, 0.25)',
-                    fontWeight: 700
-                  }}>
-                    <Check size={14} />
-                    <span>+$1,000 added to your account</span>
-                  </div>
-                )}
 
                 {/* Primary Action: Enter Storefront */}
                 <button

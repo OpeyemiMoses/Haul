@@ -358,15 +358,15 @@ export default function SettingsPage({ onNavigateTab }) {
                 background: 'var(--brand-green)',
                 color: '#080F0F'
               }}>
-                MAINNET TRANSITION READY
+                MAINNET LIVE
               </span>
               <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFFFFF' }}>
-                Upcoming Migration: Monad Testnet to Monad Mainnet
+                Monad Mainnet Protocol Deployment
               </span>
             </div>
             <p style={{ fontSize: '0.76rem', color: '#D1D5DB', margin: 0, lineHeight: 1.5 }}>
-              Haul currently executes on the high-throughput <strong>Monad Testnet</strong> (10,000 TPS).
-              All protocol contracts (HualPassport, HualEscrow, HualCommerce) and the gasless relayer are modularly configured to transition to <strong>Monad Mainnet</strong> upon official genesis.
+              Haul is deployed and executing on the high-throughput <strong>Monad Mainnet</strong> (10,000 TPS).
+              All protocol contracts (HualPassport, HualEscrow, HualCommerce) and the gasless relayer operate on Chain ID 143.
             </p>
           </div>
 
@@ -386,7 +386,7 @@ export default function SettingsPage({ onNavigateTab }) {
                 Current Active Chain
               </div>
               <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#FFFFFF', marginTop: '3px' }}>
-                Monad Testnet (Chain ID: 10143)
+                Monad Mainnet (Chain ID: 143)
               </div>
             </div>
 

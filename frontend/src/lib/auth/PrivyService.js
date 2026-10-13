@@ -70,7 +70,7 @@ export class PrivyService {
       wallet: {
         address: address,
         chainType: 'ethereum',
-        chainId: 10143, // Monad Testnet
+        chainId: 143, // Monad Mainnet
         clientType: 'privy-embedded-wallet'
       },
       createdAt: Date.now()

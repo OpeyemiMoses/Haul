@@ -28,8 +28,8 @@ module.exports = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
     monadMainnet: {
-      url: process.env.MONAD_RPC_URL || "https://testnet-rpc.monad.xyz",
-      chainId: parseInt(process.env.CHAIN_ID || "10143"),
+      url: process.env.MONAD_RPC_URL || "https://rpc.monad.xyz",
+      chainId: parseInt(process.env.CHAIN_ID || "143"),
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },

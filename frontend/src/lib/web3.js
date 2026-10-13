@@ -165,7 +165,7 @@ export async function fetchOnchainProducts() {
 }
 
 /**
- * Place order on Monad Testnet with USDC deposited into Escrow and mint living Passport NFT
+ * Place order on Monad Mainnet with USDC deposited into Escrow and mint living Passport NFT
  * 100% Gasless for the buyer - sponsored by the funded Paymaster relayer.
  */
 export async function buyWithUsdcEscrow(arg1, arg2, arg3, arg4) {
@@ -331,7 +331,7 @@ export async function buyWithUsdcEscrow(arg1, arg2, arg3, arg4) {
     let txHash = null;
 
     try {
-      // 5. Broadcast real gasless transaction on Monad Testnet
+      // 5. Broadcast real gasless transaction on Monad Mainnet
       orderTx = await commerce.createOrder(
         targetProductId,
         buyerAddress,
@@ -365,7 +365,7 @@ export async function buyWithUsdcEscrow(arg1, arg2, arg3, arg4) {
       blockNumber: receipt?.blockNumber || Math.floor(1000000 + Math.random() * 500000),
       orderId,
       tokenId,
-      explorerUrl: `https://testnet.monadexplorer.com/tx/${txHash}`
+      explorerUrl: `https://monadexplorer.com/tx/${txHash}`
     };
   } catch (outerErr) {
     console.warn('buyWithUsdcEscrow fallback:', outerErr?.message || outerErr);
@@ -377,7 +377,7 @@ export async function buyWithUsdcEscrow(arg1, arg2, arg3, arg4) {
       blockNumber: Math.floor(1000000 + Math.random() * 500000),
       orderId: Date.now(),
       tokenId: Math.floor(Math.random() * 9000) + 1000,
-      explorerUrl: `https://testnet.monadexplorer.com/tx/${fallbackHash}`
+      explorerUrl: `https://monadexplorer.com/tx/${fallbackHash}`
     };
   }
 }
@@ -675,7 +675,7 @@ export async function listProductOnchain({
 }
 
 /**
- * Release escrow payment directly to store owner's address on Monad Testnet
+ * Release escrow payment directly to store owner's address on Monad Mainnet
  */
 export async function releaseEscrowPayoutToStoreOwner({ sellerAddress, amountUsdc, orderId, orderName }) {
   const relayer = getRelayerSigner();
@@ -702,7 +702,7 @@ export async function releaseEscrowPayoutToStoreOwner({ sellerAddress, amountUsd
       await mintTx.wait();
     }
 
-    // Execute real onchain transfer to seller's address on Monad Testnet
+    // Execute real onchain transfer to seller's address on Monad Mainnet
     const tx = await usdc.transfer(validSellerAddress, amountUnits);
     receipt = await tx.wait();
     txHash = receipt?.hash || tx.hash;

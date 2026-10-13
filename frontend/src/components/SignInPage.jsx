@@ -267,7 +267,7 @@ export default function SignInPage({ onSignInSuccess, onBackToLanding }) {
           }}>
             <ShieldCheck size={14} color="var(--brand-green)" style={{ flexShrink: 0 }} />
             <div style={{ fontSize: '0.68rem', color: 'rgba(255, 255, 255, 0.5)', lineHeight: 1.4 }}>
-              Protected by Privy MPC on Monad testnet. Non-custodial embedded wallet created automatically on sign in.
+              Protected by Privy MPC on Monad Mainnet. Non-custodial embedded wallet created automatically on sign in.
             </div>
           </div>
 

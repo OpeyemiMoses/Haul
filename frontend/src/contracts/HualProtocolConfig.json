@@ -1,9 +1,9 @@
 {
-  "chainId": 10143,
-  "networkName": "monadTestnet",
+  "chainId": 143,
+  "networkName": "monadMainnet",
   "contracts": {
     "USDC": {
-      "address": "0xe6aC8c520e61Cd1D48DfaAFa32dc0Ad387d99946",
+      "address": "0xE4d1a20BC3F037a95fA1BD09C3382906591dcb4A",
       "abi": [
         {
           "inputs": [],
@@ -413,7 +413,7 @@
       ]
     },
     "Passport": {
-      "address": "0x6503c1fAE0c50D527fEFd270264a3BC34ff64Bc4",
+      "address": "0x5F37Dda882340a5F13E2feC3fA075b7C360BaB57",
       "abi": [
         {
           "inputs": [],
@@ -1642,7 +1642,7 @@
       ]
     },
     "Escrow": {
-      "address": "0x6A3ec329593eFef6623493315951183B65faeF6B",
+      "address": "0xEDf5e8E09568F93f19F5DB168eCa608D67f75A8c",
       "abi": [
         {
           "inputs": [
@@ -2108,7 +2108,7 @@
       ]
     },
     "Commerce": {
-      "address": "0xc3601ccfDb421e71ABBEDbA361f8DF693B5e6d7a",
+      "address": "0x1267d94c2174fc5e719a7B3ed272D6e0F3e93380",
       "abi": [
         {
           "inputs": [

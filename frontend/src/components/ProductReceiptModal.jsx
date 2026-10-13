@@ -364,7 +364,7 @@ export default function ProductReceiptModal({
               <div style={{ fontSize: '0.68rem', color: '#9CA3AF', marginBottom: '4px' }}>Transaction Hash</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <a
-                  href={`https://testnet.monadexplorer.com/tx/${txHash}`}
+                  href={`https://monadexplorer.com/tx/${txHash}`}
                   target="_blank"
                   rel="noreferrer"
                   style={{ 
@@ -396,7 +396,7 @@ export default function ProductReceiptModal({
               <div style={{ fontSize: '0.68rem', color: '#9CA3AF', marginBottom: '4px' }}>Network</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <span style={{ width: '8px', height: '8px', transform: 'rotate(45deg)', background: '#A855F7', display: 'inline-block' }} />
-                <span style={{ fontSize: '0.86rem', fontWeight: 700, color: '#FFFFFF' }}>Monad Testnet</span>
+                <span style={{ fontSize: '0.86rem', fontWeight: 700, color: '#FFFFFF' }}>Monad Mainnet</span>
               </div>
             </div>
           </div>

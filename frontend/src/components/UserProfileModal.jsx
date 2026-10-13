@@ -44,7 +44,6 @@ export default function UserProfileModal({
     usdcBalance, 
     loadingBalance, 
     refreshBalance, 
-    faucetUsdc, 
     transferUsdc,
     linkGoogle,
     linkEmail,
@@ -57,8 +56,6 @@ export default function UserProfileModal({
   } = useAuth();
 
   const [copied, setCopied] = useState(false);
-  const [fauceting, setFauceting] = useState(false);
-  const [faucetSuccess, setFaucetSuccess] = useState(false);
   const [createStoreOpen, setCreateStoreOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState(false);
 
@@ -81,21 +78,6 @@ export default function UserProfileModal({
     navigator.clipboard.writeText(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleFaucet = async () => {
-    setFauceting(true);
-    setFaucetSuccess(false);
-    try {
-      await faucetUsdc(1000);
-      await refreshBalance();
-      setFaucetSuccess(true);
-      setTimeout(() => setFaucetSuccess(false), 3000);
-    } catch (err) {
-      console.error('Top-up failed:', err);
-    } finally {
-      setFauceting(false);
-    }
   };
 
   const handleTransferSubmit = async (e) => {
@@ -338,7 +320,7 @@ export default function UserProfileModal({
             </div>
           </div>
 
-          {/* 2. Top-Up & Account Hash Row */}
+          {/* 2. Balance & Account Hash Row */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -419,16 +401,6 @@ export default function UserProfileModal({
               >
                 <Send size={12} />
                 <span>Send USDC</span>
-              </button>
-
-              <button
-                onClick={handleFaucet}
-                disabled={fauceting}
-                className="btn-pill-primary"
-                style={{ padding: '6px 14px', fontSize: '0.76rem', fontWeight: 700 }}
-              >
-                <PlusCircle size={13} />
-                <span>{fauceting ? 'Adding...' : '+ Add $1,000 USD'}</span>
               </button>
             </div>
           </div>
@@ -576,24 +548,6 @@ export default function UserProfileModal({
                   </button>
                 </div>
               </form>
-            </div>
-          )}
-
-          {faucetSuccess && (
-            <div style={{
-              padding: '10px 14px',
-              borderRadius: '10px',
-              background: 'rgba(132, 244, 59, 0.18)',
-              border: '1px solid rgba(21, 128, 61, 0.3)',
-              color: '#15803d',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}>
-              <Check size={15} />
-              <span>+$1,000.00 USD added to your spendable balance</span>
             </div>
           )}
 

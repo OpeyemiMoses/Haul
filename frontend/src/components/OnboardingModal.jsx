@@ -14,13 +14,12 @@ import { useAuth } from '../lib/auth/AuthContext';
 import { BUYER_LOCATIONS } from '../lib/catalogData';
 
 export default function OnboardingModal({ isOpen, onClose, onComplete }) {
-  const { user, updateUserLocation, faucetUsdc, refreshBalance } = useAuth();
+  const { user, updateUserLocation, refreshBalance } = useAuth();
   
   const [displayName, setDisplayName] = useState(user?.name || 'Shopper');
   const [selectedLocation, setSelectedLocation] = useState(user?.location || 'Victoria Island, Lagos');
   const [customLocation, setCustomLocation] = useState('');
   const [useCustom, setUseCustom] = useState(false);
-  const [funding, setFunding] = useState(false);
   const [saving, setSaving] = useState(false);
 
   if (!isOpen) return null;
@@ -37,13 +36,10 @@ export default function OnboardingModal({ isOpen, onClose, onComplete }) {
     localStorage.setItem('hual_user_name', displayName);
 
     try {
-      setFunding(true);
-      await faucetUsdc(1000);
-      if (user?.address) await refreshBalance(user.address);
+      if (user?.address && refreshBalance) await refreshBalance(user.address);
     } catch (e) {
-      console.warn('Faucet seed notice:', e);
+      console.warn('Balance refresh notice:', e);
     } finally {
-      setFunding(false);
       setSaving(false);
       if (onComplete) onComplete('consumer');
       if (onClose) onClose();

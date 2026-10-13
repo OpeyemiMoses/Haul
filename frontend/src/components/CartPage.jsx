@@ -32,7 +32,7 @@ export default function CartPage({
   onNavigateToShop,
   onPassportMinted
 }) {
-  const { user, usdcBalance, refreshBalance, deductUsdc, faucetUsdc, authenticated, login, userLocation } = useAuth();
+  const { user, usdcBalance, refreshBalance, deductUsdc, authenticated, login, userLocation } = useAuth();
   
   const [checkingOut, setCheckingOut] = useState(false);
   const userAddr = user?.address ? user.address.toLowerCase() : null;
@@ -105,7 +105,7 @@ export default function CartPage({
     if (cart.length === 0) return;
 
     if (usdcBalance < subtotal) {
-      alert(`Insufficient balance ($${usdcBalance.toLocaleString()}). You need $${subtotal.toLocaleString()} to complete this checkout. Use the "+ Add $1k" faucet in the header to fund your balance!`);
+      alert(`Insufficient balance ($${usdcBalance.toLocaleString()}). You need $${subtotal.toLocaleString()} to complete this checkout. Please deposit USDC into your wallet address to proceed.`);
       return;
     }
 
@@ -703,28 +703,6 @@ export default function CartPage({
                       {formatCurrency(usdcBalance)}
                     </div>
                   </div>
-
-                  {usdcBalance < subtotal && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (faucetUsdc) await faucetUsdc(1000);
-                        if (refreshBalance) await refreshBalance();
-                      }}
-                      className="btn-pill-primary btn-pill-sm"
-                      style={{
-                        background: 'linear-gradient(135deg, #10B981, #059669)',
-                        color: '#FFFFFF',
-                        border: '1px solid rgba(255, 255, 255, 0.3)',
-                        boxShadow: '0 0 15px rgba(16, 185, 129, 0.4)',
-                        fontWeight: 800,
-                        gap: '6px'
-                      }}
-                    >
-                      <Zap size={13} />
-                      <span>+ Faucet $1,000 USDC</span>
-                    </button>
-                  )}
                 </div>
 
                 {usdcBalance < subtotal && (
@@ -740,7 +718,7 @@ export default function CartPage({
                   }}>
                     <AlertCircle size={20} color="#EF4444" style={{ flexShrink: 0 }} />
                     <div style={{ fontSize: '0.78rem', color: '#FCA5A5', lineHeight: 1.35 }}>
-                      <strong>Insufficient Funds:</strong> Cart subtotal is <strong>{formatCurrency(subtotal)}</strong>, but balance is <strong>{formatCurrency(usdcBalance)}</strong> (short by {formatCurrency(Math.max(0, subtotal - usdcBalance))}). Top up using the faucet button above.
+                      <strong>Insufficient Funds:</strong> Cart subtotal is <strong>{formatCurrency(subtotal)}</strong>, but balance is <strong>{formatCurrency(usdcBalance)}</strong> (short by {formatCurrency(Math.max(0, subtotal - usdcBalance))}). Please deposit USDC into your wallet to proceed.
                     </div>
                   </div>
                 )}

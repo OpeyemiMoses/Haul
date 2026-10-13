@@ -101,7 +101,6 @@ export default function ProfilePage({
     usdcBalance, 
     loadingBalance, 
     refreshBalance, 
-    faucetUsdc, 
     deductUsdc,
     transferUsdc,
     linkGoogle,
@@ -115,8 +114,6 @@ export default function ProfilePage({
 
   const fileInputRef = useRef(null);
   const [copied, setCopied] = useState(false);
-  const [fauceting, setFauceting] = useState(false);
-  const [faucetSuccess, setFaucetSuccess] = useState(false);
   const [createStoreOpen, setCreateStoreOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [editLocationOpen, setEditLocationOpen] = useState(false);
@@ -393,9 +390,6 @@ export default function ProfilePage({
       }
 
       // 4. Refund USDC to balance
-      if (faucetUsdc) {
-        try { await faucetUsdc(refundAmount); } catch {}
-      }
       if (refreshBalance) {
         try { await refreshBalance(); } catch {}
       }
@@ -798,21 +792,6 @@ export default function ProfilePage({
     navigator.clipboard.writeText(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleFaucet = async () => {
-    setFauceting(true);
-    setFaucetSuccess(false);
-    try {
-      await faucetUsdc(1000);
-      await refreshBalance();
-      setFaucetSuccess(true);
-      setTimeout(() => setFaucetSuccess(false), 3000);
-    } catch (err) {
-      console.error('Top-up failed:', err);
-    } finally {
-      setFauceting(false);
-    }
   };
 
   // Delete a cancelled/refunded passport record
@@ -1692,16 +1671,6 @@ export default function ProfilePage({
             </button>
 
             <button
-              onClick={handleFaucet}
-              disabled={fauceting}
-              className="btn-pill-primary btn-pill-sm"
-              style={{ padding: '8px', fontSize: '0.74rem', fontWeight: 800 }}
-            >
-              <RefreshCw size={13} className={fauceting ? 'animate-spin' : ''} />
-              <span>{fauceting ? 'Adding...' : faucetSuccess ? '+$1k Added!' : '+Top-Up $1k'}</span>
-            </button>
-
-            <button
               onClick={handleExportWallet}
               className="btn-pill-secondary btn-pill-sm"
               style={{ padding: '8px', fontSize: '0.74rem', fontWeight: 700 }}
@@ -1877,7 +1846,7 @@ export default function ProfilePage({
                     Passport Management Hub
                   </h3>
                 </div>
-                <span style={{ fontSize: '0.68rem', color: 'var(--brand-green)', fontWeight: 700 }}>Monad Testnet</span>
+                <span style={{ fontSize: '0.68rem', color: 'var(--brand-green)', fontWeight: 700 }}>Monad Mainnet</span>
               </div>
 
               {effectivePassports.length === 0 ? (
@@ -2208,7 +2177,7 @@ export default function ProfilePage({
                       <div>
                         <span style={{ color: '#6B7280', display: 'block', fontSize: '0.68rem' }}>Monad Tx Ref</span>
                         <a
-                          href={fTxRef.startsWith('0x') ? `https://testnet.monadexplorer.com/tx/${fTxRef}` : '#'}
+                          href={fTxRef.startsWith('0x') ? `https://monadexplorer.com/tx/${fTxRef}` : '#'}
                           target="_blank"
                           rel="noreferrer"
                           style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-mono)', textDecoration: 'none' }}
@@ -2831,7 +2800,7 @@ export default function ProfilePage({
                       </div>
                       <div style={{ flexShrink: 0 }}>
                         <a
-                          href={pTx.startsWith('0x') ? `https://testnet.monadexplorer.com/tx/${pTx}` : '#'}
+                          href={pTx.startsWith('0x') ? `https://monadexplorer.com/tx/${pTx}` : '#'}
                           target="_blank"
                           rel="noreferrer"
                           style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-mono)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '3px', fontSize: '0.66rem' }}
@@ -3316,7 +3285,7 @@ export default function ProfilePage({
                           {(counterHandoverTxHash || counterLookupResult.payoutTxHash) && (
                             <div style={{ marginTop: '10px' }}>
                               <a
-                                href={`https://testnet.monadexplorer.com/tx/${counterHandoverTxHash || counterLookupResult.payoutTxHash}`}
+                                href={`https://monadexplorer.com/tx/${counterHandoverTxHash || counterLookupResult.payoutTxHash}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 style={{
@@ -3565,7 +3534,7 @@ export default function ProfilePage({
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <a 
-                        href={tx.txHash && tx.txHash.startsWith('0x') ? `https://testnet.monadexplorer.com/tx/${tx.txHash}` : `https://testnet.monadexplorer.com`} 
+                        href={tx.txHash && tx.txHash.startsWith('0x') ? `https://monadexplorer.com/tx/${tx.txHash}` : `https://monadexplorer.com`} 
                         target="_blank" 
                         rel="noreferrer"
                         style={{
@@ -4770,11 +4739,11 @@ export default function ProfilePage({
                     Physical Handover Completed
                   </h3>
                   <p style={{ fontSize: '0.82rem', color: '#9CA3AF', lineHeight: 1.5, margin: '0 0 14px' }}>
-                    This item was verified and handed over at <strong style={{ color: '#FFFFFF' }}>{merchName}</strong>. Escrow payment was disbursed to the store owner's wallet on Monad Testnet.
+                    This item was verified and handed over at <strong style={{ color: '#FFFFFF' }}>{merchName}</strong>. Escrow payment was disbursed to the store owner's wallet on Monad Mainnet.
                   </p>
                   {payoutTx && (
                     <a
-                      href={`https://testnet.monadexplorer.com/tx/${payoutTx}`}
+                      href={`https://monadexplorer.com/tx/${payoutTx}`}
                       target="_blank"
                       rel="noreferrer"
                       style={{
@@ -5098,18 +5067,6 @@ export default function ProfilePage({
               </button>
             </div>
 
-            {/* Instant Faucet Action */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                onClick={handleFaucet}
-                disabled={fauceting}
-                className="btn-pill-primary"
-                style={{ width: '100%', padding: '11px', fontWeight: 800, fontSize: '0.84rem' }}
-              >
-                <RefreshCw size={14} className={fauceting ? 'animate-spin' : ''} />
-                <span>{fauceting ? 'Adding Funds...' : faucetSuccess ? '+$1,000 USD Added!' : 'Instant Faucet Top-Up (+$1,000 USD)'}</span>
-              </button>
-            </div>
           </div>
         </div>
         </ModalPortal>
