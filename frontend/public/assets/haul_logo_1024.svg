@@ -1,0 +1,87 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080F0F" />
+      <stop offset="50%" stop-color="#0E1919" />
+      <stop offset="100%" stop-color="#040808" />
+    </linearGradient>
+
+    <!-- Radial Ambient Energy Glow -->
+    <radialGradient id="emeraldGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#84F43B" stop-opacity="0.35" />
+      <stop offset="50%" stop-color="#14B8A6" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#080F0F" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Neon Emerald Brand Gradients -->
+    <linearGradient id="neonEmeraldPillar" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A5F96E" />
+      <stop offset="40%" stop-color="#84F43B" />
+      <stop offset="100%" stop-color="#55B01D" />
+    </linearGradient>
+
+    <linearGradient id="ribbonTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B6FB8A" />
+      <stop offset="50%" stop-color="#84F43B" />
+      <stop offset="100%" stop-color="#4E9E1E" />
+    </linearGradient>
+
+    <linearGradient id="ribbonShadow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4E9E1E" />
+      <stop offset="100%" stop-color="#2D660D" />
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="glowFilter" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="36" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="squircleShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="24" stdDeviation="40" flood-color="#000000" flood-opacity="0.8" />
+    </filter>
+  </defs>
+
+  <!-- Background Base Canvas -->
+  <rect width="1024" height="1024" fill="url(#bgGrad)" />
+
+  <!-- Ambient Radial Light Bloom behind emblem -->
+  <circle cx="512" cy="512" r="420" fill="url(#emeraldGlow)" />
+
+  <!-- Outer Glass Border Ring -->
+  <rect x="92" y="92" width="840" height="840" rx="220" 
+        fill="rgba(18, 30, 30, 0.6)" 
+        stroke="rgba(255, 255, 255, 0.08)" 
+        stroke-width="3" 
+        filter="url(#squircleShadow)" />
+
+  <!-- Inner Soft Accent Ring -->
+  <rect x="94" y="94" width="836" height="836" rx="218" 
+        fill="none" 
+        stroke="rgba(132, 244, 59, 0.15)" 
+        stroke-width="1.5" />
+
+  <!-- HUAL "H" Ribbon Emblem Mark (Scaled to 520x520 centered at 512, 512) -->
+  <g transform="translate(252, 252) scale(5.2)" filter="url(#glowFilter)">
+    <!-- Left Pillar -->
+    <rect x="20" y="16" width="18" height="68" rx="9" fill="url(#neonEmeraldPillar)" />
+
+    <!-- Right Pillar -->
+    <rect x="62" y="16" width="18" height="68" rx="9" fill="url(#neonEmeraldPillar)" />
+
+    <!-- Ribbon Fold Underlayer (Shadow) -->
+    <path d="M20 62L80 34V48L20 76Z" fill="url(#ribbonShadow)" opacity="0.95" />
+
+    <!-- Ribbon Fold Top Highlight -->
+    <path d="M20 44L80 20V34L20 58Z" fill="url(#ribbonTop)" />
+
+    <!-- 3D Center Fold Crease -->
+    <path d="M38 52L62 40" stroke="#E6FFD2" stroke-width="2.2" stroke-linecap="round" opacity="0.85" />
+  </g>
+
+  <!-- Subtle Specular Glass Highlight -->
+  <path d="M140 180C140 140 180 120 220 115C380 95 644 95 804 115C844 120 884 140 884 180C750 250 274 250 140 180Z" 
+        fill="white" 
+        opacity="0.04" />
+</svg>

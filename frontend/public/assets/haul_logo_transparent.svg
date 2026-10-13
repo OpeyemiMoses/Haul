@@ -1,0 +1,43 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Neon Emerald Brand Gradients -->
+    <linearGradient id="neonEmeraldPillar" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A5F96E" />
+      <stop offset="40%" stop-color="#84F43B" />
+      <stop offset="100%" stop-color="#55B01D" />
+    </linearGradient>
+
+    <linearGradient id="ribbonTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B6FB8A" />
+      <stop offset="50%" stop-color="#84F43B" />
+      <stop offset="100%" stop-color="#4E9E1E" />
+    </linearGradient>
+
+    <linearGradient id="ribbonShadow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4E9E1E" />
+      <stop offset="100%" stop-color="#2D660D" />
+    </linearGradient>
+
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#84F43B" flood-opacity="0.35" />
+    </filter>
+  </defs>
+
+  <!-- HUAL "H" Ribbon Emblem Mark centered on transparent canvas -->
+  <g transform="translate(187, 187) scale(6.5)" filter="url(#softGlow)">
+    <!-- Left Pillar -->
+    <rect x="20" y="16" width="18" height="68" rx="9" fill="url(#neonEmeraldPillar)" />
+
+    <!-- Right Pillar -->
+    <rect x="62" y="16" width="18" height="68" rx="9" fill="url(#neonEmeraldPillar)" />
+
+    <!-- Ribbon Fold Underlayer (Shadow) -->
+    <path d="M20 62L80 34V48L20 76Z" fill="url(#ribbonShadow)" opacity="0.95" />
+
+    <!-- Ribbon Fold Top Highlight -->
+    <path d="M20 44L80 20V34L20 58Z" fill="url(#ribbonTop)" />
+
+    <!-- 3D Center Fold Crease -->
+    <path d="M38 52L62 40" stroke="#E6FFD2" stroke-width="2.2" stroke-linecap="round" opacity="0.9" />
+  </g>
+</svg>
