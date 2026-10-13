@@ -635,6 +635,161 @@ html, body {
     padding: 20px 16px !important;
     max-height: 90vh !important;
   }
+
+  /* ========================================================
+     COMPACT MOBILE CARD DETAILS & PROFILE ADAPTATIONS
+     ======================================================== */
+  .perspective-container {
+    perspective: none !important;
+  }
+
+  .card-reveal-left,
+  .card-reveal-right {
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* General Cards on Mobile: reduce bulky padding and prevent cut-offs */
+  .apple-liquid-glass-card,
+  .liquid-glass-card {
+    padding: 14px 12px !important;
+    border-radius: 16px !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Profile Header & Top Cards */
+  .profile-header-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .profile-identity-card,
+  .profile-vault-card {
+    padding: 14px 12px !important;
+    border-radius: 16px !important;
+    gap: 10px !important;
+  }
+
+  .profile-identity-top-row {
+    gap: 10px !important;
+  }
+
+  .profile-avatar-circle {
+    width: 44px !important;
+    height: 44px !important;
+    font-size: 1.1rem !important;
+  }
+
+  .profile-display-name {
+    font-size: 1.02rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .profile-verified-badge {
+    font-size: 0.58rem !important;
+    padding: 1.5px 5px !important;
+  }
+
+  .profile-meta-row {
+    font-size: 0.68rem !important;
+    gap: 4px !important;
+  }
+
+  .profile-bio-text {
+    font-size: 0.68rem !important;
+    line-height: 1.25 !important;
+    margin-top: 2px !important;
+  }
+
+  .profile-identity-actions {
+    gap: 6px !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  .profile-btn-edit,
+  .profile-btn-signout {
+    padding: 4px 10px !important;
+    font-size: 0.66rem !important;
+  }
+
+  .profile-pills-grid {
+    padding: 8px 8px !important;
+    gap: 6px !important;
+    border-radius: 10px !important;
+  }
+
+  .profile-pills-grid span {
+    font-size: 0.58rem !important;
+  }
+
+  .profile-pills-grid strong {
+    font-size: 0.66rem !important;
+  }
+
+  .profile-vault-balance {
+    font-size: 1.45rem !important;
+  }
+
+  .profile-vault-wallet-icon {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .profile-vault-metrics {
+    gap: 6px !important;
+  }
+
+  .profile-vault-metrics > div {
+    padding: 5px 3px !important;
+    border-radius: 10px !important;
+  }
+
+  .profile-vault-metrics div > div:first-child {
+    font-size: 0.95rem !important;
+  }
+
+  .profile-vault-metrics div > div:last-child {
+    font-size: 0.58rem !important;
+  }
+
+  .profile-vault-actions {
+    gap: 4px !important;
+  }
+
+  .profile-vault-actions button {
+    padding: 6px 3px !important;
+    font-size: 0.66rem !important;
+    gap: 3px !important;
+  }
+
+  /* Profile Overview & Tab Grids */
+  .profile-overview-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .profile-passports-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .profile-passport-card {
+    padding: 12px 10px !important;
+    border-radius: 16px !important;
+  }
+
+  .profile-featured-specs-box {
+    grid-template-columns: 76px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 10px !important;
+  }
 }
 
 @media (max-width: 480px) {
@@ -644,6 +799,24 @@ html, body {
     gap: 8px !important;
   }
 
+  .marketplace-products-grid .marketplace-product-card {
+    padding: 8px !important;
+    border-radius: 14px !important;
+  }
+
+  .marketplace-products-grid .marketplace-product-image-box {
+    height: 120px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .marketplace-products-grid .marketplace-product-title {
+    font-size: 0.74rem !important;
+  }
+
+  .marketplace-products-grid .marketplace-product-price {
+    font-size: 0.8rem !important;
+  }
+
   .mobile-product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 8px !important;
@@ -651,6 +824,15 @@ html, body {
 
   .header-brand-title {
     font-size: 1.1rem !important;
+  }
+
+  .profile-identity-card,
+  .profile-vault-card {
+    padding: 12px 10px !important;
+  }
+
+  .profile-vault-balance {
+    font-size: 1.35rem !important;
   }
 }
 

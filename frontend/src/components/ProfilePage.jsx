@@ -1330,29 +1330,33 @@ export default function ProfilePage({
       )}
 
       {/* ================= 1. COMPACT PROFILE HEADER ================= */}
-      <div className="perspective-container" style={{
+      <div className="perspective-container profile-header-grid" style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
         gap: '16px',
         marginBottom: '20px'
       }}>
         {/* User Identity Card (Apple Liquid Glass) */}
-        <div className="apple-liquid-glass-card card-reveal-left" style={{
+        <div className="apple-liquid-glass-card card-reveal-left profile-identity-card" style={{
           padding: '20px 22px',
           borderRadius: '20px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: '14px'
+          gap: '14px',
+          boxSizing: 'border-box',
+          minWidth: 0,
+          overflow: 'hidden'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div className="profile-identity-top-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', minWidth: 0 }}>
+            <div className="profile-identity-user-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: '1 1 auto' }}>
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <div 
+                  className="profile-avatar-circle"
                   onClick={() => fileInputRef.current?.click()}
                   style={{
-                    width: '56px',
-                    height: '56px',
+                    width: '52px',
+                    height: '52px',
                     borderRadius: '50%',
                     background: profilePicture || user?.profilePicture ? 'transparent' : '#080F0F',
                     border: '2px solid var(--brand-green)',
@@ -1360,7 +1364,7 @@ export default function ProfilePage({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '1.4rem',
+                    fontSize: '1.3rem',
                     fontWeight: 900,
                     boxShadow: '0 0 16px var(--brand-green-dim)',
                     overflow: 'hidden',
@@ -1386,8 +1390,8 @@ export default function ProfilePage({
                     position: 'absolute',
                     bottom: '-2px',
                     right: '-2px',
-                    width: '22px',
-                    height: '22px',
+                    width: '20px',
+                    height: '20px',
                     borderRadius: '50%',
                     background: 'var(--brand-green)',
                     border: '2px solid #080F0F',
@@ -1399,7 +1403,7 @@ export default function ProfilePage({
                   }}
                   title="Upload picture"
                 >
-                  <Camera size={11} strokeWidth={2.5} />
+                  <Camera size={10} strokeWidth={2.5} />
                 </button>
                 <input
                   ref={fileInputRef}
@@ -1410,80 +1414,86 @@ export default function ProfilePage({
                 />
               </div>
 
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <h2 className="font-display" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', margin: 0 }}>
+              <div className="profile-identity-user-text" style={{ minWidth: 0, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', minWidth: 0 }}>
+                  <h2 className="font-display profile-display-name" style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                     {displayName}
                   </h2>
-                  <span style={{
+                  <span className="profile-verified-badge" style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '3px',
                     background: 'var(--brand-green-dim)',
                     color: 'var(--brand-green)',
-                    fontSize: '0.64rem',
+                    fontSize: '0.62rem',
                     fontWeight: 800,
-                    padding: '2px 7px',
+                    padding: '2px 6px',
                     borderRadius: '999px',
-                    border: '1px solid var(--brand-green-border)'
+                    border: '1px solid var(--brand-green-border)',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
                   }}>
-                    <CheckCircle2 size={11} /> VERIFIED
+                    <CheckCircle2 size={10} /> VERIFIED
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', fontSize: '0.76rem', color: '#9CA3AF' }}>
-                  <span>{displayHandle}</span>
+                <div className="profile-meta-row" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', fontSize: '0.72rem', color: '#9CA3AF', flexWrap: 'wrap', minWidth: 0 }}>
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{displayHandle}</span>
                   <span>•</span>
-                  <span style={{ color: 'var(--brand-green)', fontWeight: 700 }}>{userLocation}</span>
+                  <span style={{ color: 'var(--brand-green)', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{userLocation}</span>
                   <button 
                     onClick={() => setEditLocationOpen(true)} 
-                    style={{ background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '0.68rem', textDecoration: 'underline' }}
+                    style={{ background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer', fontSize: '0.66rem', textDecoration: 'underline', padding: 0 }}
                   >
                     Change
                   </button>
                 </div>
 
                 {displayBio && (
-                  <p style={{ margin: '4px 0 0', fontSize: '0.74rem', color: '#9CA3AF', fontStyle: 'italic', maxWidth: '380px', lineHeight: 1.35 }}>
+                  <p className="profile-bio-text" style={{ margin: '3px 0 0', fontSize: '0.72rem', color: '#9CA3AF', fontStyle: 'italic', maxWidth: '380px', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     "{displayBio}"
                   </p>
                 )}
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="profile-identity-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
               <button
                 onClick={() => setEditProfileOpen(true)}
+                className="profile-btn-edit"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '5px',
-                  padding: '6px 14px',
+                  gap: '4px',
+                  padding: '5px 12px',
                   borderRadius: '999px',
                   background: 'rgba(132, 244, 59, 0.12)',
                   border: '1px solid rgba(132, 244, 59, 0.35)',
                   color: 'var(--brand-green)',
-                  fontSize: '0.72rem',
+                  fontSize: '0.7rem',
                   fontWeight: 700,
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
                 }}
               >
-                <Edit3 size={12} />
+                <Edit3 size={11} />
                 <span>Edit Profile</span>
               </button>
 
               <button
                 onClick={logout}
+                className="profile-btn-signout"
                 style={{
-                  padding: '6px 12px',
+                  padding: '5px 10px',
                   borderRadius: '999px',
                   background: '#162424',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                   color: '#9CA3AF',
-                  fontSize: '0.72rem',
+                  fontSize: '0.7rem',
                   fontWeight: 600,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 Sign Out
@@ -1492,44 +1502,46 @@ export default function ProfilePage({
           </div>
 
           {/* Quick Account Info Pills */}
-          <div style={{
+          <div className="profile-pills-grid" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
             gap: '8px',
-            padding: '10px 12px',
+            padding: '8px 10px',
             background: '#080F0F',
             borderRadius: '12px',
             border: '1px solid rgba(255, 255, 255, 0.06)',
-            fontSize: '0.74rem'
+            fontSize: '0.72rem',
+            minWidth: 0,
+            overflow: 'hidden'
           }}>
-            <div>
-              <span style={{ color: '#6B7280', fontSize: '0.66rem', display: 'block' }}>Account Role</span>
-              <strong style={{ color: '#FFFFFF' }}>{userRole === 'merchant' ? 'Store Owner' : 'Shopper'}</strong>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <span style={{ color: '#6B7280', fontSize: '0.62rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Account Role</span>
+              <strong style={{ color: '#FFFFFF', fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{userRole === 'merchant' ? 'Store Owner' : 'Shopper'}</strong>
             </div>
-            <div>
-              <span style={{ color: '#6B7280', fontSize: '0.66rem', display: 'block' }}>Monad ID</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', color: '#9CA3AF' }}>{shortAddr}</span>
-                <button onClick={handleCopy} style={{ background: 'transparent', border: 'none', color: copied ? 'var(--brand-green)' : '#6B7280', cursor: 'pointer' }}>
-                  {copied ? <Check size={11} /> : <Copy size={11} />}
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <span style={{ color: '#6B7280', fontSize: '0.62rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Monad ID</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '3px', minWidth: 0 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', color: '#9CA3AF', fontSize: '0.66rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shortAddr}</span>
+                <button onClick={handleCopy} style={{ background: 'transparent', border: 'none', color: copied ? 'var(--brand-green)' : '#6B7280', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+                  {copied ? <Check size={10} /> : <Copy size={10} />}
                 </button>
               </div>
             </div>
-            <div>
-              <span style={{ color: '#6B7280', fontSize: '0.66rem', display: 'block' }}>Buyer Protection</span>
-              <strong style={{ color: 'var(--brand-green)' }}>Active (Escrow)</strong>
+            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+              <span style={{ color: '#6B7280', fontSize: '0.62rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Buyer Protection</span>
+              <strong style={{ color: 'var(--brand-green)', fontSize: '0.7rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>Active (Escrow)</strong>
             </div>
           </div>
 
           {/* Action Button */}
           {userRole === 'merchant' ? (
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', minWidth: 0 }}>
               <button
                 onClick={onOpenSellModal}
                 className="btn-pill-primary btn-pill-sm"
-                style={{ flex: 1, padding: '8px', fontSize: '0.78rem', fontWeight: 800 }}
+                style={{ flex: 1, padding: '7px 8px', fontSize: '0.75rem', fontWeight: 800, minWidth: 0, justifyContent: 'center' }}
               >
-                <PlusCircle size={13} /> List Item (Sell)
+                <PlusCircle size={12} /> <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>List Item (Sell)</span>
               </button>
               <button
                 onClick={() => {
@@ -1540,50 +1552,53 @@ export default function ProfilePage({
                   }
                 }}
                 className="btn-pill-secondary btn-pill-sm"
-                style={{ flex: 1, padding: '8px', fontSize: '0.78rem' }}
+                style={{ flex: 1, padding: '7px 8px', fontSize: '0.75rem', minWidth: 0, justifyContent: 'center' }}
                 title="View your merchant storefront"
               >
-                <Store size={13} /> My Storefront
+                <Store size={12} /> <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>My Storefront</span>
               </button>
             </div>
           ) : (
             <button
               onClick={() => setCreateStoreOpen(true)}
               className="btn-pill-primary btn-pill-sm"
-              style={{ width: '100%', padding: '9px', fontSize: '0.78rem', fontWeight: 800 }}
+              style={{ width: '100%', padding: '8px 10px', fontSize: '0.76rem', fontWeight: 800, justifyContent: 'center' }}
             >
-              <Store size={14} /> Create a Store to Sell Items
+              <Store size={13} /> <span>Create a Store to Sell Items</span>
             </button>
           )}
         </div>
 
         {/* Balance Vault & Metrics Card (Apple Liquid Glass) */}
-        <div className="apple-liquid-glass-card card-reveal-right" style={{
+        <div className="apple-liquid-glass-card card-reveal-right profile-vault-card" style={{
           padding: '20px 22px',
           borderRadius: '20px',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          gap: '14px'
+          gap: '14px',
+          boxSizing: 'border-box',
+          minWidth: 0,
+          overflow: 'hidden'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', minWidth: 0 }}>
+            <div style={{ minWidth: 0 }}>
               <div style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '5px',
-                fontSize: '0.68rem',
+                fontSize: '0.64rem',
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
                 color: 'var(--brand-green)',
                 fontWeight: 800,
                 marginBottom: '2px'
               }}>
-                <Sparkles size={12} />
+                <Sparkles size={11} />
                 <span>Available Shopping Balance</span>
               </div>
-              <div style={{
-                fontSize: '2rem',
+              <div className="profile-vault-balance" style={{
+                fontSize: 'clamp(1.4rem, 4.5vw, 1.85rem)',
                 fontWeight: 900,
                 color: '#FFFFFF',
                 fontFamily: "'JetBrains Mono', monospace",
@@ -1594,9 +1609,9 @@ export default function ProfilePage({
               </div>
             </div>
 
-            <div style={{
-              width: '40px',
-              height: '40px',
+            <div className="profile-vault-wallet-icon" style={{
+              width: '36px',
+              height: '36px',
               borderRadius: '50%',
               background: '#080F0F',
               border: '1.5px solid var(--brand-green)',
@@ -1607,77 +1622,80 @@ export default function ProfilePage({
               boxShadow: '0 0 14px var(--brand-green-dim)',
               flexShrink: 0
             }}>
-              <Wallet size={18} />
+              <Wallet size={16} />
             </div>
           </div>
 
           {/* 3 Metric counters */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+          <div className="profile-vault-metrics" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px', minWidth: 0 }}>
             <div style={{
-              padding: '8px 6px',
+              padding: '6px 4px',
               background: '#080F0F',
               borderRadius: '12px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
-              textAlign: 'center'
+              textAlign: 'center',
+              minWidth: 0
             }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', fontFamily: "'JetBrains Mono', monospace" }}>
+              <div style={{ fontSize: 'clamp(0.95rem, 3.5vw, 1.15rem)', fontWeight: 800, color: '#FFFFFF', fontFamily: "'JetBrains Mono', monospace" }}>
                 {formatNumber(productsOwnedCount)}
               </div>
-              <div style={{ fontSize: '0.66rem', color: '#9CA3AF', fontWeight: 600 }}>Owned</div>
+              <div style={{ fontSize: '0.62rem', color: '#9CA3AF', fontWeight: 600 }}>Owned</div>
             </div>
             <div style={{
-              padding: '8px 6px',
+              padding: '6px 4px',
               background: '#080F0F',
               borderRadius: '12px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
-              textAlign: 'center'
+              textAlign: 'center',
+              minWidth: 0
             }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', fontFamily: "'JetBrains Mono', monospace" }}>
+              <div style={{ fontSize: 'clamp(0.95rem, 3.5vw, 1.15rem)', fontWeight: 800, color: '#FFFFFF', fontFamily: "'JetBrains Mono', monospace" }}>
                 {formatNumber(transfersCount)}
               </div>
-              <div style={{ fontSize: '0.66rem', color: '#9CA3AF', fontWeight: 600 }}>Transfers</div>
+              <div style={{ fontSize: '0.62rem', color: '#9CA3AF', fontWeight: 600 }}>Transfers</div>
             </div>
             <div style={{
-              padding: '8px 6px',
+              padding: '6px 4px',
               background: '#080F0F',
               borderRadius: '12px',
               border: '1px solid rgba(255, 255, 255, 0.08)',
-              textAlign: 'center'
+              textAlign: 'center',
+              minWidth: 0
             }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF', fontFamily: "'JetBrains Mono', monospace" }}>
+              <div style={{ fontSize: 'clamp(0.95rem, 3.5vw, 1.15rem)', fontWeight: 800, color: '#FFFFFF', fontFamily: "'JetBrains Mono', monospace" }}>
                 {formatNumber(resalesCount)}
               </div>
-              <div style={{ fontSize: '0.66rem', color: '#9CA3AF', fontWeight: 600 }}>Resales</div>
+              <div style={{ fontSize: '0.62rem', color: '#9CA3AF', fontWeight: 600 }}>Resales</div>
             </div>
           </div>
 
           {/* Balance Actions */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+          <div className="profile-vault-actions" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '6px', minWidth: 0 }}>
             <button
               onClick={() => setDepositModalOpen(true)}
               className="btn-pill-secondary btn-pill-sm"
-              style={{ padding: '8px', fontSize: '0.74rem', fontWeight: 700 }}
+              style={{ padding: '7px 4px', fontSize: '0.7rem', fontWeight: 700, minWidth: 0, justifyContent: 'center' }}
             >
-              <QrCode size={13} color="var(--brand-green)" />
-              <span>Deposit QR</span>
+              <QrCode size={12} color="var(--brand-green)" />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Deposit</span>
             </button>
 
             <button
               onClick={() => setSendModalOpen(true)}
               className="btn-pill-secondary btn-pill-sm"
-              style={{ padding: '8px', fontSize: '0.74rem', fontWeight: 700 }}
+              style={{ padding: '7px 4px', fontSize: '0.7rem', fontWeight: 700, minWidth: 0, justifyContent: 'center' }}
             >
-              <Send size={13} color="var(--brand-green)" />
-              <span>Send Funds</span>
+              <Send size={12} color="var(--brand-green)" />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Send</span>
             </button>
 
             <button
               onClick={handleExportWallet}
               className="btn-pill-secondary btn-pill-sm"
-              style={{ padding: '8px', fontSize: '0.74rem', fontWeight: 700 }}
+              style={{ padding: '7px 4px', fontSize: '0.7rem', fontWeight: 700, minWidth: 0, justifyContent: 'center' }}
             >
-              <Key size={13} color="var(--brand-green)" />
-              <span>Export Key</span>
+              <Key size={12} color="var(--brand-green)" />
+              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Key</span>
             </button>
           </div>
         </div>
@@ -1727,7 +1745,7 @@ export default function ProfilePage({
 
       {/* ================= 3. OVERVIEW TAB CONTENT ================= */}
       {subTab === 'overview' && (
-        <div className="perspective-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', alignItems: 'start', position: 'relative', zIndex: 2 }}>
+        <div className="perspective-container profile-overview-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '16px', alignItems: 'start', position: 'relative', zIndex: 2 }}>
           
           {/* Left Column: Recent Activity & Quick Actions */}
           <div className="card-reveal-left" style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative', zIndex: 2 }}>
@@ -2117,78 +2135,83 @@ export default function ProfilePage({
                   position: 'relative',
                   zIndex: 2
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                    <div>
-                      <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: isCollected ? 'var(--brand-green)' : '#F59E0B', fontWeight: 800, letterSpacing: '0.06em' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px', minWidth: 0 }}>
+                    <div style={{ minWidth: 0, flex: '1 1 auto' }}>
+                      <span style={{ fontSize: '0.66rem', textTransform: 'uppercase', color: isCollected ? 'var(--brand-green)' : '#F59E0B', fontWeight: 800, letterSpacing: '0.06em' }}>
                         FEATURED LIVING PASSPORT
                       </span>
-                      <h3 className="font-display" style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', margin: '2px 0 0' }}>
+                      <h3 className="font-display" style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF', margin: '2px 0 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                         {fName} (#{fSerial})
                       </h3>
                     </div>
                     <span style={{
                       background: isCollected ? 'var(--brand-green-dim)' : 'rgba(245, 158, 11, 0.15)',
                       color: isCollected ? 'var(--brand-green)' : '#F59E0B',
-                      padding: '3px 10px',
+                      padding: '3px 8px',
                       borderRadius: '999px',
-                      fontSize: '0.72rem',
+                      fontSize: '0.66rem',
                       fontWeight: 800,
-                      border: isCollected ? '1px solid var(--brand-green-border)' : '1px solid rgba(245, 158, 11, 0.3)'
+                      border: isCollected ? '1px solid var(--brand-green-border)' : '1px solid rgba(245, 158, 11, 0.3)',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0
                     }}>
-                      {isCollected ? 'VERIFIED IN HAND (OWNED)' : (activeFeatured.deliveryMethod === 'dispatch' || activeFeatured.deliveryMethod === 'delivery' || activeFeatured.currentState === 'IN_TRANSIT') ? 'IN TRANSIT (COURIER DISPATCHED)' : 'LOCKED IN ESCROW (PENDING PICKUP)'}
+                      {isCollected ? 'VERIFIED IN HAND (OWNED)' : (activeFeatured.deliveryMethod === 'dispatch' || activeFeatured.deliveryMethod === 'delivery' || activeFeatured.currentState === 'IN_TRANSIT') ? 'IN TRANSIT' : 'LOCKED IN ESCROW'}
                     </span>
                   </div>
 
                   {/* Product Preview Image & Specs */}
-                  <div style={{
+                  <div className="profile-featured-specs-box" style={{
                     display: 'grid',
-                    gridTemplateColumns: '120px 1fr',
-                    gap: '16px',
-                    padding: '14px',
+                    gridTemplateColumns: 'minmax(76px, 110px) minmax(0, 1fr)',
+                    gap: '12px',
+                    padding: '12px',
                     background: '#080F0F',
                     borderRadius: '16px',
-                    marginBottom: '18px',
-                    border: '1px solid rgba(255, 255, 255, 0.06)'
+                    marginBottom: '16px',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    minWidth: 0,
+                    overflow: 'hidden'
                   }}>
                     <div style={{
-                      height: '110px',
+                      height: '96px',
                       background: '#121C1C',
                       borderRadius: '12px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       overflow: 'hidden',
-                      padding: '6px'
+                      padding: '4px',
+                      flexShrink: 0
                     }}>
                       <img src={fImage} alt={fName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', fontSize: '0.76rem' }}>
-                      <div>
-                        <span style={{ color: '#6B7280', display: 'block', fontSize: '0.68rem' }}>Original Merchant</span>
-                        <strong style={{ color: '#FFFFFF' }}>{fMerchant}</strong>
-                        <span style={{ fontSize: '0.65rem', color: '#9CA3AF', display: 'block' }}>{fLocation}</span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px', fontSize: '0.72rem', minWidth: 0 }}>
+                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                        <span style={{ color: '#6B7280', display: 'block', fontSize: '0.62rem' }}>Original Merchant</span>
+                        <strong style={{ color: '#FFFFFF', fontSize: '0.7rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fMerchant}</strong>
+                        <span style={{ fontSize: '0.62rem', color: '#9CA3AF', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{fLocation}</span>
                       </div>
-                      <div>
-                        <span style={{ color: '#6B7280', display: 'block', fontSize: '0.68rem' }}>Current Custody / Owner</span>
-                        <strong style={{ color: isCollected ? 'var(--brand-green)' : '#F59E0B' }}>
+                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                        <span style={{ color: '#6B7280', display: 'block', fontSize: '0.62rem' }}>Current Custody</span>
+                        <strong style={{ color: isCollected ? 'var(--brand-green)' : '#F59E0B', fontSize: '0.7rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {isCollected ? `You (${displayName})` : 'Smart Contract Escrow'}
                         </strong>
                       </div>
-                      <div>
-                        <span style={{ color: '#6B7280', display: 'block', fontSize: '0.68rem' }}>Monad Tx Ref</span>
+                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                        <span style={{ color: '#6B7280', display: 'block', fontSize: '0.62rem' }}>Monad Tx Ref</span>
                         <a
                           href={fTxRef.startsWith('0x') ? `https://monadexplorer.com/tx/${fTxRef}` : '#'}
                           target="_blank"
                           rel="noreferrer"
-                          style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-mono)', textDecoration: 'none' }}
+                          style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-mono)', textDecoration: 'none', fontSize: '0.66rem', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                         >
                           {fShortTx}
                         </a>
                       </div>
-                      <div>
-                        <span style={{ color: '#6B7280', display: 'block', fontSize: '0.68rem' }}>Original Price</span>
-                        <strong style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-mono)' }}>{formatCurrency(fPrice)}</strong>
+                      <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                        <span style={{ color: '#6B7280', display: 'block', fontSize: '0.62rem' }}>Original Price</span>
+                        <strong style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-mono)', fontSize: '0.74rem' }}>{formatCurrency(fPrice)}</strong>
                       </div>
                     </div>
                   </div>
@@ -2670,8 +2693,8 @@ export default function ProfilePage({
           )}
 
           <div 
-            className="stagger-group perspective-container"
-            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: '18px', width: '100%', boxSizing: 'border-box' }}
+            className="stagger-group perspective-container profile-passports-grid"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '16px', width: '100%', boxSizing: 'border-box' }}
           >
             {effectivePassports.map((p) => {
               const isCollected = 
@@ -2691,12 +2714,12 @@ export default function ProfilePage({
               return (
                 <div
                   key={p.tokenId || p.serialNumber}
-                  className="liquid-glass-card"
+                  className="liquid-glass-card profile-passport-card"
                   style={{
                     background: '#0E1717',
                     border: isCollected ? '1px solid rgba(132, 244, 59, 0.3)' : '1px solid rgba(245, 158, 11, 0.35)',
                     borderRadius: '20px',
-                    padding: '18px',
+                    padding: '16px',
                     boxShadow: '0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(132, 244, 59, 0.08)',
                     display: 'flex',
                     flexDirection: 'column',
@@ -3385,7 +3408,7 @@ export default function ProfilePage({
               </button>
             </div>
           ) : (
-            <div className="perspective-container stagger-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+            <div className="perspective-container stagger-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '16px' }}>
               {wishlist.map((item) => (
                 <div
                   key={item.productId}
@@ -4127,7 +4150,7 @@ export default function ProfilePage({
             </div>
           </div>
 
-          <div className="perspective-container stagger-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+          <div className="perspective-container stagger-group" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: '16px' }}>
             {(() => {
               let storesList = [];
               try {
