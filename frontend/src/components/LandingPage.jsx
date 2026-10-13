@@ -67,20 +67,28 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'transparent', color: '#FFFFFF', fontFamily: "'Sora', sans-serif", position: 'relative', zIndex: 1, overflowX: 'hidden', width: '100%', maxWidth: '100%' }}>
       
       {/* ================= 1. FLOATING NAVIGATION BAR ================= */}
-      <header style={{
-        position: 'sticky',
-        top: '12px',
-        zIndex: 50,
-        maxWidth: '1240px',
-        margin: '0 auto',
-        width: 'calc(100% - 24px)',
-      }}>
+      {/* ================= 1. FLOATING NAVIGATION BAR ================= */}
+      <header 
+        className="landing-fixed-header"
+        style={{
+          position: 'fixed',
+          top: '12px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 100,
+          maxWidth: '1240px',
+          width: 'calc(100% - 24px)',
+          margin: '0 auto',
+          pointerEvents: 'none'
+        }}
+      >
         <div className="apple-glass-dock landing-header-dock" style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '10px 18px',
-          gap: '12px'
+          gap: '12px',
+          pointerEvents: 'auto'
         }}>
           {/* Brand Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', flexShrink: 0 }} onClick={() => handleEnter('shop')}>
@@ -160,7 +168,7 @@ export default function LandingPage({ onLaunchApp, onOpenProfileModal, onNavigat
         maxWidth: '1280px',
         margin: '0 auto',
         width: '100%',
-        padding: '36px 16px 50px',
+        padding: 'clamp(76px, 11vw, 96px) 16px 50px',
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(290px, 100%), 1fr))',
         gap: '36px',

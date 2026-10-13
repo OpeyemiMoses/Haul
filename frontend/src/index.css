@@ -178,6 +178,18 @@ body {
   transform: translateY(-3px);
 }
 
+/* Fixed Landing Page Floating Navigation Header */
+.landing-fixed-header {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  max-width: 1240px;
+  width: calc(100% - 24px);
+  margin: 0 auto;
+}
+
 /* Apple Liquid Glass Floating Dock / Navbar */
 .apple-glass-dock {
   background: var(--liquid-glass-dock-bg);
@@ -533,6 +545,16 @@ html, body {
   /* Landing Page Header Dock on Mobile */
   .landing-desktop-nav {
     display: none !important;
+  }
+
+  .landing-fixed-header {
+    position: fixed !important;
+    top: 10px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 100 !important;
+    width: calc(100% - 20px) !important;
+    max-width: 1240px !important;
   }
 
   .landing-header-dock {
