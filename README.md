@@ -15,10 +15,11 @@
 [![Privy](https://img.shields.io/badge/Auth%20%26%20Wallets-Privy%20Embedded-blueviolet.svg)](https://privy.io/)
 [![Groq AI](https://img.shields.io/badge/AI%20Engine-Groq%20Llama%203.3%2070B-F55036.svg)](https://groq.com/)
 [![Live App](https://img.shields.io/badge/Live%20dApp-haul--shopping.vercel.app-84F43B.svg)](https://haul-shopping.vercel.app)
+[![AI Disclosure](https://img.shields.io/badge/Build-AI%20Agent%20Disclosed-555555.svg)](#ai-agent--tools-disclosure)
 
 *"Paper and screenshot receipts die after checkout. Products are alive."*
 
-[Live dApp](https://haul-shopping.vercel.app) • [Judges Testing Guide](#judges--evaluators-quick-access-guide) • [Architecture](#protocol-architecture) • [Smart Contracts](#deployed-contracts-monad-mainnet) • [Privy Integration](#meaningful-privy-integration-beyond-login) • [GTM Strategy](#go-to-market--user-acquisition-strategy) • [Quick Start](#quick-start)
+[Live dApp](https://haul-shopping.vercel.app) • [Judges Testing Guide](#judges--evaluators-quick-access-guide) • [Architecture](#protocol-architecture) • [Smart Contracts](#deployed-contracts-monad-mainnet) • [Privy Integration](#meaningful-privy-integration-beyond-login) • [GTM Strategy](#go-to-market--user-acquisition-strategy) • [AI Disclosure](#ai-agent--tools-disclosure) • [Quick Start](#quick-start)
 
 </div>
 
@@ -40,6 +41,7 @@
 - [Repository Structure](#repository-structure)
 - [Quick Start & Local Setup](#quick-start--local-setup)
 - [Environment Configuration](#environment-configuration)
+- [AI Agent & Tools Disclosure](#ai-agent--tools-disclosure)
 - [License & Community](#license--community)
 
 ---
@@ -412,6 +414,31 @@ MONAD_RPC_URL=https://rpc.monad.xyz
 CHAIN_ID=143
 PRIVATE_KEY=your_deployer_private_key
 ```
+
+---
+
+## AI Agent & Tools Disclosure
+
+In accordance with hackathon rules and guidelines regarding transparency in AI-assisted software engineering, this section details the AI tools and agentic workflows utilized during the development of Haul.
+
+### 1. Primary AI Tools & Systems Used
+
+- **Antigravity IDE (Google DeepMind)**: Served as an autonomous AI coding agent and pair programmer for codebase implementation, architectural scaffolding, UI refinement, and continuous integration validation.
+- **Groq Llama 3.3 70B Versatile / Llama 3.1 8B**: Integrated into the live production dApp as the runtime intelligence layer powering Haul's AI Shopping & Support Companion (`AISupportModal`, order status lookup, dispute triage, and passport verification).
+
+### 2. Attribution & Division of Responsibility
+
+| Component & Phase | Human Direction & Architecture | AI Agent Contribution & Scaffolding |
+| :--- | :--- | :--- |
+| **Protocol Design & State Machine** | Formulated the core concept of replacing disposable receipts with living onchain Product Passports (ERC-721); designed the 4-digit PIN hash cryptographic handshake (`keccak256`) for in-store pickup and non-custodial escrow release. | Generated initial Solidity contract stubs, formatted architectural state flow diagrams, and structured lifecycle enum definitions. |
+| **Smart Contract Engineering** | Specified escrow settlement logic, invariant checks, reentrancy guards, token minting access controls, and Monad Cancun EVM compatibility. | Assisted in writing unit test suites (`contracts/test/`), deployment automation scripts (`scripts/deployProtocol.js`), and gas optimization benchmarks. |
+| **Frontend & Design System** | Created the visual brand identity, dark obsidian aesthetic, Apple Liquid Glass dock styling, color tokens, and responsive layout hierarchy. | Implemented React components, CSS transition classes, modal portal integration, mobile drawer adaptations, and form validation handlers. |
+| **Privy & Gasless Web3 Architecture** | Designed the gasless consumer onboarding flow, sponsored Paymaster relayer strategy, and embedded wallet lifecycle hooks to eliminate visitor seed phrase requirements. | Integrated `@privy-io/react-auth` SDK methods, context state synchronization in `AuthContext.jsx`, and fallback handling. |
+| **Auditing & Verification** | Reviewed 100% of contract logic, cryptographic signature verifications, payment math, and deployment keys; conducted end-to-end checkout and pickup testing on Monad RPC. | Executed automated test runners (`npx hardhat test`), production bundle compilations (`vite build`), and lint verification. |
+
+### 3. Human Oversight & Code Integrity
+
+Every line of smart contract code, cryptographic verification routine, and financial logic was audited, tested, and validated by the team prior to deployment. The AI agent served as an efficiency multiplier, accelerating repetitive boilerplate, UI styling, and documentation structuring while architectural authority and protocol decisions remained entirely human-directed.
 
 ---
 
